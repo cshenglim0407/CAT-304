@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
 // import the other pages
-import 'homepage.dart';
-import 'login.dart';
-import 'signup.dart';
-import 'wenhao.dart';
-import 'juncheng.dart';
-import 'xianming.dart';
+import 'pages/homepage.dart';
+import 'pages/login.dart';
+import 'pages/signup.dart';
+import 'pages/wenhao.dart';
+import 'pages/juncheng.dart';
+import 'pages/xianming.dart';
 
 void main() {
   runApp(const MyApp());
@@ -24,14 +24,13 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
 
-      initialRoute: '/',
+      home: const HomePage(),
       routes: {
-        '/homepage': (context) => const HomePage(),      // PAGE 1
-        '/login': (context) => const Login(),// PAGE 2
-        '/signup': (context) => const SignUp(), // PAGE 3
-        '/wenhao': (context) => const WenHao(), // PAGE 4
-        '/juncheng': (context) => const JunCheng(), // PAGE 5
-        '/xianming': (context) => const XianMing(), // PAGE 6
+        '/login': (context) => const Login(),
+        '/signup': (context) => const SignUp(),
+        '/wenhao': (context) => const WenHao(),
+        '/juncheng': (context) => const JunCheng(),
+        '/xianming': (context) => const XianMing(),
       },
     );
   }
