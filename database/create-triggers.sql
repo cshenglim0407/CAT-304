@@ -1,22 +1,34 @@
 ---
--- Drop existing triggers and functions if they exist
+-- Trigger to auto-increment ITEM_ID for each TRANSACTION_ID in EXPENSE_ITEMS
 ---
+
+DROP TRIGGER IF EXISTS trg_set_expense_item_id ON EXPENSE_ITEMS;
+DROP FUNCTION IF EXISTS set_expense_item_id();
+
+CREATE OR REPLACE FUNCTION set_expense_item_id()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.ITEM_ID := (SELECT COALESCE(MAX(ITEM_ID), 0) + 1 FROM EXPENSE_ITEMS WHERE TRANSACTION_ID = NEW.TRANSACTION_ID);
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_set_expense_item_id
+BEFORE INSERT ON EXPENSE_ITEMS
+FOR EACH ROW
+EXECUTE FUNCTION set_expense_item_id();
+
+
+---
+-- Updates the UPDATED_AT column to the current timestamp before any update operation. 
+---
+
 DROP TRIGGER IF EXISTS trg_update_users_timestamp ON USERS;
 DROP TRIGGER IF EXISTS trg_update_biometrics_timestamp ON BIOMETRICS;
 DROP TRIGGER IF EXISTS trg_update_accounts_timestamp ON ACCOUNTS;
 DROP TRIGGER IF EXISTS trg_update_transaction_timestamp ON TRANSACTION;
 DROP TRIGGER IF EXISTS trg_update_detailed_timestamp ON DETAILED;
 DROP FUNCTION IF EXISTS update_timestamp();
-
-DROP TRIGGER IF EXISTS trg_update_income_balance ON INCOME;
-DROP TRIGGER IF EXISTS trg_update_expense_balance ON EXPENSES;
-DROP TRIGGER IF EXISTS trg_update_transfer_balance ON TRANSFER;
-DROP FUNCTION IF EXISTS update_account_balance();
-
-
----
--- Updates the UPDATED_AT column to the current timestamp before any update operation. 
----
 
 CREATE OR REPLACE FUNCTION update_timestamp()
 RETURNS TRIGGER AS $$
@@ -49,6 +61,11 @@ FOR EACH ROW EXECUTE FUNCTION update_timestamp();
 ---
 -- Update account balances after income, expenses, or transfer operations
 ---
+
+DROP TRIGGER IF EXISTS trg_update_income_balance ON INCOME;
+DROP TRIGGER IF EXISTS trg_update_expense_balance ON EXPENSES;
+DROP TRIGGER IF EXISTS trg_update_transfer_balance ON TRANSFER;
+DROP FUNCTION IF EXISTS update_account_balance();
 
 CREATE OR REPLACE FUNCTION update_account_balance()
 RETURNS TRIGGER AS $$
