@@ -44,7 +44,7 @@ DECLARE
     v_total_amount NUMERIC(15, 2) := 0;
     v_item RECORD;
 BEGIN
-    -- 1. Resolve IDs
+    -- 1. Resolve IDs and calculate total amount first
     IF NOT EXISTS (SELECT 1 FROM ACCOUNTS WHERE ACCOUNT_ID = p_account_id AND USER_ID = p_user_id) THEN
         RAISE EXCEPTION 'Account % does not exist or does not belong to user %', p_account_id, p_user_id;
     END IF;
@@ -52,14 +52,26 @@ BEGIN
     SELECT EXPENSE_CAT_ID INTO v_cat_id FROM EXPENSE_CATEGORY 
     WHERE NAME = p_category_name;
 
-    -- 2. Create the Parent Transaction (Placeholder amount 0)
+    -- Pre-calculate the total amount from items
+    FOR v_item IN SELECT * FROM jsonb_to_recordset(p_items) 
+        AS x(name TEXT, qty INTEGER, unit_price NUMERIC)
+    LOOP
+        v_total_amount := v_total_amount + (v_item.qty * v_item.unit_price);
+    END LOOP;
+
+    -- Raise an exception if the total amount is not positive
+    IF v_total_amount <= 0 THEN
+        RAISE EXCEPTION 'Total expense amount must be positive.';
+    END IF;
+
+    -- 2. Create the Parent Transaction
     INSERT INTO TRANSACTION (NAME, TYPE, DESCRIPTION, ACCOUNT_ID)
     VALUES (p_expense_name, 'E', p_description, p_account_id)
     RETURNING TRANSACTION_ID INTO v_tx_id;
 
-    -- 3. Create the Expense Record
+    -- 3. Create the Expense Record with the correct total amount
     INSERT INTO EXPENSES (TRANSACTION_ID, AMOUNT, EXPENSE_CAT_ID)
-    VALUES (v_tx_id, 0, v_cat_id);
+    VALUES (v_tx_id, v_total_amount, v_cat_id);
 
     -- 4. Loop through the JSON items and insert into EXPENSE_ITEMS
     FOR v_item IN SELECT * FROM jsonb_to_recordset(p_items) 
@@ -73,13 +85,7 @@ BEGIN
             v_item.unit_price, 
             (v_item.qty * v_item.unit_price)
         );
-
-        -- Accumulate the total
-        v_total_amount := v_total_amount + (v_item.qty * v_item.unit_price);
     END LOOP;
-
-    -- 5. Final Step: Update the total amount in the EXPENSES table
-    UPDATE EXPENSES SET AMOUNT = v_total_amount WHERE TRANSACTION_ID = v_tx_id;
 
 END;
 $$;
