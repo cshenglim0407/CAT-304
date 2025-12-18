@@ -1,5 +1,38 @@
 -- Handle income, expense, and transfer entries
 
+CREATE OR REPLACE PROCEDURE add_transfer(
+    p_user_id UUID,
+    p_from_account_id UUID,
+    p_to_account_id UUID,
+    p_name TEXT,
+    p_amount NUMERIC,
+    p_description TEXT DEFAULT NULL,
+    p_currency TEXT DEFAULT 'MYR'
+)
+LANGUAGE plpgsql AS $$
+DECLARE
+    v_tx_id UUID;
+BEGIN
+    -- 1. Verify account ownership
+    IF NOT EXISTS (SELECT 1 FROM ACCOUNTS WHERE ACCOUNT_ID = p_from_account_id AND USER_ID = p_user_id) THEN
+        RAISE EXCEPTION 'From account % does not exist or does not belong to user %', p_from_account_id, p_user_id;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM ACCOUNTS WHERE ACCOUNT_ID = p_to_account_id AND USER_ID = p_user_id) THEN
+        RAISE EXCEPTION 'To account % does not exist or does not belong to user %', p_to_account_id, p_user_id;
+    END IF;
+
+    -- 2. Insert into TRANSACTION (Primary log)
+    INSERT INTO TRANSACTION (NAME, TYPE, DESCRIPTION, CURRENCY, ACCOUNT_ID)
+    VALUES (p_name, 'T', p_description, p_currency, p_from_account_id)
+    RETURNING TRANSACTION_ID INTO v_tx_id;
+
+    -- 3. Insert into TRANSFER
+    INSERT INTO TRANSFER (TRANSACTION_ID, AMOUNT, FROM_ACCOUNT_ID, TO_ACCOUNT_ID)
+    VALUES (v_tx_id, p_amount, p_from_account_id, p_to_account_id);
+END;
+$$;
+
 CREATE OR REPLACE PROCEDURE add_income(
     p_user_id UUID,
     p_account_id UUID,
@@ -89,39 +122,6 @@ BEGIN
         );
     END LOOP;
 
-END;
-$$;
-
-CREATE OR REPLACE PROCEDURE add_transfer(
-    p_user_id UUID,
-    p_from_account_id UUID,
-    p_to_account_id UUID,
-    p_name TEXT,
-    p_amount NUMERIC,
-    p_description TEXT DEFAULT NULL,
-    p_currency TEXT DEFAULT 'MYR'
-)
-LANGUAGE plpgsql AS $$
-DECLARE
-    v_tx_id UUID;
-BEGIN
-    -- 1. Verify account ownership
-    IF NOT EXISTS (SELECT 1 FROM ACCOUNTS WHERE ACCOUNT_ID = p_from_account_id AND USER_ID = p_user_id) THEN
-        RAISE EXCEPTION 'From account % does not exist or does not belong to user %', p_from_account_id, p_user_id;
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM ACCOUNTS WHERE ACCOUNT_ID = p_to_account_id AND USER_ID = p_user_id) THEN
-        RAISE EXCEPTION 'To account % does not exist or does not belong to user %', p_to_account_id, p_user_id;
-    END IF;
-
-    -- 2. Insert into TRANSACTION (Primary log)
-    INSERT INTO TRANSACTION (NAME, TYPE, DESCRIPTION, CURRENCY, ACCOUNT_ID)
-    VALUES (p_name, 'T', p_description, p_currency, p_from_account_id)
-    RETURNING TRANSACTION_ID INTO v_tx_id;
-
-    -- 3. Insert into TRANSFER
-    INSERT INTO TRANSFER (TRANSACTION_ID, AMOUNT, FROM_ACCOUNT_ID, TO_ACCOUNT_ID)
-    VALUES (v_tx_id, p_amount, p_from_account_id, p_to_account_id);
 END;
 $$;
 
