@@ -40,7 +40,7 @@ CREATE TABLE USERS (
     CURRENCY_PREF TEXT DEFAULT 'MYR',
     -- Constraint
     CONSTRAINT users_date_of_birth_current CHECK (DATE_OF_BIRTH <= CURRENT_DATE OR DATE_OF_BIRTH IS NULL),
-    CONSTRAINT users_gender_options CHECK (GENDER IN ('male', 'female', 'other') OR GENDER IS NULL),
+    CONSTRAINT users_gender_options CHECK (GENDER IN ('MALE', 'FEMALE', 'OTHER') OR GENDER IS NULL),
     CONSTRAINT users_email_format CHECK (EMAIL ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
     CONSTRAINT users_timezone_format CHECK (TIMEZONE ~ '^[+-](0[0-9]|1[0-4]):([0-5][0-9])$'),
     CONSTRAINT users_theme_pref_options CHECK (THEME_PREF IN ('light', 'dark', 'system') OR THEME_PREF IS NULL),
@@ -121,8 +121,12 @@ CREATE TABLE INCOME (
 CREATE TABLE EXPENSE_CATEGORY (
     EXPENSE_CAT_ID UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     NAME TEXT NOT NULL,
+    DESCRIPTION TEXT,
     -- Constraint
-    CONSTRAINT expense_category_name_options CHECK (NAME IN ('FOOD', 'TRANSPORT', 'ENTERTAINMENT', 'HEALTH', 'BILLS', 'SHOPPING', 'TRAVEL', 'EDUCATION', 'OTHER') OR NAME IS NULL)
+    CONSTRAINT expense_category_name_options CHECK (NAME IN
+    ('FOOD', 'TRANSPORT', 'ENTERTAINMENT', 'UTILITIES', 'HEALTHCARE',
+    'SHOPPING', 'TRAVEL', 'EDUCATION', 'RENT', 'OTHER')
+    OR NAME IS NULL)
 );
 
 CREATE TABLE EXPENSES (
