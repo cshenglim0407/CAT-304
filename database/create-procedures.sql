@@ -7,6 +7,7 @@ CREATE OR REPLACE PROCEDURE add_income(
     p_amount NUMERIC,
     p_category TEXT, -- 'SALARY', 'BUSINESS', etc.
     p_description TEXT DEFAULT NULL,
+    p_currency TEXT DEFAULT 'MYR',
     p_is_recurrent BOOLEAN DEFAULT FALSE
 )
 LANGUAGE plpgsql AS $$
@@ -19,8 +20,8 @@ BEGIN
     END IF;
 
     -- Insert into Parent Transaction
-    INSERT INTO TRANSACTION (NAME, TYPE, DESCRIPTION, ACCOUNT_ID)
-    VALUES (p_name, 'I', p_description, p_account_id)
+    INSERT INTO TRANSACTION (NAME, TYPE, DESCRIPTION, CURRENCY, ACCOUNT_ID)
+    VALUES (p_name, 'I', p_description, p_currency, p_account_id)
     RETURNING TRANSACTION_ID INTO v_tx_id;
 
     -- Insert into Income child table
@@ -35,7 +36,8 @@ CREATE OR REPLACE PROCEDURE add_expense(
     p_category_name TEXT,
     p_expense_name TEXT,
     p_description TEXT,
-    p_items JSONB -- Format: '[{"name": "Milk", "qty": 2, "unit_price": 5.50}, ...]'
+    p_items JSONB, -- Format: '[{"name": "Milk", "qty": 2, "unit_price": 5.50}, ...]'
+    p_currency TEXT DEFAULT 'MYR'
 )
 LANGUAGE plpgsql AS $$
 DECLARE
@@ -65,8 +67,8 @@ BEGIN
     END IF;
 
     -- 2. Create the Parent Transaction
-    INSERT INTO TRANSACTION (NAME, TYPE, DESCRIPTION, ACCOUNT_ID)
-    VALUES (p_expense_name, 'E', p_description, p_account_id)
+    INSERT INTO TRANSACTION (NAME, TYPE, DESCRIPTION, CURRENCY, ACCOUNT_ID)
+    VALUES (p_expense_name, 'E', p_description, p_currency, p_account_id)
     RETURNING TRANSACTION_ID INTO v_tx_id;
 
     -- 3. Create the Expense Record with the correct total amount
@@ -96,7 +98,8 @@ CREATE OR REPLACE PROCEDURE add_transfer(
     p_to_account_id UUID,
     p_name TEXT,
     p_amount NUMERIC,
-    p_description TEXT DEFAULT NULL
+    p_description TEXT DEFAULT NULL,
+    p_currency TEXT DEFAULT 'MYR'
 )
 LANGUAGE plpgsql AS $$
 DECLARE
@@ -112,8 +115,8 @@ BEGIN
     END IF;
 
     -- 2. Insert into TRANSACTION (Primary log)
-    INSERT INTO TRANSACTION (NAME, TYPE, DESCRIPTION, ACCOUNT_ID)
-    VALUES (p_name, 'T', p_description, p_from_account_id)
+    INSERT INTO TRANSACTION (NAME, TYPE, DESCRIPTION, CURRENCY, ACCOUNT_ID)
+    VALUES (p_name, 'T', p_description, p_currency, p_from_account_id)
     RETURNING TRANSACTION_ID INTO v_tx_id;
 
     -- 3. Insert into TRANSFER
