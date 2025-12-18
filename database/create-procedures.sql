@@ -194,3 +194,74 @@ BEGIN
     );
 END;
 $$;
+
+-- Stored procedure to add a new budget for a user
+CREATE OR REPLACE PROCEDURE add_user_budget(
+    p_user_id UUID,
+    p_threshold NUMERIC,
+    p_date_from DATE,
+    p_date_to DATE
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_budget_id UUID;
+BEGIN
+    -- Insert into BUDGET table and get the generated BUDGET_ID
+    INSERT INTO BUDGET (TYPE, DATE_FROM, DATE_TO, USER_ID)
+    VALUES ('U', p_date_from, p_date_to, p_user_id)
+    RETURNING BUDGET_ID INTO v_budget_id;
+
+    -- Insert into USER_BUDGET table
+    INSERT INTO USER_BUDGET (BUDGET_ID, THRESHOLD)
+    VALUES (v_budget_id, p_threshold);
+END;
+$$;
+
+-- Add a new budget for a specific account
+CREATE OR REPLACE PROCEDURE add_account_budget(
+    p_user_id UUID,
+    p_account_id UUID,
+    p_threshold NUMERIC,
+    p_date_from DATE,
+    p_date_to DATE
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_budget_id UUID;
+BEGIN
+    -- Insert into BUDGET table and get the generated BUDGET_ID
+    INSERT INTO BUDGET (TYPE, DATE_FROM, DATE_TO, USER_ID)
+    VALUES ('A', p_date_from, p_date_to, p_user_id)
+    RETURNING BUDGET_ID INTO v_budget_id;
+
+    -- Insert into ACCOUNT_BUDGET table
+    INSERT INTO ACCOUNT_BUDGET (BUDGET_ID, THRESHOLD, ACCOUNT_ID)
+    VALUES (v_budget_id, p_threshold, p_account_id);
+END;
+$$;
+
+-- Stored procedure to add a new budget for a specific expense category
+CREATE OR REPLACE PROCEDURE add_category_budget(
+    p_user_id UUID,
+    p_expense_cat_id UUID,
+    p_threshold NUMERIC,
+    p_date_from DATE,
+    p_date_to DATE
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_budget_id UUID;
+BEGIN
+    -- Insert into BUDGET table and get the generated BUDGET_ID
+    INSERT INTO BUDGET (TYPE, DATE_FROM, DATE_TO, USER_ID)
+    VALUES ('C', p_date_from, p_date_to, p_user_id)
+    RETURNING BUDGET_ID INTO v_budget_id;
+
+    -- Insert into CATEGORY_BUDGET table
+    INSERT INTO CATEGORY_BUDGET (BUDGET_ID, THRESHOLD, EXPENSE_CAT_ID)
+    VALUES (v_budget_id, p_threshold, p_expense_cat_id);
+END;
+$$;
