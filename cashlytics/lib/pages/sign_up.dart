@@ -136,7 +136,7 @@ class _SignUpPageState extends State<SignUpPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Image.asset('assets/logo.webp', height: 60),
+                  Image.asset('assets/logo/logo.webp', height: 60),
                   const SizedBox(width: 10),
                 ],
               ),

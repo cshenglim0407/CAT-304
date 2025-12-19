@@ -67,7 +67,7 @@ class _LoginPageState extends State<LoginPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Image.asset(
-                      'assets/logo.webp',
+                      'assets/logo/logo.webp',
                       height: 75,
                     ),
                     const SizedBox(width: 10),
