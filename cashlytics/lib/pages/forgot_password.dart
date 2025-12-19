@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
-import 'otpverification.dart';
 
-class ForgotPassword extends StatefulWidget {
-  const ForgotPassword({super.key});
+import 'otp_verification.dart';
+
+class ForgotPasswordPage extends StatefulWidget {
+  const ForgotPasswordPage({super.key});
 
   @override
-  State<ForgotPassword> createState() => _ForgotPasswordState();
+  State<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
 }
 
-class _ForgotPasswordState extends State<ForgotPassword> {
+class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final _email = TextEditingController();
 
   // Your specific Green color
@@ -121,7 +122,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => OtpVerification(userEmail: email),
+                          builder: (context) => OtpVerificationPage(userEmail: email),
                         ),
                       );
                     } else {

@@ -31,36 +31,6 @@ class HomePage extends StatelessWidget {
               },
               child: const Text('Go to Sign Up'),
             ),
-
-            const SizedBox(height: 8),
-
-            ElevatedButton(
-              onPressed: () {
-                // Go to WenHao page
-                Navigator.pushNamed(context, '/wenhao');
-              },
-              child: const Text('Go to WenHao'),
-            ),
-
-            const SizedBox(height: 8),
-
-            ElevatedButton(
-              onPressed: () {
-                // Go to JunCheng page
-                Navigator.pushNamed(context, '/juncheng');
-              },
-              child: const Text('Go to JunCheng'),
-            ),
-
-            const SizedBox(height: 8),
-
-            ElevatedButton(
-              onPressed: () {
-                // Go to XianMing page
-                Navigator.pushNamed(context, '/xianming');
-              },
-              child: const Text('Go to XianMing'),
-            ),
           ],
         ),
       ),

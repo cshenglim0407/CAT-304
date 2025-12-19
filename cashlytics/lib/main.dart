@@ -4,15 +4,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // import the other pages
-import 'pages/homepage.dart';
+import 'pages/home_page.dart';
 import 'pages/login.dart';
-import 'pages/signup.dart';
-import 'pages/wenhao.dart';
-import 'pages/juncheng.dart';
-import 'pages/xianming.dart';
-import 'pages/forgetpassword.dart';
-import 'pages/otpverification.dart';
-import 'pages/resetpassword.dart';
+import 'pages/sign_up.dart';
+import 'pages/forgot_password.dart';
+import 'pages/otp_verification.dart';
+import 'pages/reset_password.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -54,14 +51,11 @@ class MyApp extends StatelessWidget {
 
       home: const HomePage(),
       routes: {
-        '/login': (context) => const Login(),
-        '/signup': (context) => const SignUp(),
-        '/wenhao': (context) => const WenHao(),
-        '/juncheng': (context) => const JunCheng(),
-        '/xianming': (context) => const XianMing(),
-        '/forgetpassword': (context) => const ForgotPassword(),
-        '/otpverification': (context) => OtpVerification(userEmail: ''),
-        '/resetpassword': (context) => const ResetPassword(),
+        '/login': (context) => const LoginPage(),
+        '/signup': (context) => const SignUpPage(),
+        '/forgetpassword': (context) => const ForgotPasswordPage(),
+        '/otpverification': (context) => OtpVerificationPage(userEmail: ''),
+        '/resetpassword': (context) => const ResetPasswordPage(),
       },
     );
   }

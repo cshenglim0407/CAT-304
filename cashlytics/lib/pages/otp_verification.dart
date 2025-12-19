@@ -1,18 +1,19 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'resetpassword.dart';
 
-class OtpVerification extends StatefulWidget {
+import 'reset_password.dart';
+
+class OtpVerificationPage extends StatefulWidget {
   final String userEmail; // Pass the email from the previous screen
 
-  const OtpVerification({super.key, required this.userEmail});
+  const OtpVerificationPage({super.key, required this.userEmail});
 
   @override
-  State<OtpVerification> createState() => _OtpVerificationState();
+  State<OtpVerificationPage> createState() => _OtpVerificationPageState();
 }
 
-class _OtpVerificationState extends State<OtpVerification> {
+class _OtpVerificationPageState extends State<OtpVerificationPage> {
   // Your specific Green color
   static const Color kPrimary = Color(0xFF2E604B);
   static const Color kGreyColor = Color(0xFFEAEAEA);
@@ -74,7 +75,7 @@ class _OtpVerificationState extends State<OtpVerification> {
       // ---------------------------------------------
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const ResetPassword()),
+        MaterialPageRoute(builder: (context) => const ResetPasswordPage()),
       );
       
     } else {

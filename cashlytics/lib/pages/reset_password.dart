@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-class ResetPassword extends StatefulWidget {
-  const ResetPassword({super.key});
+class ResetPasswordPage extends StatefulWidget {
+  const ResetPasswordPage({super.key});
 
   @override
-  State<ResetPassword> createState() => _ResetPasswordState();
+  State<ResetPasswordPage> createState() => _ResetPasswordPageState();
 }
 
-class _ResetPasswordState extends State<ResetPassword> {
+class _ResetPasswordPageState extends State<ResetPasswordPage> {
   final _newPassword = TextEditingController();
   final _confirmPassword = TextEditingController();
 

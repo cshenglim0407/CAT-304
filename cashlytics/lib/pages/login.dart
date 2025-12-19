@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
-import 'forgetpassword.dart';
 
-class Login extends StatefulWidget {
-  const Login({super.key});
+import 'forgot_password.dart';
+
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
 
   @override
-  State<Login> createState() => _LoginState();
+  State<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginState extends State<Login> {
+class _LoginPageState extends State<LoginPage> {
   final _email = TextEditingController();
   final _password = TextEditingController();
 
@@ -83,7 +84,7 @@ class _LoginState extends State<Login> {
                 ),
                 const SizedBox(height: 6),
                 const Text(
-                  "Enter your login information",
+                  "Enter your LoginPage information",
                   style: TextStyle(fontSize: 14, color: Color(0xFF9E9E9E)),
                 ),
 
@@ -228,7 +229,7 @@ class _LoginState extends State<Login> {
                         // Navigate to Forgot Password Page
                         Navigator.push(
                           context, 
-                          MaterialPageRoute(builder: (context) => const ForgotPassword())
+                          MaterialPageRoute(builder: (context) => const ForgotPasswordPage())
                         );
                       },
                       // ... rest of your style code
