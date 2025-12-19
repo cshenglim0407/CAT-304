@@ -4,12 +4,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // import the other pages
-import 'presentation/income_expense_management/home_page.dart';
-import 'presentation/user_management/login.dart';
-import 'presentation/user_management/sign_up.dart';
-import 'presentation/user_management/forgot_password.dart';
-import 'presentation/user_management/otp_verification.dart';
-import 'presentation/user_management/reset_password.dart';
+import 'presentation/pages/income_expense_management/home_page.dart';
+import 'presentation/pages/user_management/login.dart';
+import 'presentation/pages/user_management/sign_up.dart';
+import 'presentation/pages/user_management/forgot_password.dart';
+import 'presentation/pages/user_management/otp_verification.dart';
+import 'presentation/pages/user_management/reset_password.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,9 +18,9 @@ Future<void> main() async {
   // debug mode: .env.local
   // release mode: .env.production
   if (const bool.fromEnvironment('dart.vm.product')) {
-    await dotenv.load(fileName: ".env.production");
+    await dotenv.load(fileName: "assets/env/.env.production");
   } else {
-    await dotenv.load(fileName: ".env.local");
+    await dotenv.load(fileName: "assets/env/.env.local");
   }
 
   // Initialize Supabase
