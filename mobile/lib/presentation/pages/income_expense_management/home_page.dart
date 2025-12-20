@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:cashlytics/main.dart';
 import 'package:cashlytics/core/services/supabase/auth_services.dart';
@@ -34,6 +35,13 @@ class _HomePageState extends State<HomePage> {
             const Text('This is the Home Page'),
             const SizedBox(height: 8),
             Text('(Status: ${supabase.auth.currentUser != null ? "Logged In" : "Logged Out"})'),
+            const SizedBox(height: 8),
+            FutureBuilder<bool>(
+              future: SharedPreferences.getInstance().then((prefs) => prefs.getBool('remember_me') ?? false),
+              builder: (context, snapshot) {
+                return Text('(Remember Me: ${snapshot.data ?? false})');
+              },
+            ),
             const SizedBox(height: 16),
 
             ElevatedButton(

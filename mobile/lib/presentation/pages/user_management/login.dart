@@ -33,6 +33,7 @@ class _LoginPageState extends State<LoginPage> {
     await _authService.signInWithEmail(
       email: _email.text,
       password: _password.text,
+      rememberMe: _rememberMe,
       onLoadingStart: () {
         if (mounted) {
           setState(() => _isLoading = true);

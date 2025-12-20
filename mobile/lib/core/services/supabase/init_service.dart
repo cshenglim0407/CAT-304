@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SupabaseInitService {
   /// Initialize Supabase with environment variables
@@ -15,6 +16,10 @@ class SupabaseInitService {
       await dotenv.load(fileName: "assets/env/.env.local");
     }
 
+    // Check if user wants to persist session
+    final prefs = await SharedPreferences.getInstance();
+    final rememberMe = prefs.getBool('remember_me') ?? false;
+
     // Initialize Supabase
     await Supabase.initialize(
       url: (kIsWeb
@@ -24,9 +29,36 @@ class SupabaseInitService {
                   : 'http://127.0.0.1:')) +
           (dotenv.env['PUBLIC_SUPABASE_PORT'] ?? '54321'),
       anonKey: dotenv.env['PUBLIC_SUPABASE_ANON_KEY'] ?? '',
+      authOptions: FlutterAuthClientOptions(
+        authFlowType: AuthFlowType.pkce,
+        localStorage: rememberMe ? null : const EmptyLocalStorage()
+      )
     );
   }
 
   /// Get the Supabase client instance
   static SupabaseClient get client => Supabase.instance.client;
+}
+
+/// An empty local storage implementation that does nothing.
+/// Used to prevent session persistence when "Remember Me" is not selected.
+class EmptyLocalStorage extends LocalStorage {
+  const EmptyLocalStorage();
+
+  @override
+  Future<void> initialize() async {}
+
+  @override
+  Future<String?> accessToken() async => null;
+
+  @override
+  Future<bool> hasAccessToken() async => false;
+
+  @override
+  Future<void> persistSession(String persistSessionString) async {
+    // Don't persist the session
+  }
+
+  @override
+  Future<void> removePersistedSession() async {}
 }
