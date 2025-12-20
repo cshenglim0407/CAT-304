@@ -54,23 +54,26 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   void initState() {
-    _authStateSubscription = supabase.auth.onAuthStateChange.listen((data) {
-      if (_redirecting) return;
-      final session = data.session;
-      if (session != null) {
-        if (mounted) {
-          setState(() => _redirecting = true);
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const HomePage()),
-          );
+    _authStateSubscription = supabase.auth.onAuthStateChange.listen(
+      (data) {
+        if (_redirecting) return;
+        final session = data.session;
+        if (session != null) {
+          if (mounted) {
+            setState(() => _redirecting = true);
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => const HomePage()),
+            );
+          }
         }
-      }
-    }, onError: (error) {
-      // Handle errors from the auth state change stream
-      if (mounted) {
-        context.showSnackBar('Authentication error: $error', isError: true);
-      }
-    });
+      },
+      onError: (error) {
+        // Handle errors from the auth state change stream
+        if (mounted) {
+          context.showSnackBar('Authentication error: $error', isError: true);
+        }
+      },
+    );
     super.initState();
   }
 
@@ -82,10 +85,7 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  InputDecoration _inputDecoration({
-    required String hint,
-    Widget? suffixIcon,
-  }) {
+  InputDecoration _inputDecoration({required String hint, Widget? suffixIcon}) {
     return InputDecoration(
       hintText: hint,
       hintStyle: const TextStyle(color: Color(0xFFBDBDBD)),
@@ -113,7 +113,7 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Align( 
+        child: Align(
           alignment: const Alignment(0, -0.7),
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
@@ -123,10 +123,7 @@ class _LoginPageState extends State<LoginPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Image.asset(
-                      'assets/logo/logo.webp',
-                      height: 75,
-                    ),
+                    Image.asset('assets/logo/logo.webp', height: 75),
                     const SizedBox(width: 10),
                   ],
                 ),
@@ -135,9 +132,10 @@ class _LoginPageState extends State<LoginPage> {
                 const Text(
                   "Welcome Back!",
                   style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF2E604B)),
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF2E604B),
+                  ),
                 ),
                 const SizedBox(height: 6),
                 const Text(
@@ -164,14 +162,21 @@ class _LoginPageState extends State<LoginPage> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: const [
-                            Text("G",
-                                style: TextStyle(
-                                    fontWeight: FontWeight.w800, fontSize: 16)),
+                            Text(
+                              "G",
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 16,
+                              ),
+                            ),
                             SizedBox(width: 8),
-                            Text("Google",
-                                style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.black87)),
+                            Text(
+                              "Google",
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -193,13 +198,19 @@ class _LoginPageState extends State<LoginPage> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: const [
-                            Icon(Icons.facebook,
-                                color: Color(0xFF1877F2), size: 20),
+                            Icon(
+                              Icons.facebook,
+                              color: Color(0xFF1877F2),
+                              size: 20,
+                            ),
                             SizedBox(width: 8),
-                            Text("Facebook",
-                                style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.black87)),
+                            Text(
+                              "Facebook",
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -213,14 +224,18 @@ class _LoginPageState extends State<LoginPage> {
                 Row(
                   children: const [
                     Expanded(
-                        child: Divider(color: Color(0xFFEAEAEA), thickness: 1)),
+                      child: Divider(color: Color(0xFFEAEAEA), thickness: 1),
+                    ),
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: 10),
-                      child: Text("Or",
-                          style: TextStyle(color: Color(0xFF9E9E9E))),
+                      child: Text(
+                        "Or",
+                        style: TextStyle(color: Color(0xFF9E9E9E)),
+                      ),
                     ),
                     Expanded(
-                        child: Divider(color: Color(0xFFEAEAEA), thickness: 1)),
+                      child: Divider(color: Color(0xFFEAEAEA), thickness: 1),
+                    ),
                   ],
                 ),
 
@@ -278,15 +293,22 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                     const SizedBox(width: 10),
-                    const Text("Remember me",
-                        style: TextStyle(fontSize: 13, color: Colors.black87)),
+                    GestureDetector(
+                      onTap: () => setState(() => _rememberMe = !_rememberMe),
+                      child: const Text(
+                        "Remember me",
+                        style: TextStyle(fontSize: 13, color: Colors.black87),
+                      ),
+                    ),
                     const Spacer(),
                     TextButton(
                       onPressed: () {
                         // Navigate to Forgot Password Page
                         Navigator.push(
-                          context, 
-                          MaterialPageRoute(builder: (context) => const ForgotPasswordPage())
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ForgotPasswordPage(),
+                          ),
                         );
                       },
                       child: const Text("Forgot Password?"),
@@ -313,7 +335,9 @@ class _LoginPageState extends State<LoginPage> {
                     child: const Text(
                       "Sign In",
                       style: TextStyle(
-                          fontWeight: FontWeight.w700, fontSize: 15),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
                     ),
                   ),
                 ),
@@ -325,7 +349,9 @@ class _LoginPageState extends State<LoginPage> {
                   child: RichText(
                     text: TextSpan(
                       style: const TextStyle(
-                          color: Colors.black87, fontSize: 13),
+                        color: Colors.black87,
+                        fontSize: 13,
+                      ),
                       children: [
                         const TextSpan(text: "Don't have an account? "),
                         WidgetSpan(
