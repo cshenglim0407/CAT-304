@@ -1,12 +1,15 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 import 'package:cashlytics/main.dart';
 
 class AuthService {
   /// Sign in with email and password
-  /// 
+  ///
   /// Calls [onLoadingStart] when operation begins
   /// Calls [onLoadingEnd] when operation completes
   /// Calls [onError] if an error occurs with error message
@@ -25,14 +28,83 @@ class AuthService {
       final prefs = await SharedPreferences.getInstance();
       prefs.setBool('remember_me', rememberMe);
 
-      await supabase.auth.signInWithPassword(
-        email: email,
-        password: password,
-      );
+      await supabase.auth.signInWithPassword(email: email, password: password);
     } on AuthException catch (error) {
       onError(error.message);
     } catch (error) {
       onError('Something went wrong');
+    } finally {
+      onLoadingEnd();
+    }
+  }
+
+  /// Sign in with Google OAuth
+  ///
+  /// Calls [onLoadingStart] when operation begins
+  /// Calls [onLoadingEnd] when operation completes
+  /// Calls [onError] if an error occurs with error message
+  Future<void> signInWithGoogle({
+    required bool rememberMe,
+    required VoidCallback onLoadingStart,
+    required VoidCallback onLoadingEnd,
+    required Function(String) onError,
+  }) async {
+    try {
+      onLoadingStart();
+
+      // Save remember me preference
+      final prefs = await SharedPreferences.getInstance();
+      prefs.setBool('remember_me', true);
+
+      final webClientId =
+          dotenv.env['PUBLIC_SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID'] ?? '';
+      final iosClientId =
+          dotenv.env['PUBLIC_SUPABASE_AUTH_EXTERNAL_GOOGLE_IOS_CLIENT_ID'] ??
+          '';
+      final androidClientId =
+          dotenv
+              .env['PUBLIC_SUPABASE_AUTH_EXTERNAL_GOOGLE_ANDROID_CLIENT_ID'] ??
+          '';
+      final scopes = ['email', 'profile'];
+      final googleSignIn = GoogleSignIn.instance;
+
+      await googleSignIn.initialize(
+        serverClientId: webClientId,
+        clientId: defaultTargetPlatform == TargetPlatform.iOS
+            ? iosClientId
+            : androidClientId,
+      );
+
+      late GoogleSignInAccount account;
+      // final account = await googleSignIn.attemptLightweightAuthentication();
+      try {
+        account = await googleSignIn.authenticate();
+      } catch (e) {
+        throw AuthException('Google sign-in was cancelled or failed: $e');
+      }
+
+      // if (account == null) {
+      //   throw AuthException('Failed to sign in with Google.');
+      // }
+
+      final auth =
+          await account.authorizationClient.authorizationForScopes(scopes) ??
+          await account.authorizationClient.authorizeScopes(scopes);
+
+      final idToken = account.authentication.idToken;
+      if (idToken == null) {
+        throw AuthException('Failed to retrieve Google ID token.');
+      }
+
+      await supabase.auth.signInWithIdToken(
+        provider: OAuthProvider.google,
+        idToken: idToken,
+        accessToken: auth.accessToken,
+      );
+    } on AuthException catch (error) {
+      onError(error.message);
+    } catch (error) {
+      onError('Something went wrong during Google sign-in.');
     } finally {
       onLoadingEnd();
     }

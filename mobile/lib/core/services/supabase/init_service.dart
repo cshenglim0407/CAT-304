@@ -4,16 +4,23 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SupabaseInitService {
+  static late String _uri;
+
   /// Initialize Supabase with environment variables
   /// Must be called before the app starts
   static Future<void> initialize() async {
     // Load environment variables based on the build mode
     // debug mode: .env.local
     // release mode: .env.production
-    if (const bool.fromEnvironment('dart.vm.product')) {
+    if (kReleaseMode) {
       await dotenv.load(fileName: "assets/env/.env.production");
+      _uri = dotenv.env['PUBLIC_SUPABASE_URL'] ?? '';
     } else {
       await dotenv.load(fileName: "assets/env/.env.local");
+      _uri = (kIsWeb
+              ? 'http://localhost'
+              : (defaultTargetPlatform == TargetPlatform.android ? 'http://10.0.2.2' : 'http://127.0.0.1')) +
+          (dotenv.env['PUBLIC_SUPABASE_PORT'] ?? '54321');
     }
 
     // Check if user wants to persist session
@@ -22,12 +29,7 @@ class SupabaseInitService {
 
     // Initialize Supabase
     await Supabase.initialize(
-      url: (kIsWeb
-              ? 'http://localhost:'
-              : (defaultTargetPlatform == TargetPlatform.android
-                  ? 'http://10.0.2.2:'
-                  : 'http://127.0.0.1:')) +
-          (dotenv.env['PUBLIC_SUPABASE_PORT'] ?? '54321'),
+      url: _uri,
       anonKey: dotenv.env['PUBLIC_SUPABASE_ANON_KEY'] ?? '',
       authOptions: FlutterAuthClientOptions(
         authFlowType: AuthFlowType.pkce,

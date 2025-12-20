@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:cashlytics/main.dart';
@@ -29,10 +30,31 @@ class _LoginPageState extends State<LoginPage> {
   bool _redirecting = false; // for redirecting state
   late final StreamSubscription<AuthState> _authStateSubscription;
 
-  Future<void> _signIn() async {
+  Future<void> _signInWithEmail() async {
     await _authService.signInWithEmail(
       email: _email.text,
       password: _password.text,
+      rememberMe: _rememberMe,
+      onLoadingStart: () {
+        if (mounted) {
+          setState(() => _isLoading = true);
+        }
+      },
+      onLoadingEnd: () {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      },
+      onError: (message) {
+        if (mounted) {
+          context.showSnackBar(message, isError: true);
+        }
+      },
+    );
+  }
+
+  Future<void> _signInWithGoogle() async {
+    await _authService.signInWithGoogle(
       rememberMe: _rememberMe,
       onLoadingStart: () {
         if (mounted) {
@@ -151,7 +173,7 @@ class _LoginPageState extends State<LoginPage> {
                     // --- Google Button ---
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () {},
+                        onPressed: _signInWithGoogle,
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           side: const BorderSide(color: Color(0xFFEAEAEA)),
@@ -322,7 +344,7 @@ class _LoginPageState extends State<LoginPage> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _isLoading ? null : _signIn,
+                    onPressed: _isLoading ? null : _signInWithEmail,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: kPrimary,
                       foregroundColor: Colors.white,
