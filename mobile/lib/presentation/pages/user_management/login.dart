@@ -30,7 +30,7 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _signIn() async {
     try {
       setState(() => _isLoading = true);
-      final response = await supabase.auth.signInWithPassword(
+      await supabase.auth.signInWithPassword(
         email: _email.text,
         password: _password.text,
       );
