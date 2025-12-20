@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../themes/colors.dart';
+import '../../themes/typography.dart';
+import '../../widgets/index.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -14,13 +17,8 @@ class _SignUpPageState extends State<SignUpPage> {
   final _password = TextEditingController();
   final _birthdate = TextEditingController();
 
-  // REMOVED: final _age = TextEditingController();
-
   String? _selectedGender; 
   bool _obscure = true;
-
-  static const Color kPrimary = Color(0xFF2E604B); 
-  static const Color kGreyColor = Color(0xFFEAEAEA);
 
   @override
   void dispose() {
@@ -43,12 +41,12 @@ class _SignUpPageState extends State<SignUpPage> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
-              primary: kPrimary, 
+              primary: AppColors.primary, 
               onPrimary: Colors.white, 
               onSurface: Colors.black, 
             ),
             textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(foregroundColor: kPrimary),
+              style: TextButton.styleFrom(foregroundColor: AppColors.primary),
             ),
           ),
           child: child!,
@@ -66,59 +64,35 @@ class _SignUpPageState extends State<SignUpPage> {
   InputDecoration _inputDecoration({required String hint, Widget? suffixIcon}) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(color: Color(0xFFBDBDBD), fontSize: 14),
+      hintStyle: const TextStyle(color: AppColors.greyHint, fontSize: 14),
       filled: true,
       fillColor: Colors.white,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       suffixIcon: suffixIcon,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: kGreyColor),
+        borderSide: const BorderSide(color: AppColors.greyBorder),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: kGreyColor),
+        borderSide: const BorderSide(color: AppColors.greyBorder),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: kPrimary, width: 1.6),
+        borderSide: const BorderSide(color: AppColors.primary, width: 1.6),
       ),
     );
   }
 
   Widget _label(String label) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Text(
-        label,
-        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-      ),
-    );
+    return FormLabel(label: label);
   }
 
   Widget _socialButton({required String label, required Widget icon}) {
-    return Expanded(
-      child: OutlinedButton(
-        onPressed: () {},
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          side: const BorderSide(color: kGreyColor),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            icon,
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black87),
-            ),
-          ],
-        ),
-      ),
+    return SocialAuthButton(
+      label: label,
+      icon: icon,
+      onPressed: () {},
     );
   }
 
@@ -144,9 +118,9 @@ class _SignUpPageState extends State<SignUpPage> {
               const SizedBox(height: 24),
 
               // Title
-              const Text("Sign Up Account", style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: Color(0xFF2E604B))),
+              Text("Sign Up Account", style: AppTypography.pageTitle.copyWith(color: AppColors.primary)),
               const SizedBox(height: 8),
-              const Text("Enter your personal data to create\nyour account.", style: TextStyle(fontSize: 14, color: Color(0xFF9E9E9E), height: 1.4)),
+              Text("Enter your personal data to create\nyour account.", style: AppTypography.subtitle.copyWith(color: AppColors.greyText)),
 
               const SizedBox(height: 24),
 
@@ -163,10 +137,13 @@ class _SignUpPageState extends State<SignUpPage> {
 
               // Divider
               Row(
-                children: const [
-                  Expanded(child: Divider(color: kGreyColor)),
-                  Padding(padding: EdgeInsets.symmetric(horizontal: 10), child: Text("Or", style: TextStyle(color: Color(0xFF9E9E9E)))),
-                  Expanded(child: Divider(color: kGreyColor)),
+                children: [
+                  const Expanded(child: Divider(color: AppColors.greyLight)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Text("Or", style: AppTypography.bodySmall.copyWith(color: AppColors.greyText)),
+                  ),
+                  const Expanded(child: Divider(color: AppColors.greyLight)),
                 ],
               ),
 
@@ -193,19 +170,12 @@ class _SignUpPageState extends State<SignUpPage> {
 
               const SizedBox(height: 16),
 
-              // *** MODIFIED: Gender Dropdown (Full Width now) ***
-              _label("Gender"),
-              DropdownButtonFormField<String>(
-                initialValue: _selectedGender,
-                hint: const Text("Select", style: TextStyle(color: Color(0xFFBDBDBD), fontSize: 14)),
-                icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF9E9E9E)),
-                decoration: _inputDecoration(hint: ""), 
-                items: ['Male', 'Female'].map((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
+              // *** Gender Dropdown (Full Width) ***
+              FormLabel(label: "Gender"),
+              CustomDropdownFormField(
+                value: _selectedGender,
+                items: const ['Male', 'Female'],
+                hint: "Select",
                 onChanged: (newValue) {
                   setState(() {
                     _selectedGender = newValue;
@@ -216,65 +186,51 @@ class _SignUpPageState extends State<SignUpPage> {
               const SizedBox(height: 16),
 
               // --- Date of Birth ---
-              _label("Date of Birth"),
-              TextField(
+              FormLabel(label: "Date of Birth"),
+              CustomTextFormField(
                 controller: _birthdate,
-                readOnly: true, 
-                onTap: _selectDate, 
-                decoration: _inputDecoration(
-                  hint: "YYYY-MM-DD",
-                  suffixIcon: const Icon(Icons.calendar_today_rounded, size: 20, color: Color(0xFF9E9E9E)),
-                ),
+                hint: "YYYY-MM-DD",
+                readOnly: true,
+                onTap: _selectDate,
+                suffixIcon: const Icon(Icons.calendar_today_rounded, size: 20, color: AppColors.greyText),
               ),
 
               const SizedBox(height: 16),
 
               // --- Email ---
-              _label("Email Address"),
-              TextField(
+              FormLabel(label: "Email Address"),
+              CustomTextFormField(
                 controller: _email,
+                hint: "Email Address",
                 keyboardType: TextInputType.emailAddress,
-                decoration: _inputDecoration(hint: "Email Address"),
               ),
 
               const SizedBox(height: 16),
 
               // --- Password ---
-              _label("Password"),
-              TextField(
+              FormLabel(label: "Password"),
+              CustomTextFormField(
                 controller: _password,
+                hint: "Password",
                 obscureText: _obscure,
-                decoration: _inputDecoration(
-                  hint: "Password",
-                  suffixIcon: IconButton(
-                    onPressed: () => setState(() => _obscure = !_obscure),
-                    icon: Icon(
-                      _obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                      color: const Color(0xFF9E9E9E),
-                      size: 20,
-                    ),
+                suffixIcon: IconButton(
+                  onPressed: () => setState(() => _obscure = !_obscure),
+                  icon: Icon(
+                    _obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                    color: AppColors.greyText,
+                    size: 20,
                   ),
                 ),
               ),
               const SizedBox(height: 8),
-              const Text("Must contain at least 6 characters.", style: TextStyle(color: Color(0xFF9E9E9E), fontSize: 12)),
+              Text("Must contain at least 6 characters.", style: AppTypography.caption.copyWith(color: AppColors.greyText)),
 
               const SizedBox(height: 24),
 
               // --- Sign Up Button ---
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: kPrimary,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                  ),
-                  child: const Text("Sign Up", style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-                ),
+              PrimaryButton(
+                label: "Sign Up",
+                onPressed: () {},
               ),
 
               const SizedBox(height: 24),
@@ -283,14 +239,20 @@ class _SignUpPageState extends State<SignUpPage> {
               Center(
                 child: RichText(
                   text: TextSpan(
-                    style: const TextStyle(color: Colors.black87, fontSize: 14),
+                    style: AppTypography.bodyMedium.copyWith(color: Colors.black87),
                     children: [
                       const TextSpan(text: "Already have an account? "),
                       WidgetSpan(
                         alignment: PlaceholderAlignment.middle,
                         child: GestureDetector(
                           onTap: () => Navigator.pop(context),
-                          child: const Text("Sign In", style: TextStyle(color: kPrimary, fontWeight: FontWeight.w700, decoration: TextDecoration.underline)),
+                          child: Text(
+                            "Sign In",
+                            style: AppTypography.labelLarge.copyWith(
+                              color: AppColors.primary,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
                         ),
                       ),
                     ],
