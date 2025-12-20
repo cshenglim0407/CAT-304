@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:cashlytics/main.dart';
+import 'package:cashlytics/core/services/supabase/sign_out.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -11,23 +11,16 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+
   bool _isLoading = false; // for loading state
 
+  // Sign out method
   Future<void> _signOut() async {
-    try {
-      setState(() => _isLoading = false);
-      await supabase.auth.signOut();
-    } on AuthException catch (error) {
-      if (mounted) {
-        context.showSnackBar(error.message, isError: true);
-      }
-    } catch (error) {
-      if (mounted) {
-        context.showSnackBar('Unexpected error occurred during sign out.', isError: true);
-      }
-    } finally {
-      setState(() => _isLoading = false);
-    }
+    await signOut(
+      onLoadingStart: () => setState(() => _isLoading = true),
+      onLoadingEnd: () => setState(() => _isLoading = false),
+      onError: (msg) => context.showSnackBar(msg, isError: true),
+    );
   }
 
   @override
