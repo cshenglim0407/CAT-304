@@ -14,3 +14,34 @@ dist/
 
 .DS_Store
 *.log
+
+# =====================
+# Python (OCR backend)
+# =====================
+venv/
+__pycache__/
+*.pyc
+
+# =====================
+# Flutter / Dart
+# =====================
+.dart_tool/
+build/
+
+# =====================
+# Android
+# =====================
+android/.gradle/
+android/app/build/
+android/build/
+
+# =====================
+# iOS / macOS
+# =====================
+ios/Pods/
+macos/Pods/
+
+# =====================
+# VS Code
+# =====================
+.vscode/
