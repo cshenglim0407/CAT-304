@@ -34,7 +34,7 @@ class SupabaseInitService {
       authOptions: FlutterAuthClientOptions(
         authFlowType: AuthFlowType.pkce,
         localStorage: rememberMe ? null : const EmptyLocalStorage()
-      )
+      ),
     );
   }
 

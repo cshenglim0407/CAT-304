@@ -45,33 +45,45 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-	<!-- Supabase Deep Links -->
+	<!-- URL Schemes for Deep Links -->
 	<key>CFBundleURLTypes</key>
 	<array>
+		<!-- Supabase Deep Links -->
 		<dict>
-		<key>CFBundleTypeRole</key>
-		<string>Editor</string>
-		<key>CFBundleURLSchemes</key>
-		<array>
-			<string>io.supabase.flutterquickstart</string>
-		</array>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>io.supabase.flutterquickstart</string>
+			</array>
+		</dict>
+		<!-- Google Sign-in -->
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>${GOOGLE_CLIENT_ID}</string>
+			</array>
+		</dict>
+		<!-- Facebook SDK -->
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>fb${FACEBOOK_APP_ID}</string>
+			</array>
 		</dict>
 	</array>
-	<!-- End of Supabase Deep Links -->
-	<!-- Google Sign-in Section -->
-	<key>CFBundleURLTypes</key>
-	<array>
-	<dict>
-		<key>CFBundleTypeRole</key>
-		<string>Editor</string>
-		<key>CFBundleURLSchemes</key>
-		<array>
-		<!-- TODO Replace this value: -->
-		<!-- Copied from GoogleService-Info.plist key REVERSED_CLIENT_ID -->
-		<string>com.googleusercontent.apps.861823949799-vc35cprkp249096uujjn0vvnmcvjppkn</string>
-		</array>
-	</dict>
-	</array>
-	<!-- End of the Google Sign-in Section -->
+	<!-- End of URL Schemes -->
+	<!-- Facebook SDK meta-data -->
+	<key>FacebookAppID</key>
+	<string>${FACEBOOK_APP_ID}</string>
+	<key>FacebookClientToken</key>
+	<string>${FACEBOOK_CLIENT_TOKEN}</string>
+	<key>FacebookDisplayName</key>
+	<string>${FACEBOOK_DISPLAY_NAME}</string>
+	<!-- End of Facebook SDK meta-data -->
 </dict>
 </plist>

@@ -74,6 +74,27 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  Future<void> _signInWithFacebook() async {
+    await _authService.signInWithFacebook(
+      rememberMe: _rememberMe,
+      onLoadingStart: () {
+        if (mounted) {
+          setState(() => _isLoading = true);
+        }
+      },
+      onLoadingEnd: () {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      },
+      onError: (message) {
+        if (mounted) {
+          context.showSnackBar(message, isError: true);
+        }
+      },
+    );
+  }
+
   @override
   void initState() {
     _authStateSubscription = supabase.auth.onAuthStateChange.listen(
@@ -209,7 +230,7 @@ class _LoginPageState extends State<LoginPage> {
                     // --- Facebook Button ---
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () {},
+                        onPressed: _signInWithFacebook,
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           side: const BorderSide(color: Color(0xFFEAEAEA)),

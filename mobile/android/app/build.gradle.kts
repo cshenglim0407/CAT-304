@@ -1,3 +1,11 @@
+import java.util.Properties
+
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.inputStream().use { localProperties.load(it) }
+}
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -28,6 +36,13 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        manifestPlaceholders += mapOf(
+            "facebookAppId" to (localProperties.getProperty("FACEBOOK_APP_ID") ?: ""),
+            "facebookClientToken" to (localProperties.getProperty("FACEBOOK_CLIENT_TOKEN") ?: ""),
+            "facebookDisplayName" to (localProperties.getProperty("FACEBOOK_DISPLAY_NAME") ?: ""),
+            "facebookAppId" to "fb${localProperties.getProperty("FACEBOOK_APP_ID") ?: ""}"
+        )
     }
 
     buildTypes {

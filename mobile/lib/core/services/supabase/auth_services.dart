@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 
 import 'package:cashlytics/main.dart';
 
@@ -105,6 +105,61 @@ class AuthService {
       onError(error.message);
     } catch (error) {
       onError('Something went wrong during Google sign-in.');
+    } finally {
+      onLoadingEnd();
+    }
+  }
+
+  /// Sign in with Facebook OAuth
+  ///
+  /// Calls [onLoadingStart] when operation begins
+  /// Calls [onLoadingEnd] when operation completes
+  /// Calls [onError] if an error occurs with error message
+  Future<void> signInWithFacebook({
+    required bool rememberMe,
+    required VoidCallback onLoadingStart,
+    required VoidCallback onLoadingEnd,
+    required Function(String) onError,
+  }) async {
+    try {
+      onLoadingStart();
+
+      // Save remember me preference
+      final prefs = await SharedPreferences.getInstance();
+      prefs.setBool('remember_me', true);
+
+      await supabase.auth.signInWithOAuth(
+        OAuthProvider.facebook,
+        redirectTo: kIsWeb ? null : 'io.supabase.flutterquickstart://login-callback/',
+        scopes: 'email public_profile',
+      );
+
+      // try {
+      //   final result = await FacebookAuth.instance.login(
+      //     permissions: ['email', 'public_profile'],
+      //   );
+
+      //   if (result.status == LoginStatus.success) {
+      //     final accessToken = result.accessToken!.tokenString;
+      //     print('Facebook Access Token: $accessToken');
+
+      //     await supabase.auth.signInWithIdToken(
+      //       provider: OAuthProvider.facebook,
+      //       idToken: accessToken
+      //     );
+      //   } else if (result.status == LoginStatus.cancelled) {
+      //     throw AuthException('Facebook sign-in was cancelled by user.');
+      //   } else {
+      //     throw AuthException(
+      //         'Facebook sign-in failed: ${result.message ?? 'Unknown error'}');
+      //   }
+      // } catch (error) {
+      //   throw AuthException('Facebook sign-in failed: $error');
+      // }
+    } on AuthException catch (error) {
+      onError(error.message);
+    } catch (error) {
+      onError('Something went wrong during Facebook sign-in.');
     } finally {
       onLoadingEnd();
     }
