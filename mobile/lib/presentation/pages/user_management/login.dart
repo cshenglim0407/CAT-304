@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:cashlytics/main.dart';
+import 'package:cashlytics/core/services/supabase/auth_services.dart';
 import 'package:cashlytics/presentation/pages/user_management/forgot_password.dart';
 import 'package:cashlytics/presentation/pages/income_expense_management/home_page.dart';
 
@@ -17,6 +18,7 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   late final _email = TextEditingController();
   late final _password = TextEditingController();
+  late final _authService = AuthService();
 
   bool _rememberMe = false; // for remember me checkbox
   bool _obscure = true; // for password visibility toggle
@@ -28,25 +30,25 @@ class _LoginPageState extends State<LoginPage> {
   late final StreamSubscription<AuthState> _authStateSubscription;
 
   Future<void> _signIn() async {
-    try {
-      setState(() => _isLoading = true);
-      await supabase.auth.signInWithPassword(
-        email: _email.text,
-        password: _password.text,
-      );
-    } on AuthException catch (error) {
-      if (mounted) {
-        context.showSnackBar(error.message, isError: true);
-      }
-    } catch (error) {
-      if (mounted) {
-        context.showSnackBar('Something went wrong', isError: true);  
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
+    await _authService.signInWithEmail(
+      email: _email.text,
+      password: _password.text,
+      onLoadingStart: () {
+        if (mounted) {
+          setState(() => _isLoading = true);
+        }
+      },
+      onLoadingEnd: () {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      },
+      onError: (message) {
+        if (mounted) {
+          context.showSnackBar(message, isError: true);
+        }
+      },
+    );
   }
 
   @override
@@ -286,7 +288,6 @@ class _LoginPageState extends State<LoginPage> {
                           MaterialPageRoute(builder: (context) => const ForgotPasswordPage())
                         );
                       },
-                      // ... rest of your style code
                       child: const Text("Forgot Password?"),
                     ),
                   ],

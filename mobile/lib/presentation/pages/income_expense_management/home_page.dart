@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:cashlytics/main.dart';
-import 'package:cashlytics/core/services/supabase/sign_out.dart';
+import 'package:cashlytics/core/services/supabase/auth_services.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -16,7 +16,7 @@ class _HomePageState extends State<HomePage> {
 
   // Sign out method
   Future<void> _signOut() async {
-    await signOut(
+    await AuthService().signOut(
       onLoadingStart: () => setState(() => _isLoading = true),
       onLoadingEnd: () => setState(() => _isLoading = false),
       onError: (msg) => context.showSnackBar(msg, isError: true),
