@@ -11,6 +11,7 @@ import 'presentation/pages/user_management/sign_up.dart';
 import 'presentation/pages/user_management/forgot_password.dart';
 import 'presentation/pages/user_management/otp_verification.dart';
 import 'presentation/pages/user_management/reset_password.dart';
+import 'presentation/pages/user_management/profile.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -63,6 +64,7 @@ class MyApp extends StatelessWidget {
         '/forgetpassword': (context) => const ForgotPasswordPage(),
         '/otpverification': (context) => OtpVerificationPage(userEmail: ''),
         '/resetpassword': (context) => const ResetPasswordPage(),
+        '/profile': (context) => const ProfilePage(),
       },
     );
   }
