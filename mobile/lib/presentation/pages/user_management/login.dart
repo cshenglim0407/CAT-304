@@ -1,6 +1,11 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
 
-import 'forgot_password.dart';
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'package:cashlytics/main.dart';
+import 'package:cashlytics/presentation/pages/user_management/forgot_password.dart';
+import 'package:cashlytics/presentation/pages/income_expense_management/home_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -10,16 +15,65 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final _email = TextEditingController();
-  final _password = TextEditingController();
+  late final _email = TextEditingController();
+  late final _password = TextEditingController();
 
-  bool _rememberMe = false;
-  bool _obscure = true;
+  bool _rememberMe = false; // for remember me checkbox
+  bool _obscure = true; // for password visibility toggle
 
   static const Color kPrimary = Color(0xFF2E604B);
 
+  bool _isLoading = false; // for loading state
+  bool _redirecting = false; // for redirecting state
+  late final StreamSubscription<AuthState> _authStateSubscription;
+
+  Future<void> _signIn() async {
+    try {
+      setState(() => _isLoading = true);
+      final response = await supabase.auth.signInWithPassword(
+        email: _email.text,
+        password: _password.text,
+      );
+    } on AuthException catch (error) {
+      if (mounted) {
+        context.showSnackBar(error.message, isError: true);
+      }
+    } catch (error) {
+      if (mounted) {
+        context.showSnackBar('Something went wrong', isError: true);  
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  void initState() {
+    _authStateSubscription = supabase.auth.onAuthStateChange.listen((data) {
+      if (_redirecting) return;
+      final session = data.session;
+      if (session != null) {
+        if (mounted) {
+          setState(() => _redirecting = true);
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const HomePage()),
+          );
+        }
+      }
+    }, onError: (error) {
+      // Handle errors from the auth state change stream
+      if (mounted) {
+        context.showSnackBar('Authentication error: $error', isError: true);
+      }
+    });
+    super.initState();
+  }
+
   @override
   void dispose() {
+    _authStateSubscription.cancel();
     _email.dispose();
     _password.dispose();
     super.dispose();
@@ -244,7 +298,7 @@ class _LoginPageState extends State<LoginPage> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () {},
+                    onPressed: _isLoading ? null : _signIn,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: kPrimary,
                       foregroundColor: Colors.white,

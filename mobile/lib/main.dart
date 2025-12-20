@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -26,10 +27,14 @@ Future<void> main() async {
 
   // Initialize Supabase
   await Supabase.initialize(
-    url: dotenv.env['PUBLIC_SUPABASE_URL'] ?? '',
+    url: (kIsWeb
+            ? 'http://localhost:'
+            : (defaultTargetPlatform == TargetPlatform.android
+                ? 'http://10.0.2.2:'
+                : 'http://127.0.0.1:')) +
+        (dotenv.env['PUBLIC_SUPABASE_PORT'] ?? '54321'),
     anonKey: dotenv.env['PUBLIC_SUPABASE_ANON_KEY'] ?? '',
   );
-  final supabase = Supabase.instance.client;
 
   // Use path URL strategy for web
   usePathUrlStrategy();
@@ -37,6 +42,8 @@ Future<void> main() async {
 
   runApp(const MyApp());
 }
+
+final supabase = Supabase.instance.client;
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -59,6 +66,19 @@ class MyApp extends StatelessWidget {
         '/resetpassword': (context) => const ResetPasswordPage(),
         '/profile': (context) => const ProfilePage(),
       },
+    );
+  }
+}
+
+extension ContextExtension on BuildContext {
+  void showSnackBar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(this).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError
+            ? Theme.of(this).colorScheme.error
+            : Theme.of(this).snackBarTheme.backgroundColor,
+      ),
     );
   }
 }
