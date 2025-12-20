@@ -196,7 +196,7 @@ class _SignUpPageState extends State<SignUpPage> {
               // *** MODIFIED: Gender Dropdown (Full Width now) ***
               _label("Gender"),
               DropdownButtonFormField<String>(
-                value: _selectedGender,
+                initialValue: _selectedGender,
                 hint: const Text("Select", style: TextStyle(color: Color(0xFFBDBDBD), fontSize: 14)),
                 icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF9E9E9E)),
                 decoration: _inputDecoration(hint: ""), 

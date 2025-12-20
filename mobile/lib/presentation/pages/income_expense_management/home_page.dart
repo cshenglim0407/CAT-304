@@ -31,6 +31,16 @@ class HomePage extends StatelessWidget {
               },
               child: const Text('Go to Sign Up'),
             ),
+
+            const SizedBox(height: 8),
+
+            ElevatedButton(
+              onPressed: () {
+                // Go to Profile page
+                Navigator.pushNamed(context, '/profile');
+              },
+              child: const Text('Go to Profile'),
+            ),
           ],
         ),
       ),
