@@ -1,0 +1,19 @@
+-- Clear existing data from all tables to ensure a clean slate
+TRUNCATE TABLE
+    APP_USERS,
+    BIOMETRICS,
+    ACCOUNTS,
+    TRANSACTION,
+    TRANSFER,
+    INCOME,
+    EXPENSE_CATEGORY,
+    EXPENSES,
+    EXPENSE_ITEMS,
+    RECEIPT,
+    BUDGET,
+    USER_BUDGET,
+    ACCOUNT_BUDGET,
+    CATEGORY_BUDGET,
+    DETAILED,
+    AI_REPORT
+RESTART IDENTITY CASCADE;

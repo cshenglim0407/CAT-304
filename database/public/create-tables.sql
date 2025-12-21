@@ -25,7 +25,7 @@ DROP TABLE IF EXISTS APP_USERS CASCADE;
 ---
 
 CREATE TABLE APP_USERS (
-    USER_ID UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    USER_ID UUID PRIMARY KEY DEFAULT uuid_generate_v4() REFERENCES auth.users(id) ON DELETE CASCADE,
     DISPLAY_NAME TEXT,
     DATE_OF_BIRTH DATE,
     GENDER TEXT,
@@ -35,7 +35,7 @@ CREATE TABLE APP_USERS (
     CURRENCY_PREF TEXT DEFAULT 'MYR',
     -- Constraint
     CONSTRAINT users_date_of_birth_current CHECK (DATE_OF_BIRTH <= CURRENT_DATE OR DATE_OF_BIRTH IS NULL),
-    CONSTRAINT users_gender_options CHECK (GENDER IN ('MALE', 'FEMALE', 'OTHER') OR GENDER IS NULL),
+    CONSTRAINT users_gender_options CHECK (GENDER IN ('MALE', 'FEMALE', 'OTHER', NULL)),
     CONSTRAINT users_email_format CHECK (EMAIL ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
     CONSTRAINT users_timezone_format CHECK (TIMEZONE ~ '^[+-](0[0-9]|1[0-4]):([0-5][0-9])$'),
     CONSTRAINT users_theme_pref_options CHECK (THEME_PREF IN ('light', 'dark', 'system') OR THEME_PREF IS NULL),

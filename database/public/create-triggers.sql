@@ -38,10 +38,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trg_update_users_timestamp
-BEFORE UPDATE ON APP_USERS
-FOR EACH ROW EXECUTE FUNCTION update_timestamp();
-
 CREATE TRIGGER trg_update_biometrics_timestamp
 BEFORE UPDATE ON BIOMETRICS
 FOR EACH ROW EXECUTE FUNCTION update_timestamp();
