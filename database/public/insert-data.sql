@@ -1,29 +1,32 @@
--- Clear existing data from all tables to ensure a clean slate
-TRUNCATE TABLE
-    APP_USERS,
-    BIOMETRICS,
-    ACCOUNTS,
-    TRANSACTION,
-    TRANSFER,
-    INCOME,
-    EXPENSE_CATEGORY,
-    EXPENSES,
-    EXPENSE_ITEMS,
-    RECEIPT,
-    BUDGET,
-    USER_BUDGET,
-    ACCOUNT_BUDGET,
-    CATEGORY_BUDGET,
-    DETAILED,
-    AI_REPORT
-RESTART IDENTITY CASCADE;
+-- INSERT INTO
+--     APP_USERS (DISPLAY_NAME, DATE_OF_BIRTH, GENDER, EMAIL)
+-- VALUES
+-- ('John Doe', '1990-01-15', 'MALE', 'johndoe@example.com'),
+-- ('Jane Doe', '1992-05-22', 'FEMALE', 'janedoe@example.com'),
+-- ('Bob Smith', '1988-11-30', 'MALE', 'bobsmith@example.com');
 
-INSERT INTO
-    APP_USERS (DATE_OF_BIRTH, GENDER, EMAIL)
-VALUES
-('1990-01-15', 'MALE', 'johndoe@example.com'),
-('1992-05-22', 'FEMALE', 'janedoe@example.com'),
-('1988-11-30', 'MALE', 'bobsmith@example.com');
+UPDATE APP_USERS
+SET
+    DISPLAY_NAME = 'John Doe',
+    DATE_OF_BIRTH = '1990-01-15',
+    GENDER = 'MALE'
+WHERE EMAIL = 'johndoe@example.com';
+
+UPDATE APP_USERS
+SET
+    DISPLAY_NAME = 'Jane Doe',
+    DATE_OF_BIRTH = '1992-05-22',
+    GENDER = 'FEMALE'
+WHERE EMAIL = 'janedoe@example.com';
+
+UPDATE APP_USERS
+SET
+    DISPLAY_NAME = 'Bob Smith',
+    DATE_OF_BIRTH = '1988-11-30',
+    GENDER = 'MALE'
+WHERE EMAIL = 'bobsmith@example.com';
+
+
 INSERT INTO
     BIOMETRICS (TEMPLATE_DATA, ALGO_VERSION, DEVICE_ID, DEVICE_NAME, TYPE, USER_ID)
 VALUES

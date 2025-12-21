@@ -1,7 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:cashlytics/core/utils/cache_service.dart';
 
 class SupabaseInitService {
   static late String _uri;
@@ -29,8 +30,7 @@ class SupabaseInitService {
     }
 
     // Check if user wants to persist session
-    final prefs = await SharedPreferences.getInstance();
-    final rememberMe = prefs.getBool('remember_me') ?? false;
+    final rememberMe = CacheService.load<bool>('remember_me') ?? false;
 
     // Initialize Supabase
     await Supabase.initialize(

@@ -15,3 +15,15 @@ StreamSubscription<AuthState> listenForSignedInRedirect({
     }
   }, onError: onError);
 }
+
+StreamSubscription<AuthState> listenForSignedOutRedirect({
+  required bool Function() shouldRedirect,
+  required void Function() onRedirect,
+  void Function(Object error)? onError,
+}) {
+  return supabase.auth.onAuthStateChange.listen((data) {
+    if (data.event == AuthChangeEvent.signedOut && shouldRedirect()) {
+      onRedirect();
+    }
+  }, onError: onError);
+}

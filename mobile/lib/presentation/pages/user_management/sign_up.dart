@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:cashlytics/core/services/supabase/auth_services.dart';
-import 'package:cashlytics/core/services/supabase/auth_state_listener.dart';
+import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
+import 'package:cashlytics/core/services/supabase/auth/auth_state_listener.dart';
 import 'package:cashlytics/core/utils/context_extensions.dart';
 
 import 'package:cashlytics/presentation/themes/colors.dart';
@@ -32,8 +32,8 @@ class _SignUpPageState extends State<SignUpPage> {
 
   bool _obscure = true;
 
-  bool _isLoading = false; // for loading state
-  bool _redirecting = false; // for redirect state
+  bool _isLoading = false;
+  bool _redirecting = false;
   late final StreamSubscription<AuthState> _authStateSubscription;
 
   Future<void> _signUpWithEmail() async {
@@ -55,6 +55,7 @@ class _SignUpPageState extends State<SignUpPage> {
         setState(() => _isLoading = false);
         context.showSnackBar(
           'Sign up successful! Please check your email to verify your account.',
+          isSuccess: true,
         );
         // delay to allow user to read the message
         Future.delayed(const Duration(seconds: 2), () {

@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:cashlytics/core/services/supabase/auth_services.dart';
-import 'package:cashlytics/core/services/supabase/auth_state_listener.dart';
+import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
+import 'package:cashlytics/core/services/supabase/auth/auth_state_listener.dart';
 import 'package:cashlytics/core/utils/context_extensions.dart';
 
 import 'package:cashlytics/presentation/themes/colors.dart';
@@ -25,8 +25,8 @@ class ForgotPasswordPage extends StatefulWidget {
 class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   late final _email = TextEditingController();
 
-  bool _isLoading = false; // for loading state
-  bool _redirecting = false; // for redirecting state
+  bool _isLoading = false;
+  bool _redirecting = false;
   StreamSubscription<AuthState>? _authStateSubscription;
 
   Future<void> _forgotPassword() async {
@@ -43,10 +43,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         email: email,
         onLoadingStart: () {
           if (mounted) {
-            context.showSnackBar(
-              'Sending password reset email...',
-              isError: false,
-            );
+            context.showSnackBar('Sending password reset email...');
             setState(() => _isLoading = true);
           }
         },
@@ -54,7 +51,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           if (mounted) {
             context.showSnackBar(
               'Password reset email sent. Please check your inbox.',
-              isError: false,
+              isSuccess: true,
             );
             setState(() => _isLoading = false);
             Future.delayed(const Duration(seconds: 2), () {

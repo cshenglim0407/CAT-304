@@ -1,13 +1,16 @@
+import 'package:cashlytics/core/utils/cache_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import 'package:cashlytics/core/services/supabase/client.dart';
 
 class AuthService {
+  /// Get the current authenticated user
+  User? get currentUser => supabase.auth.currentUser;
+
   /// Sign in with email and password
   ///
   /// Calls [onLoadingStart] when operation begins
@@ -25,8 +28,7 @@ class AuthService {
       onLoadingStart();
 
       // Save remember me preference
-      final prefs = await SharedPreferences.getInstance();
-      prefs.setBool('remember_me', rememberMe);
+     await CacheService.save('remember_me', rememberMe);
 
       await supabase.auth.signInWithPassword(email: email, password: password);
     } on AuthException catch (error) {
@@ -53,8 +55,7 @@ class AuthService {
       onLoadingStart();
 
       // Save remember me preference
-      final prefs = await SharedPreferences.getInstance();
-      prefs.setBool('remember_me', true);
+      await CacheService.save('remember_me', true);
 
       final webClientId =
           dotenv.env['PUBLIC_SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID'] ?? '';
@@ -120,8 +121,7 @@ class AuthService {
       onLoadingStart();
 
       // Save remember me preference
-      final prefs = await SharedPreferences.getInstance();
-      prefs.setBool('remember_me', true);
+      await CacheService.save('remember_me', true);
 
       await supabase.auth.signInWithOAuth(
         OAuthProvider.facebook,
@@ -160,7 +160,11 @@ class AuthService {
       await supabase.auth.signUp(
         email: email,
         password: password,
-        data: {'display_name': displayName},
+        data: {
+          'display_name': displayName,
+          'date_of_birth': birthdate, // Ensure this is YYYY-MM-DD
+          'gender': gender,
+        },
         emailRedirectTo: kIsWeb
             ? null
             : '${dotenv.env['PUBLIC_SUPABASE_REDIRECT_DOMAIN']}://login-callback',
@@ -168,7 +172,7 @@ class AuthService {
     } on AuthException catch (error) {
       onError(error.message);
     } catch (error) {
-      onError('Something went wrong during sign up.');
+      onError('Something went wrong during sign up: $error');
     } finally {
       onLoadingEnd();
     }
@@ -202,6 +206,31 @@ class AuthService {
     }
   }
 
+  /// Update the current user's password
+  /// 
+  /// Calls [onLoadingStart] when operation begins
+  /// Calls [onLoadingEnd] when operation completes
+  /// Calls [onError] if an error occurs with error message
+  Future<void> updatePassword({
+    required String newPassword,
+    required VoidCallback onLoadingStart,
+    required VoidCallback onLoadingEnd,
+    required Function(String) onError,
+  }) async {
+    try {
+      onLoadingStart();
+      await supabase.auth.updateUser(
+        UserAttributes(password: newPassword),
+      );
+    } on AuthException catch (error) {
+      onError(error.message);
+    } catch (error) {
+      onError('Something went wrong while updating the password: $error');
+    } finally {
+      onLoadingEnd();
+    }
+  }
+
   /// Sign out the current user
   ///
   /// Calls [onLoadingStart] when operation begins
@@ -217,8 +246,7 @@ class AuthService {
       await supabase.auth.signOut();
 
       // Clear remember me preference
-      final prefs = await SharedPreferences.getInstance();
-      prefs.setBool('remember_me', false);
+      await CacheService.save('remember_me', false);
     } on AuthException catch (error) {
       onError(error.message);
     } catch (error) {
