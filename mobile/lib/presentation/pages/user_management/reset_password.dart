@@ -1,5 +1,7 @@
+import 'package:cashlytics/core/services/supabase/auth_services.dart';
 import 'package:flutter/material.dart';
 
+import 'package:cashlytics/core/utils/context_extensions.dart';
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
 import 'package:cashlytics/presentation/widgets/index.dart';
@@ -12,11 +14,60 @@ class ResetPasswordPage extends StatefulWidget {
 }
 
 class _ResetPasswordPageState extends State<ResetPasswordPage> {
-  final _newPassword = TextEditingController();
-  final _confirmPassword = TextEditingController();
+  late final _newPassword = TextEditingController();
+  late final _confirmPassword = TextEditingController();
+
+  late final _authService = AuthService();
 
   bool _obscureNew = true;
   bool _obscureConfirm = true;
+
+  Future<void> _handleReset() async {
+    String newPass = _newPassword.text;
+    String confirmPass = _confirmPassword.text;
+
+    if (newPass.isEmpty || confirmPass.isEmpty) {
+      context.showSnackBar("Please fill in all fields", isError: true);
+      return;
+    }
+
+    if (newPass.length < 6) {
+      context.showSnackBar(
+        "Password must be at least 6 characters",
+        isError: true,
+      );
+      return;
+    }
+
+    if (newPass != confirmPass) {
+      context.showSnackBar("Passwords do not match", isError: true);
+      return;
+    }
+
+    await _authService.updatePassword(
+      newPassword: newPass,
+      onLoadingStart: () {
+        if (mounted) {
+          context.showSnackBar('Resetting password...', isError: false);
+        }
+      },
+      onLoadingEnd: () {
+        if (mounted) {
+          _showSuccessDialog();
+        }
+      },
+      onError: (errorMessage) {
+        if (mounted) {
+          context.showSnackBar(errorMessage, isError: true);
+        }
+      },
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
   @override
   void dispose() {
@@ -25,31 +76,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
     super.dispose();
   }
 
-  void _handleReset() {
-    String newPass = _newPassword.text;
-    String confirmPass = _confirmPassword.text;
-
-    if (newPass.isEmpty || confirmPass.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill in both fields")),
-      );
-      return;
-    }
-
-    if (newPass.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Password must be at least 6 characters")),
-      );
-      return;
-    }
-
-    if (newPass != confirmPass) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Passwords do not match")),
-      );
-      return;
-    }
-
+  void _showSuccessDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -58,13 +85,17 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+              Navigator.of(
+                context,
+              ).pushNamedAndRemoveUntil('/', (route) => false);
             },
             child: Text(
               "Login Now",
-              style: AppTypography.labelLarge.copyWith(color: AppColors.primary),
+              style: AppTypography.labelLarge.copyWith(
+                color: AppColors.primary,
+              ),
             ),
-          )
+          ),
         ],
       ),
     );
@@ -88,7 +119,9 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
               // --- Title ---
               SectionTitle(title: "Reset Password"),
               const SizedBox(height: 10),
-              SectionSubtitle(subtitle: "Please enter your new password below."),
+              SectionSubtitle(
+                subtitle: "Please enter your new password below.",
+              ),
 
               const SizedBox(height: 32),
 
@@ -101,7 +134,9 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                 suffixIcon: IconButton(
                   onPressed: () => setState(() => _obscureNew = !_obscureNew),
                   icon: Icon(
-                    _obscureNew ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                    _obscureNew
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
                     color: AppColors.greyText,
                   ),
                 ),
@@ -116,9 +151,12 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                 hint: "Re-enter password",
                 obscureText: _obscureConfirm,
                 suffixIcon: IconButton(
-                  onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
+                  onPressed: () =>
+                      setState(() => _obscureConfirm = !_obscureConfirm),
                   icon: Icon(
-                    _obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                    _obscureConfirm
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
                     color: AppColors.greyText,
                   ),
                 ),
@@ -127,16 +165,15 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
               const SizedBox(height: 8),
               Text(
                 "Must contain at least 6 characters.",
-                style: AppTypography.caption.copyWith(color: AppColors.greyText),
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.greyText,
+                ),
               ),
 
               const SizedBox(height: 40),
 
               // --- Reset Button ---
-              PrimaryButton(
-                label: "Reset Password",
-                onPressed: _handleReset,
-              ),
+              PrimaryButton(label: "Reset Password", onPressed: _handleReset),
             ],
           ),
         ),

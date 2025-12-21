@@ -206,6 +206,31 @@ class AuthService {
     }
   }
 
+  /// Update the current user's password
+  /// 
+  /// Calls [onLoadingStart] when operation begins
+  /// Calls [onLoadingEnd] when operation completes
+  /// Calls [onError] if an error occurs with error message
+  Future<void> updatePassword({
+    required String newPassword,
+    required VoidCallback onLoadingStart,
+    required VoidCallback onLoadingEnd,
+    required Function(String) onError,
+  }) async {
+    try {
+      onLoadingStart();
+      await supabase.auth.updateUser(
+        UserAttributes(password: newPassword),
+      );
+    } on AuthException catch (error) {
+      onError(error.message);
+    } catch (error) {
+      onError('Something went wrong while updating the password: $error');
+    } finally {
+      onLoadingEnd();
+    }
+  }
+
   /// Sign out the current user
   ///
   /// Calls [onLoadingStart] when operation begins
