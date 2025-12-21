@@ -5,15 +5,22 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class SupabaseInitService {
   static late String _uri;
+  static late String _stage;
 
   /// Initialize Supabase with environment variables
   /// Must be called before the app starts
   static Future<void> initialize() async {
     // Load environment variables based on the build mode
     // debug mode: .env.local
+    // profile mode: .env.development
     // release mode: .env.production
-    if (kReleaseMode) {
+      await dotenv.load(fileName: "assets/env/.env");
+      _stage = dotenv.env['PUBLIC_STAGE'] ?? 'local';
+    if (kReleaseMode || _stage == 'production') {
       await dotenv.load(fileName: "assets/env/.env.production");
+      _uri = dotenv.env['PUBLIC_SUPABASE_URL'] ?? '';
+    } else if (kProfileMode || _stage == 'development') {
+      await dotenv.load(fileName: "assets/env/.env.development");
       _uri = dotenv.env['PUBLIC_SUPABASE_URL'] ?? '';
     } else {
       await dotenv.load(fileName: "assets/env/.env.local");
