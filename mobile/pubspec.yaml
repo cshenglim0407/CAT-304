@@ -58,6 +58,7 @@ dev_dependencies:
 flutter:
   assets:
       - assets/logo/logo.webp
+      - assets/logo/logo_without_word.webp
       - assets/env/.env.local
       - assets/env/.env.production
 

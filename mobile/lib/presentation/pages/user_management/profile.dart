@@ -20,7 +20,7 @@ class _ProfilePageState extends State<ProfilePage> {
   final String _currency = "MYR";
   final String _themePref = "Light";
 
-  // --- Helper to calculate Age ---
+  // --- Age Calculation ---
   String _getFormattedDob(String dateStr) {
     try {
       DateTime birthDate = DateTime.parse(dateStr);
@@ -42,8 +42,6 @@ class _ProfilePageState extends State<ProfilePage> {
     });
 
     if (index == 0) {
-      // Logic to navigate to Home Page
-      // Navigator.pushReplacementNamed(context, '/home');
       debugPrint("Navigate to Home");
     }
   }
@@ -129,7 +127,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
               const SizedBox(height: 30),
 
-              // --- Menu Items (Only Edit Info & Logout remain) ---
+              // --- Menu Items ---
               AppMenuItem(
                 icon: Icons.edit_note_rounded,
                 label: "Edit Personal Information",

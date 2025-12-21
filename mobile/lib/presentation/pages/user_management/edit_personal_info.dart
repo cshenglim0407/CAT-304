@@ -183,7 +183,7 @@ class _EditPersonalInformationPageState extends State<EditPersonalInformationPag
                 Text("Preferences", style: AppTypography.labelLarge.copyWith(color: AppColors.primary)),
                 const SizedBox(height: 16),
 
-                // UPDATED: Timezone with Transformer
+                // Timezone
                 const FormLabel(label: "Timezone"),
                 CustomDropdownFormField(
                   value: _selectedTimezone,
@@ -201,7 +201,7 @@ class _EditPersonalInformationPageState extends State<EditPersonalInformationPag
 
                 const SizedBox(height: 16),
 
-                // UPDATED: Currency with Transformer
+                // Currency
                 const FormLabel(label: "Currency"),
                 CustomDropdownFormField(
                   value: _selectedCurrency,

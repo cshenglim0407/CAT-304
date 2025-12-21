@@ -2,15 +2,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:cashlytics/main.dart'; // For supabase client access
+import 'package:cashlytics/main.dart';
 import 'package:cashlytics/core/services/supabase/auth_services.dart';
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
-import 'package:cashlytics/presentation/widgets/index.dart'; // Imports all your custom widgets
+import 'package:cashlytics/presentation/widgets/index.dart';
 
 import 'package:cashlytics/presentation/pages/user_management/forgot_password.dart';
 import 'package:cashlytics/presentation/pages/income_expense_management/home_page.dart';
-import 'package:cashlytics/presentation/pages/user_management/sign_up.dart'; // Ensure this is imported for navigation
+import 'package:cashlytics/presentation/pages/user_management/sign_up.dart'; 
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -71,10 +71,8 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _signIn() async {
-    // 1. Validate Input
     if (!_formKey.currentState!.validate()) return;
 
-    // 2. Execute Sign In
     await _authService.signInWithEmail(
       email: _email.text.trim(),
       password: _password.text,
@@ -100,67 +98,32 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Center(
+        child: Align(
+          alignment: const Alignment(0, -0.3), 
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
             child: Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   // --- Logo ---
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Image.asset('assets/logo/logo.webp', height: 75),
+                      Image.asset('assets/logo/logo_without_word.webp', height: 75),
                       const SizedBox(width: 10),
                     ],
                   ),
-                  const SizedBox(height: 60),
+                  const SizedBox(height: 40),
 
                   // --- Header ---
                   const SectionTitle(title: "Welcome Back!"),
                   const SizedBox(height: 6),
                   const SectionSubtitle(subtitle: "Enter your login information"),
 
-                  const SizedBox(height: 22),
-
-                  // --- Social Buttons ---
-                  Row(
-                    children: [
-                      SocialAuthButton(
-                        label: "Google",
-                        icon: const Text("G", style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
-                        onPressed: () {
-                          // TODO: Implement Google Sign In
-                        },
-                      ),
-                      const SizedBox(width: 14),
-                      SocialAuthButton(
-                        label: "Facebook",
-                        icon: const Icon(Icons.facebook, color: AppColors.facebook, size: 22),
-                        onPressed: () {
-                          // TODO: Implement Facebook Sign In
-                        },
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 18),
-
-                  // --- Divider ---
-                  Row(
-                    children: [
-                      const Expanded(child: Divider(color: AppColors.greyLight, thickness: 1)),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        child: Text("Or", style: AppTypography.bodySmall.copyWith(color: AppColors.greyText)),
-                      ),
-                      const Expanded(child: Divider(color: AppColors.greyLight, thickness: 1)),
-                    ],
-                  ),
-
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 26),
 
                   // --- Email Input ---
                   const FormLabel(label: "Email Address"),
@@ -236,7 +199,7 @@ class _LoginPageState extends State<LoginPage> {
                     ],
                   ),
 
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 24),
 
                   // --- Sign In Button ---
                   PrimaryButton(
@@ -245,7 +208,44 @@ class _LoginPageState extends State<LoginPage> {
                     onPressed: _signIn,
                   ),
 
-                  const SizedBox(height: 22),
+                  const SizedBox(height: 24),
+
+                  // --- Divider ---
+                  Row(
+                    children: [
+                      const Expanded(child: Divider(color: AppColors.greyLight, thickness: 1)),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Text("Or", style: AppTypography.bodySmall.copyWith(color: AppColors.greyText)),
+                      ),
+                      const Expanded(child: Divider(color: AppColors.greyLight, thickness: 1)),
+                    ],
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // --- Social Buttons (Minimalist Version) ---
+                  Row(
+                    children: [
+                      SocialAuthButton(
+                        // No Label = Minimalist Mode
+                        icon: const Text("G", style: TextStyle(fontWeight: FontWeight.w800, fontSize: 24)),
+                        onPressed: () {
+                          // TODO: Google Sign In
+                        },
+                      ),
+                      const SizedBox(width: 14),
+                      SocialAuthButton(
+                        // No Label = Minimalist Mode
+                        icon: const Icon(Icons.facebook, color: AppColors.facebook, size: 28),
+                        onPressed: () {
+                          // TODO: Facebook Sign In
+                        },
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 32),
 
                   // --- Sign Up Link ---
                   Center(
@@ -258,8 +258,6 @@ class _LoginPageState extends State<LoginPage> {
                             alignment: PlaceholderAlignment.middle,
                             child: GestureDetector(
                               onTap: () {
-                                // Assuming you have a named route or direct push
-                                // Navigator.pushNamed(context, '/signup');
                                 Navigator.push(
                                   context, 
                                   MaterialPageRoute(builder: (context) => const SignUpPage())
