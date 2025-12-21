@@ -6,7 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_state_listener.dart';
 import 'package:cashlytics/core/services/supabase/database/database_service.dart';
-import 'package:cashlytics/core/utils/context_extensions.dart';
+import 'package:cashlytics/core/utils/cache_service.dart';
 
 import 'package:cashlytics/presentation/themes/typography.dart';
 import 'package:cashlytics/presentation/widgets/index.dart';
@@ -26,30 +26,43 @@ class _ProfilePageState extends State<ProfilePage> {
   late final _databaseService = DatabaseService();
   late Map<String, dynamic>? currentUserProfile = {};
 
-  bool _redirecting = false; // for redirecting state
+  bool _redirecting = false;
   late final StreamSubscription<AuthState> _authStateSubscription;
 
-  int _selectedIndex = 1; // Default to Profile tab
+  int _selectedIndex = 1;
 
+  static const String _userProfileCacheKey = 'user_profile_cache';
+
+  // --- User Data ---
+  late String _dobString = "";
+  late String _gender = "";
+  late String _timezone = "";
+  late String _currency = "";
+  late String _themePref = "";
+
+  /// Fetch user profile from database and update cache
   Future<void> _fetchUserProfile() async {
     final user = _authService.currentUser;
     if (user != null) {
-      currentUserProfile = await _databaseService.fetchSingle(
-        'app_users',
-        matchColumn: 'user_id',
-        matchValue: user.id,
-      );
-      debugPrint('User Profile: $currentUserProfile');
-      // Process profile data as needed
+      try {
+        currentUserProfile = await _databaseService.fetchSingle(
+          'app_users',
+          matchColumn: 'user_id',
+          matchValue: user.id,
+        );
+        debugPrint('User Profile Fetched: $currentUserProfile');
+
+        if (currentUserProfile != null) {
+          await CacheService.save(_userProfileCacheKey, currentUserProfile!);
+        }
+      } catch (e) {
+        debugPrint('Error fetching profile: $e');
+        currentUserProfile = CacheService.load<Map<String, dynamic>>(
+          _userProfileCacheKey,
+        );
+      }
     }
   }
-
-  // --- User Data ---
-  late String _dobString = "Unknown";
-  late String _gender = "Unknown";
-  late String _timezone = "Unknown";
-  late String _currency = "MYR";
-  late String _themePref = "System";
 
   // --- Age Calculation ---
   String _getFormattedDob(String dateStr) {
@@ -78,27 +91,49 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  /// Update UI with profile data
+  void _updateUIWithProfile() {
+    if (currentUserProfile == null) return;
+
+    setState(() {
+      _dobString = currentUserProfile!['date_of_birth'] ?? 'N/A';
+      _gender = currentUserProfile!['gender'] ?? 'N/A';
+      _timezone = currentUserProfile!['timezone'] ?? 'N/A';
+      _currency = currentUserProfile!['currency_pref'] ?? 'MYR';
+
+      final themePref = currentUserProfile!['theme_pref'] ?? 'system';
+      _themePref = themePref.isNotEmpty
+          ? themePref[0].toUpperCase() +
+                (themePref.length > 1 ? themePref.substring(1) : '')
+          : 'System';
+    });
+  }
+
   @override
   void initState() {
+    super.initState();
+
+    // Load from cache first (synchronous)
+    final cachedProfile = CacheService.load<Map<String, dynamic>>(_userProfileCacheKey);
+    if (cachedProfile != null) {
+      currentUserProfile = cachedProfile;
+      _updateUIWithProfile();
+    }
+
+    // Fetch fresh data from database in background
     _fetchUserProfile().then((_) {
-      debugPrint('User Profile: $currentUserProfile');
-      setState(() {
-        _dobString = currentUserProfile!['date_of_birth'] ?? 'N/A';
-        _gender = currentUserProfile!['gender'] ?? 'N/A';
-        _timezone = currentUserProfile!['timezone'] ?? 'N/A';
-        _currency = currentUserProfile!['currency_pref'] ?? 'N/A';
-        _themePref =
-            currentUserProfile!['theme_pref'][0].toString().toUpperCase() +
-            (currentUserProfile!['theme_pref'].length > 1
-                ? currentUserProfile!['theme_pref'].substring(1)
-                : '');
-      });
+      _updateUIWithProfile();
     });
 
     _authStateSubscription = listenForSignedOutRedirect(
       shouldRedirect: () => !_redirecting,
       onRedirect: () {
         setState(() => _redirecting = true);
+
+        // Clear cached profile data on logout
+        CacheService.remove(_userProfileCacheKey);
+
+        // Navigate to login page
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const LoginPage()),
         );
@@ -107,8 +142,6 @@ class _ProfilePageState extends State<ProfilePage> {
         debugPrint('Auth State Listener Error: $error');
       },
     );
-
-    super.initState();
   }
 
   @override
@@ -241,7 +274,9 @@ class _ProfilePageState extends State<ProfilePage> {
                 icon: Icons.logout_rounded,
                 label: "Logout",
                 isDestructive: true,
-                onTap: () {},
+                onTap: () {
+                  // TODO: Confirm logout dialog
+                },
               ),
               const SizedBox(height: 20),
             ],

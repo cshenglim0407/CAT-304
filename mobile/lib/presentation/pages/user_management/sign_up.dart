@@ -32,8 +32,8 @@ class _SignUpPageState extends State<SignUpPage> {
 
   bool _obscure = true;
 
-  bool _isLoading = false; // for loading state
-  bool _redirecting = false; // for redirect state
+  bool _isLoading = false;
+  bool _redirecting = false;
   late final StreamSubscription<AuthState> _authStateSubscription;
 
   Future<void> _signUpWithEmail() async {

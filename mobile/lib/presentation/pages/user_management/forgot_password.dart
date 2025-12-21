@@ -25,8 +25,8 @@ class ForgotPasswordPage extends StatefulWidget {
 class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   late final _email = TextEditingController();
 
-  bool _isLoading = false; // for loading state
-  bool _redirecting = false; // for redirecting state
+  bool _isLoading = false;
+  bool _redirecting = false;
   StreamSubscription<AuthState>? _authStateSubscription;
 
   Future<void> _forgotPassword() async {
