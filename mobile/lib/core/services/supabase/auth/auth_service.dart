@@ -1,8 +1,8 @@
+import 'package:cashlytics/core/utils/cache_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import 'package:cashlytics/core/services/supabase/client.dart';
@@ -28,8 +28,7 @@ class AuthService {
       onLoadingStart();
 
       // Save remember me preference
-      final prefs = await SharedPreferences.getInstance();
-      prefs.setBool('remember_me', rememberMe);
+     await CacheService.save('remember_me', rememberMe);
 
       await supabase.auth.signInWithPassword(email: email, password: password);
     } on AuthException catch (error) {
@@ -56,8 +55,7 @@ class AuthService {
       onLoadingStart();
 
       // Save remember me preference
-      final prefs = await SharedPreferences.getInstance();
-      prefs.setBool('remember_me', true);
+      await CacheService.save('remember_me', true);
 
       final webClientId =
           dotenv.env['PUBLIC_SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID'] ?? '';
@@ -123,8 +121,7 @@ class AuthService {
       onLoadingStart();
 
       // Save remember me preference
-      final prefs = await SharedPreferences.getInstance();
-      prefs.setBool('remember_me', true);
+      await CacheService.save('remember_me', true);
 
       await supabase.auth.signInWithOAuth(
         OAuthProvider.facebook,
@@ -249,8 +246,7 @@ class AuthService {
       await supabase.auth.signOut();
 
       // Clear remember me preference
-      final prefs = await SharedPreferences.getInstance();
-      prefs.setBool('remember_me', false);
+      await CacheService.save('remember_me', false);
     } on AuthException catch (error) {
       onError(error.message);
     } catch (error) {

@@ -7,6 +7,7 @@ import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_state_listener.dart';
 import 'package:cashlytics/core/services/supabase/database/database_service.dart';
 import 'package:cashlytics/core/utils/cache_service.dart';
+import 'package:cashlytics/core/utils/context_extensions.dart';
 
 import 'package:cashlytics/presentation/themes/typography.dart';
 import 'package:cashlytics/presentation/widgets/index.dart';
@@ -26,8 +27,18 @@ class _ProfilePageState extends State<ProfilePage> {
   late final _databaseService = DatabaseService();
   late Map<String, dynamic>? currentUserProfile = {};
 
+  bool _isLoading = false; // for loading state
   bool _redirecting = false;
   late final StreamSubscription<AuthState> _authStateSubscription;
+
+  // Sign out method
+  Future<void> _signOut() async {
+    await AuthService().signOut(
+      onLoadingStart: () => setState(() => _isLoading = true),
+      onLoadingEnd: () => setState(() => _isLoading = false),
+      onError: (msg) => context.showSnackBar(msg, isError: true),
+    );
+  }
 
   int _selectedIndex = 1;
 
@@ -114,7 +125,9 @@ class _ProfilePageState extends State<ProfilePage> {
     super.initState();
 
     // Load from cache first (synchronous)
-    final cachedProfile = CacheService.load<Map<String, dynamic>>(_userProfileCacheKey);
+    final cachedProfile = CacheService.load<Map<String, dynamic>>(
+      _userProfileCacheKey,
+    );
     if (cachedProfile != null) {
       currentUserProfile = cachedProfile;
       _updateUIWithProfile();
@@ -147,6 +160,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void dispose() {
     _authStateSubscription.cancel();
+    CacheService.remove(_userProfileCacheKey);
     super.dispose();
   }
 
@@ -274,9 +288,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 icon: Icons.logout_rounded,
                 label: "Logout",
                 isDestructive: true,
-                onTap: () {
-                  // TODO: Confirm logout dialog
-                },
+                onTap: _isLoading ? () {} : () => _signOut(),
               ),
               const SizedBox(height: 20),
             ],
