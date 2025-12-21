@@ -43,10 +43,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         email: email,
         onLoadingStart: () {
           if (mounted) {
-            context.showSnackBar(
-              'Sending password reset email...',
-              isError: false,
-            );
+            context.showSnackBar('Sending password reset email...');
             setState(() => _isLoading = true);
           }
         },
@@ -54,7 +51,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           if (mounted) {
             context.showSnackBar(
               'Password reset email sent. Please check your inbox.',
-              isError: false,
+              isSuccess: true,
             );
             setState(() => _isLoading = false);
             Future.delayed(const Duration(seconds: 2), () {

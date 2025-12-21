@@ -55,6 +55,7 @@ class _SignUpPageState extends State<SignUpPage> {
         setState(() => _isLoading = false);
         context.showSnackBar(
           'Sign up successful! Please check your email to verify your account.',
+          isSuccess: true,
         );
         // delay to allow user to read the message
         Future.delayed(const Duration(seconds: 2), () {

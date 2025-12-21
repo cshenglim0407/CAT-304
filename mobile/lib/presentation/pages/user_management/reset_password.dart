@@ -48,7 +48,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       newPassword: newPass,
       onLoadingStart: () {
         if (mounted) {
-          context.showSnackBar('Resetting password...', isError: false);
+          context.showSnackBar('Resetting password...');
         }
       },
       onLoadingEnd: () {
