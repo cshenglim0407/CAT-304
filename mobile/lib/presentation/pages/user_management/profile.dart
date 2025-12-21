@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_state_listener.dart';
+import 'package:cashlytics/core/services/supabase/database/database_service.dart';
 import 'package:cashlytics/core/utils/context_extensions.dart';
 
 import 'package:cashlytics/presentation/themes/typography.dart';
@@ -22,21 +23,37 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   late final _authService = AuthService();
+  late final _databaseService = DatabaseService();
+  late Map<String, dynamic>? currentUserProfile = {};
 
   bool _redirecting = false; // for redirecting state
   late final StreamSubscription<AuthState> _authStateSubscription;
 
   int _selectedIndex = 1; // Default to Profile tab
 
+  Future<void> _fetchUserProfile() async {
+    final user = _authService.currentUser;
+    if (user != null) {
+      currentUserProfile = await _databaseService.fetchSingle(
+        'app_users',
+        matchColumn: 'user_id',
+        matchValue: user.id,
+      );
+      debugPrint('User Profile: $currentUserProfile');
+      // Process profile data as needed
+    }
+  }
+
   // --- User Data ---
-  final String _dobString = "2003-08-24";
-  final String _gender = "Male";
-  final String _timezone = "GMT+8";
-  final String _currency = "MYR";
-  final String _themePref = "Light";
+  late String _dobString = "Unknown";
+  late String _gender = "Unknown";
+  late String _timezone = "Unknown";
+  late String _currency = "MYR";
+  late String _themePref = "System";
 
   // --- Age Calculation ---
   String _getFormattedDob(String dateStr) {
+    if (dateStr == 'N/A' || dateStr.isEmpty) return dateStr;
     try {
       DateTime birthDate = DateTime.parse(dateStr);
       DateTime today = DateTime.now();
@@ -63,6 +80,21 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   void initState() {
+    _fetchUserProfile().then((_) {
+      debugPrint('User Profile: $currentUserProfile');
+      setState(() {
+        _dobString = currentUserProfile!['date_of_birth'] ?? 'N/A';
+        _gender = currentUserProfile!['gender'] ?? 'N/A';
+        _timezone = currentUserProfile!['timezone'] ?? 'N/A';
+        _currency = currentUserProfile!['currency_pref'] ?? 'N/A';
+        _themePref =
+            currentUserProfile!['theme_pref'][0].toString().toUpperCase() +
+            (currentUserProfile!['theme_pref'].length > 1
+                ? currentUserProfile!['theme_pref'].substring(1)
+                : '');
+      });
+    });
+
     _authStateSubscription = listenForSignedOutRedirect(
       shouldRedirect: () => !_redirecting,
       onRedirect: () {
