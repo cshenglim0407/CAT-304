@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../../themes/colors.dart';
-import '../../themes/typography.dart';
-import '../../widgets/index.dart';
+import 'package:cashlytics/presentation/themes/colors.dart';
+import 'package:cashlytics/presentation/themes/typography.dart';
+import 'package:cashlytics/presentation/widgets/index.dart';
 import 'package:flutter/services.dart';
 import 'reset_password.dart';
 

@@ -28,7 +28,7 @@ Centralized color definitions for the entire app.
 
 **Usage:**
 ```dart
-import '../../themes/colors.dart';
+import 'package:cashlytics/presentation/themes/colors.dart';
 
 Color primary = AppColors.primary;
 Color greyText = AppColors.greyText;
@@ -45,7 +45,7 @@ Text style definitions for consistent typography across the app.
 
 **Usage:**
 ```dart
-import '../../themes/typography.dart';
+import 'package:cashlytics/presentation/themes/typography.dart';
 
 Text("Title", style: AppTypography.pageTitle)
 Text("Body", style: AppTypography.bodyMedium)
@@ -235,7 +235,7 @@ Single import for all widgets.
 
 **Usage:**
 ```dart
-import '../../widgets/index.dart';
+import 'package:cashlytics/presentation/widgets/index.dart';
 
 // All widgets now available
 ```
@@ -365,11 +365,11 @@ style: AppTypography.headline2
 ### Use widget barrel imports:
 ```dart
 // ❌ Don't
-import '../../widgets/primary_button.dart';
-import '../../widgets/form_label.dart';
+import 'package:cashlytics/presentation/widgets/primary_button.dart';
+import 'package:cashlytics/presentation/widgets/form_label.dart';
 
 // ✅ Do
-import '../../widgets/index.dart';
+import 'package:cashlytics/presentation/widgets/index.dart';
 ```
 
 ### Extend theme properties for custom styling:

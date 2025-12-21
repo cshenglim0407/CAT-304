@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../themes/colors.dart';
-import '../../themes/typography.dart';
-import '../../widgets/index.dart';
+import 'package:cashlytics/presentation/themes/colors.dart';
+import 'package:cashlytics/presentation/themes/typography.dart';
+import 'package:cashlytics/presentation/widgets/index.dart';
 import 'otp_verification.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
