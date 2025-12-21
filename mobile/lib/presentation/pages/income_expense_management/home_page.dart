@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:cashlytics/main.dart';
 import 'package:cashlytics/core/services/supabase/auth_services.dart';
+import 'package:cashlytics/core/utils/context_extensions.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
