@@ -65,7 +65,7 @@ class _HomePageState extends State<HomePage> {
             const SizedBox(height: 8),
 
             ElevatedButton(
-              onPressed: _signOut,
+              onPressed: _isLoading ? null : _signOut,
               child: const Text('Sign Out'),
             ),
 
