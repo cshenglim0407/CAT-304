@@ -11,6 +11,7 @@ import 'presentation/pages/user_management/forgot_password.dart';
 import 'presentation/pages/user_management/otp_verification.dart';
 import 'presentation/pages/user_management/reset_password.dart';
 import 'presentation/pages/user_management/profile.dart';
+import 'presentation/pages/income_expense_management/dashboard.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -69,6 +70,7 @@ class _MyAppState extends State<MyApp> {
         '/otpverification': (context) => OtpVerificationPage(userEmail: ''),
         '/resetpassword': (context) => const ResetPasswordPage(),
         '/profile': (context) => const ProfilePage(),
+        '/dashboard': (context) => const DashboardPage(),
       },
     );
   }

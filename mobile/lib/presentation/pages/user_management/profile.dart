@@ -37,14 +37,14 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _onNavBarTap(int index) {
+  if (index == 0) {
+    Navigator.pop(context);
+  } else {
     setState(() {
       _selectedIndex = index;
     });
-
-    if (index == 0) {
-      debugPrint("Navigate to Home");
-    }
   }
+}
 
   @override
   Widget build(BuildContext context) {

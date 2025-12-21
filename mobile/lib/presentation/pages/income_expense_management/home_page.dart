@@ -13,9 +13,8 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
 
-  bool _isLoading = false; // for loading state
+  bool _isLoading = false; 
 
-  // Sign out method
   Future<void> _signOut() async {
     await AuthService().signOut(
       onLoadingStart: () => setState(() => _isLoading = true),
@@ -46,7 +45,6 @@ class _HomePageState extends State<HomePage> {
 
             ElevatedButton(
               onPressed: () {
-                // Go to Login page
                 Navigator.pushNamed(context, '/login');
               },
               child: const Text('Go to Login'),
@@ -56,7 +54,6 @@ class _HomePageState extends State<HomePage> {
 
             ElevatedButton(
               onPressed: () {
-                // Go to Sign Up page
                 Navigator.pushNamed(context, '/signup');
               },
               child: const Text('Go to Sign Up'),
@@ -73,10 +70,19 @@ class _HomePageState extends State<HomePage> {
 
             ElevatedButton(
               onPressed: () {
-                // Go to Profile page
                 Navigator.pushNamed(context, '/profile');
               },
               child: const Text('Go to Profile'),
+            ),
+
+            const SizedBox(height: 8),
+
+            // --- UPDATED BUTTON (Normal Style) ---
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/dashboard');
+              },
+              child: const Text('Go to Dashboard'),
             ),
           ],
         ),
