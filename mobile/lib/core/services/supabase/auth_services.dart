@@ -137,6 +137,10 @@ class AuthService {
   }
 
   /// Sign out the current user
+  /// 
+  /// Calls [onLoadingStart] when operation begins
+  /// Calls [onLoadingEnd] when operation completes
+  /// Calls [onError] if an error occurs with error message
   Future<void> signOut({
     required VoidCallback onLoadingStart,
     required VoidCallback onLoadingEnd,
