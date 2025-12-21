@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
 import 'package:cashlytics/presentation/widgets/index.dart';
+import 'package:cashlytics/presentation/pages/user_management/edit_personal_info.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -10,7 +11,7 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  int _selectedIndex = 1;
+  int _selectedIndex = 1; // Default to Profile tab
 
   // --- User Data ---
   final String _dobString = "2003-08-24"; 
@@ -19,7 +20,7 @@ class _ProfilePageState extends State<ProfilePage> {
   final String _currency = "MYR";
   final String _themePref = "Light";
 
-  // --- Helper to calculate Age ---
+  // --- Age Calculation ---
   String _getFormattedDob(String dateStr) {
     try {
       DateTime birthDate = DateTime.parse(dateStr);
@@ -56,6 +57,7 @@ class _ProfilePageState extends State<ProfilePage> {
           padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
           child: Column(
             children: [
+              // --- Back button + Title ---
               Align(
                 alignment: Alignment.centerLeft,
                 child: AppBackButton(onPressed: () => Navigator.pop(context)),
@@ -69,6 +71,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
               const SizedBox(height: 10),
               
+              // --- Profile Header ---
               Center(
                 child: Column(
                   children: [
@@ -88,6 +91,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
               const SizedBox(height: 30),
 
+              // --- INFORMATION CARD ---
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -123,15 +127,18 @@ class _ProfilePageState extends State<ProfilePage> {
 
               const SizedBox(height: 30),
 
+              // --- Menu Items ---
               AppMenuItem(
                 icon: Icons.edit_note_rounded,
-                label: "Edit Personal Information", // UPDATED LABEL
-                onTap: () {},
-              ),
-              AppMenuItem(
-                icon: Icons.help_outline_rounded,
-                label: "Help Center",
-                onTap: () {},
+                label: "Edit Personal Information",
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const EditPersonalInformationPage(),
+                    ),
+                  );
+                },
               ),
               AppMenuItem(
                 icon: Icons.logout_rounded,

@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
@@ -158,7 +157,7 @@ class AuthService {
     try {
       onLoadingStart();
 
-      final AuthResponse res = await supabase.auth.signUp(
+      await supabase.auth.signUp(
         email: email,
         password: password,
         data: {'display_name': displayName},
