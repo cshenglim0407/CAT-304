@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+
 import 'package:cashlytics/presentation/themes/typography.dart';
 import 'package:cashlytics/presentation/widgets/index.dart';
+
 import 'package:cashlytics/presentation/pages/user_management/edit_personal_info.dart';
 
 class ProfilePage extends StatefulWidget {

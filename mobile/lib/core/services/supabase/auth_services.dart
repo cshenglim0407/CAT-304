@@ -5,7 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
-import 'package:cashlytics/main.dart';
+import 'package:cashlytics/core/services/supabase/client.dart';
 
 class AuthService {
   /// Sign in with email and password

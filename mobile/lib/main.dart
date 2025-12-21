@@ -1,16 +1,17 @@
-import 'package:cashlytics/core/services/supabase/init_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // import the other pages
-import 'presentation/pages/income_expense_management/home_page.dart';
-import 'presentation/pages/user_management/login.dart';
-import 'presentation/pages/user_management/sign_up.dart';
-import 'presentation/pages/user_management/forgot_password.dart';
-import 'presentation/pages/user_management/otp_verification.dart';
-import 'presentation/pages/user_management/reset_password.dart';
-import 'presentation/pages/user_management/profile.dart';
+import 'package:cashlytics/core/services/supabase/init_service.dart';
+import 'package:cashlytics/core/services/supabase/client.dart';
+import 'package:cashlytics/presentation/pages/income_expense_management/home_page.dart';
+import 'package:cashlytics/presentation/pages/user_management/login.dart';
+import 'package:cashlytics/presentation/pages/user_management/sign_up.dart';
+import 'package:cashlytics/presentation/pages/user_management/forgot_password.dart';
+import 'package:cashlytics/presentation/pages/user_management/otp_verification.dart';
+import 'package:cashlytics/presentation/pages/user_management/reset_password.dart';
+import 'package:cashlytics/presentation/pages/user_management/profile.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,8 +25,6 @@ Future<void> main() async {
   // Run the app
   runApp(const MyApp());
 }
-
-final supabase = SupabaseInitService.client;
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});

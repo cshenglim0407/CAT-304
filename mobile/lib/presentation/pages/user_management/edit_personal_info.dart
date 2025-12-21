@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
+import 'package:cashlytics/core/utils/profile_constants.dart'; 
+
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
-import 'package:cashlytics/presentation/widgets/index.dart'; 
-import 'package:cashlytics/core/utils/profile_constants.dart'; 
+import 'package:cashlytics/presentation/widgets/index.dart';
 
 class EditPersonalInformationPage extends StatefulWidget {
   const EditPersonalInformationPage({super.key});

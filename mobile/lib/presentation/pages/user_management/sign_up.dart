@@ -3,12 +3,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:cashlytics/main.dart';
 import 'package:cashlytics/core/services/supabase/auth_services.dart';
+import 'package:cashlytics/core/services/supabase/client.dart';
 import 'package:cashlytics/core/utils/context_extensions.dart';
+
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
 import 'package:cashlytics/presentation/widgets/index.dart';
+
 import 'package:cashlytics/presentation/pages/income_expense_management/home_page.dart';
 import 'package:cashlytics/presentation/pages/user_management/login.dart';
 
