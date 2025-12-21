@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:cashlytics/core/config/profile_constants.dart';
+import 'package:cashlytics/core/utils/context_extensions.dart';
 
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
@@ -166,12 +167,7 @@ class _EditPersonalInformationPageState
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted) {
           setState(() => _isLoading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Profile settings updated successfully!"),
-              backgroundColor: AppColors.success,
-            ),
-          );
+          context.showSnackBar("Profile settings updated successfully!", isSuccess: true);
           Navigator.pop(context);
         }
       });
