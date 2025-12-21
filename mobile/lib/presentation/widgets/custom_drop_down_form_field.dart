@@ -7,6 +7,8 @@ class CustomDropdownFormField extends StatelessWidget {
   final List<String> items;
   final String hint;
   final ValueChanged<String?> onChanged;
+  // NEW: Function to transform the display text when selected
+  final String Function(String)? selectedItemTransformer;
 
   const CustomDropdownFormField({
     super.key,
@@ -14,12 +16,14 @@ class CustomDropdownFormField extends StatelessWidget {
     required this.items,
     required this.hint,
     required this.onChanged,
+    this.selectedItemTransformer,
   });
 
   @override
   Widget build(BuildContext context) {
     return DropdownButtonFormField<String>(
       initialValue: value,
+      isExpanded: true, // FIXED: Prevents overflow errors
       hint: Text(
         hint,
         style: AppTypography.hintText.copyWith(
@@ -47,10 +51,26 @@ class CustomDropdownFormField extends StatelessWidget {
           borderSide: const BorderSide(color: AppColors.primary, width: 1.6),
         ),
       ),
+      // NEW: Logic to show the transformed text (short version) when closed
+      selectedItemBuilder: selectedItemTransformer != null
+          ? (BuildContext context) {
+              return items.map<Widget>((String item) {
+                return Text(
+                  selectedItemTransformer!(item),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.black87),
+                );
+              }).toList();
+            }
+          : null,
       items: items.map((String value) {
         return DropdownMenuItem<String>(
           value: value,
-          child: Text(value),
+          child: Text(
+            value,
+            overflow: TextOverflow.ellipsis, // Handles long text in the menu
+          ),
         );
       }).toList(),
       onChanged: onChanged,
