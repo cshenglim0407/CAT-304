@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:cashlytics/core/utils/profile_constants.dart';
+import 'package:cashlytics/core/config/profile_constants.dart';
 
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
