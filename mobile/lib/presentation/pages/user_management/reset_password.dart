@@ -1,4 +1,4 @@
-import 'package:cashlytics/core/services/supabase/auth/auth_services.dart';
+import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
 import 'package:flutter/material.dart';
 
 import 'package:cashlytics/core/utils/context_extensions.dart';

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:cashlytics/core/services/supabase/auth/auth_services.dart';
+import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
 import 'package:cashlytics/core/services/supabase/client.dart';
 import 'package:cashlytics/core/utils/context_extensions.dart';
 
