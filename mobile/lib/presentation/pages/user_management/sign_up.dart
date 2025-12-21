@@ -68,6 +68,36 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 
+  Future<void> _signUpWithGoogle() async {
+    await _authService.signInWithGoogle(
+      rememberMe: true,
+      onLoadingStart: () {
+        if (mounted) setState(() => _isLoading = true);
+      },
+      onLoadingEnd: () {
+        if (mounted) setState(() => _isLoading = false);
+      },
+      onError: (message) {
+        if (mounted) context.showSnackBar(message, isError: true);
+      },
+    );
+  }
+
+  Future<void> _signUpWithFacebook() async {
+    await _authService.signInWithFacebook(
+      rememberMe: true,
+      onLoadingStart: () {
+        if (mounted) setState(() => _isLoading = true);
+      },
+      onLoadingEnd: () {
+        if (mounted) setState(() => _isLoading = false);
+      },
+      onError: (message) {
+        if (mounted) context.showSnackBar(message, isError: true);
+      },
+    );
+  }
+
   Future<void> _selectDate() async {
     DateTime? picked = await showDatePicker(
       context: context,
@@ -132,8 +162,12 @@ class _SignUpPageState extends State<SignUpPage> {
     super.dispose();
   }
 
-  Widget _socialButton({required String label, required Widget icon}) {
-    return SocialAuthButton(label: label, icon: icon, onPressed: () {});
+  Widget _socialButton({
+    required String label,
+    required Widget icon,
+    required VoidCallback onPressed,
+  }) {
+    return SocialAuthButton(label: label, icon: icon, onPressed: onPressed);
   }
 
   @override
@@ -186,6 +220,7 @@ class _SignUpPageState extends State<SignUpPage> {
                         fontSize: 18,
                       ),
                     ),
+                    onPressed: _signUpWithGoogle,
                   ),
                   const SizedBox(width: 14),
                   _socialButton(
@@ -195,6 +230,7 @@ class _SignUpPageState extends State<SignUpPage> {
                       color: Color(0xFF1877F2),
                       size: 22,
                     ),
+                    onPressed: _signUpWithFacebook,
                   ),
                 ],
               ),
