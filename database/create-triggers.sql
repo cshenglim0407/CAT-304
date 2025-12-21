@@ -23,7 +23,7 @@ EXECUTE FUNCTION set_expense_item_id();
 -- Updates the UPDATED_AT column to the current timestamp before any update operation. 
 ---
 
-DROP TRIGGER IF EXISTS trg_update_users_timestamp ON USERS;
+DROP TRIGGER IF EXISTS trg_update_users_timestamp ON APP_USERS;
 DROP TRIGGER IF EXISTS trg_update_biometrics_timestamp ON BIOMETRICS;
 DROP TRIGGER IF EXISTS trg_update_accounts_timestamp ON ACCOUNTS;
 DROP TRIGGER IF EXISTS trg_update_transaction_timestamp ON TRANSACTION;
@@ -39,7 +39,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trg_update_users_timestamp
-BEFORE UPDATE ON USERS
+BEFORE UPDATE ON APP_USERS
 FOR EACH ROW EXECUTE FUNCTION update_timestamp();
 
 CREATE TRIGGER trg_update_biometrics_timestamp
