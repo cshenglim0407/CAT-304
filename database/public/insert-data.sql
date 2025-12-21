@@ -19,11 +19,11 @@ TRUNCATE TABLE
 RESTART IDENTITY CASCADE;
 
 INSERT INTO
-    APP_USERS (DATE_OF_BIRTH, GENDER, EMAIL)
+    APP_USERS (DISPLAY_NAME, DATE_OF_BIRTH, GENDER, EMAIL)
 VALUES
-('1990-01-15', 'MALE', 'johndoe@example.com'),
-('1992-05-22', 'FEMALE', 'janedoe@example.com'),
-('1988-11-30', 'MALE', 'bobsmith@example.com');
+('John Doe', '1990-01-15', 'MALE', 'johndoe@example.com'),
+('Jane Doe', '1992-05-22', 'FEMALE', 'janedoe@example.com'),
+('Bob Smith', '1988-11-30', 'MALE', 'bobsmith@example.com');
 INSERT INTO
     BIOMETRICS (TEMPLATE_DATA, ALGO_VERSION, DEVICE_ID, DEVICE_NAME, TYPE, USER_ID)
 VALUES
