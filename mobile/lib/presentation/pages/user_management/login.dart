@@ -5,20 +5,21 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:cashlytics/main.dart';
 import 'package:cashlytics/core/services/supabase/auth_services.dart';
+import 'package:cashlytics/presentation/widgets/index.dart';
 import 'package:cashlytics/presentation/pages/user_management/forgot_password.dart';
 import 'package:cashlytics/presentation/pages/income_expense_management/home_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
-@override
+  @override
   State<LoginPage> createState() => _LoginPageState();
 }
 
 class _LoginPageState extends State<LoginPage> {
   late final _email = TextEditingController();
   late final _password = TextEditingController();
-  
+
   late final _authService = AuthService();
 
   bool _rememberMe = false; // for remember me checkbox
@@ -361,27 +362,10 @@ class _LoginPageState extends State<LoginPage> {
                 const SizedBox(height: 14),
 
                 // Sign in button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _signInWithEmail,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: kPrimary,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                    ),
-                    child: const Text(
-                      "Sign In",
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                      ),
-                    ),
-                  ),
+                PrimaryButton(
+                  label: "Sign In",
+                  onPressed: _signInWithEmail,
+                  isLoading: _isLoading,
                 ),
 
                 const SizedBox(height: 22),

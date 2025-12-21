@@ -334,7 +334,11 @@ class _SignUpPageState extends State<SignUpPage> {
               const SizedBox(height: 16),
 
               // --- Sign Up Button ---
-              PrimaryButton(label: "Sign Up", onPressed: _signUpWithEmail),
+              PrimaryButton(
+                label: "Sign Up",
+                onPressed: _signUpWithEmail,
+                isLoading: _isLoading,
+              ),
 
               const SizedBox(height: 24),
 
