@@ -287,7 +287,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const EditPersonalInformationPage(),
+                      builder: (context) => EditPersonalInformationPage(
+                        profile: currentUserProfile,
+                      ),
                     ),
                   );
                 },

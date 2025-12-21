@@ -1,19 +1,23 @@
 import 'package:flutter/material.dart';
 
-import 'package:cashlytics/core/utils/profile_constants.dart'; 
+import 'package:cashlytics/core/utils/profile_constants.dart';
 
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
 import 'package:cashlytics/presentation/widgets/index.dart';
 
 class EditPersonalInformationPage extends StatefulWidget {
-  const EditPersonalInformationPage({super.key});
+  const EditPersonalInformationPage({super.key, this.profile});
+
+  final Map<String, dynamic>? profile;
 
   @override
-  State<EditPersonalInformationPage> createState() => _EditPersonalInformationPageState();
+  State<EditPersonalInformationPage> createState() =>
+      _EditPersonalInformationPageState();
 }
 
-class _EditPersonalInformationPageState extends State<EditPersonalInformationPage> {
+class _EditPersonalInformationPageState
+    extends State<EditPersonalInformationPage> {
   final _formKey = GlobalKey<FormState>();
 
   // Text Controllers
@@ -26,21 +30,92 @@ class _EditPersonalInformationPageState extends State<EditPersonalInformationPag
   String? _selectedTimezone;
   String? _selectedCurrency;
   String? _selectedTheme;
-  
+
   bool _isLoading = false;
+
+  String? _findTimezoneItemFromCode(String? code) {
+    if (code == null || code.isEmpty) return null;
+    final needle = "(UTC$code)"; // "+08:00" -> "(UTC+08:00)"
+    try {
+      return ProfileConstants.timezones.firstWhere(
+        (tz) => tz.startsWith(needle),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String? _findCurrencyItemFromCode(String? code) {
+    if (code == null || code.isEmpty) return null;
+    final upper = code.toUpperCase();
+    try {
+      return ProfileConstants.currencies.firstWhere(
+        (c) => c.startsWith("$upper "),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String? _normalizeTheme(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    final t = raw.toLowerCase();
+    if (t == 'light' || t == 'dark' || t == 'system') {
+      return t[0].toUpperCase() + t.substring(1);
+    }
+    return null;
+  }
+
+  String? _normalizeGender(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    final g = raw.toLowerCase();
+    if (g == 'male' || g == 'm') return 'Male';
+    if (g == 'female' || g == 'f') return 'Female';
+    if (g == 'other') return 'Other';
+    return null;
+  }
 
   @override
   void initState() {
     super.initState();
-    _usernameController = TextEditingController(text: "JSmith");
-    _emailController = TextEditingController(text: "jonathansmith123@gmail.com");
-    _birthdateController = TextEditingController(text: "2003-08-24");
-    
+    _usernameController = TextEditingController();
+    _emailController = TextEditingController();
+    _birthdateController = TextEditingController();
+
+    // Sensible defaults that exist in items
     _selectedGender = "Male";
-    // Ensure these match your ProfileConstants exactly
-    _selectedTimezone = "(UTC+08:00) Kuala Lumpur, Singapore, Beijing, Perth";
+    _selectedTimezone =
+        _findTimezoneItemFromCode("+08:00") ??
+        "(UTC+08:00) Kuala Lumpur, Singapore, Beijing, Perth";
     _selectedCurrency = "MYR - Malaysian Ringgit";
     _selectedTheme = "Light";
+
+    _seedFromProfile();
+  }
+
+  void _seedFromProfile() {
+    final data = widget.profile;
+    if (data == null) return;
+
+    _usernameController.text =
+        (data['display_name'] ?? _usernameController.text).toString();
+    _emailController.text = (data['email'] ?? _emailController.text).toString();
+
+    final dob = data['date_of_birth'] as String?;
+    if (dob != null && dob.isNotEmpty) {
+      _birthdateController.text = dob;
+    }
+
+    _selectedGender =
+        _normalizeGender(data['gender'] as String?) ?? _selectedGender;
+    _selectedTimezone =
+        _findTimezoneItemFromCode(data['timezone'] as String?) ??
+        _selectedTimezone;
+    _selectedCurrency =
+        _findCurrencyItemFromCode(data['currency_pref'] as String?) ??
+        _selectedCurrency;
+    _selectedTheme =
+        _normalizeTheme(data['theme_pref'] as String?) ?? _selectedTheme;
   }
 
   @override
@@ -52,9 +127,11 @@ class _EditPersonalInformationPageState extends State<EditPersonalInformationPag
   }
 
   Future<void> _selectDate() async {
+    final initial =
+        DateTime.tryParse(_birthdateController.text) ?? DateTime.now();
     DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.parse(_birthdateController.text),
+      initialDate: initial,
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
       builder: (context, child) {
@@ -95,7 +172,7 @@ class _EditPersonalInformationPageState extends State<EditPersonalInformationPag
               backgroundColor: AppColors.success,
             ),
           );
-          Navigator.pop(context); 
+          Navigator.pop(context);
         }
       });
     }
@@ -114,9 +191,9 @@ class _EditPersonalInformationPageState extends State<EditPersonalInformationPag
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 AppBackButton(onPressed: () => Navigator.pop(context)),
-                
+
                 const SizedBox(height: 30),
-                
+
                 const SectionTitle(title: "Edit Profile"),
                 const SizedBox(height: 8),
                 const SectionSubtitle(
@@ -126,7 +203,12 @@ class _EditPersonalInformationPageState extends State<EditPersonalInformationPag
                 const SizedBox(height: 32),
 
                 // --- Personal Information ---
-                Text("Personal Info", style: AppTypography.labelLarge.copyWith(color: AppColors.primary)),
+                Text(
+                  "Personal Info",
+                  style: AppTypography.labelLarge.copyWith(
+                    color: AppColors.primary,
+                  ),
+                ),
                 const SizedBox(height: 16),
 
                 const FormLabel(label: "Username"),
@@ -134,8 +216,10 @@ class _EditPersonalInformationPageState extends State<EditPersonalInformationPag
                   controller: _usernameController,
                   hint: "Enter username",
                   validator: (value) {
-                    if (value == null || value.isEmpty) return "Username is required";
-                    if (value.length < 3) return "Username must be at least 3 chars";
+                    if (value == null || value.isEmpty)
+                      return "Username is required";
+                    if (value.length < 3)
+                      return "Username must be at least 3 chars";
                     return null;
                   },
                 ),
@@ -148,7 +232,8 @@ class _EditPersonalInformationPageState extends State<EditPersonalInformationPag
                   hint: "Email Address",
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) {
-                    if (value == null || value.isEmpty) return "Email is required";
+                    if (value == null || value.isEmpty)
+                      return "Email is required";
                     if (!value.contains('@')) return "Invalid email";
                     return null;
                   },
@@ -161,7 +246,8 @@ class _EditPersonalInformationPageState extends State<EditPersonalInformationPag
                   value: _selectedGender,
                   items: const ['Male', 'Female', 'Other'],
                   hint: "Select Gender",
-                  onChanged: (newValue) => setState(() => _selectedGender = newValue),
+                  onChanged: (newValue) =>
+                      setState(() => _selectedGender = newValue),
                 ),
 
                 const SizedBox(height: 16),
@@ -182,7 +268,12 @@ class _EditPersonalInformationPageState extends State<EditPersonalInformationPag
                 const SizedBox(height: 32),
 
                 // --- App Preferences ---
-                Text("Preferences", style: AppTypography.labelLarge.copyWith(color: AppColors.primary)),
+                Text(
+                  "Preferences",
+                  style: AppTypography.labelLarge.copyWith(
+                    color: AppColors.primary,
+                  ),
+                ),
                 const SizedBox(height: 16),
 
                 // Timezone
@@ -191,11 +282,12 @@ class _EditPersonalInformationPageState extends State<EditPersonalInformationPag
                   value: _selectedTimezone,
                   items: ProfileConstants.timezones,
                   hint: "Select Timezone",
-                  onChanged: (newValue) => setState(() => _selectedTimezone = newValue),
+                  onChanged: (newValue) =>
+                      setState(() => _selectedTimezone = newValue),
                   // Parses "(UTC+08:00) City" -> "(UTC+08:00)"
                   selectedItemTransformer: (val) {
                     if (val.contains(')')) {
-                      return "${val.split(')').first})"; 
+                      return "${val.split(')').first})";
                     }
                     return val;
                   },
@@ -209,13 +301,14 @@ class _EditPersonalInformationPageState extends State<EditPersonalInformationPag
                   value: _selectedCurrency,
                   items: ProfileConstants.currencies,
                   hint: "Select Currency",
-                  onChanged: (newValue) => setState(() => _selectedCurrency = newValue),
+                  onChanged: (newValue) =>
+                      setState(() => _selectedCurrency = newValue),
                   // Parses "MYR - Malaysian Ringgit" -> "MYR"
                   selectedItemTransformer: (val) {
-                     if (val.contains(' - ')) {
+                    if (val.contains(' - ')) {
                       return val.split(' - ').first;
-                     }
-                     return val;
+                    }
+                    return val;
                   },
                 ),
 
@@ -226,7 +319,8 @@ class _EditPersonalInformationPageState extends State<EditPersonalInformationPag
                   value: _selectedTheme,
                   items: const ['Light', 'Dark', 'System'],
                   hint: "Select Theme",
-                  onChanged: (newValue) => setState(() => _selectedTheme = newValue),
+                  onChanged: (newValue) =>
+                      setState(() => _selectedTheme = newValue),
                 ),
 
                 const SizedBox(height: 40),
@@ -236,7 +330,7 @@ class _EditPersonalInformationPageState extends State<EditPersonalInformationPag
                   isLoading: _isLoading,
                   onPressed: _handleSave,
                 ),
-                
+
                 const SizedBox(height: 20),
               ],
             ),
