@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:cashlytics/core/services/supabase/auth_services.dart';
-import 'package:cashlytics/core/services/supabase/client.dart';
+import 'package:cashlytics/core/services/supabase/auth_state_listener.dart';
 import 'package:cashlytics/core/utils/context_extensions.dart';
 
 import 'package:cashlytics/presentation/themes/colors.dart';
@@ -134,17 +134,14 @@ class _SignUpPageState extends State<SignUpPage> {
 
   @override
   void initState() {
-    _authStateSubscription = supabase.auth.onAuthStateChange.listen(
-      (data) {
-        final event = data.event;
-        if (event == AuthChangeEvent.signedIn && !_redirecting) {
-          if (mounted) {
-            setState(() => _redirecting = true);
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const HomePage()),
-            );
-          }
-        }
+    _authStateSubscription = listenForSignedInRedirect(
+      shouldRedirect: () => !_redirecting,
+      onRedirect: () {
+        if (!mounted) return;
+        setState(() => _redirecting = true);
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const HomePage()),
+        );
       },
       onError: (error) {
         if (mounted) {
