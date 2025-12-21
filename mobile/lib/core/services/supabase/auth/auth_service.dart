@@ -8,6 +8,9 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cashlytics/core/services/supabase/client.dart';
 
 class AuthService {
+  /// Get the current authenticated user
+  User? get currentUser => supabase.auth.currentUser;
+
   /// Sign in with email and password
   ///
   /// Calls [onLoadingStart] when operation begins
