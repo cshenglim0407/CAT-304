@@ -160,7 +160,11 @@ class AuthService {
       await supabase.auth.signUp(
         email: email,
         password: password,
-        data: {'display_name': displayName},
+        data: {
+          'display_name': displayName,
+          'date_of_birth': birthdate, // Ensure this is YYYY-MM-DD
+          'gender': gender,
+        },
         emailRedirectTo: kIsWeb
             ? null
             : '${dotenv.env['PUBLIC_SUPABASE_REDIRECT_DOMAIN']}://login-callback',
@@ -168,7 +172,7 @@ class AuthService {
     } on AuthException catch (error) {
       onError(error.message);
     } catch (error) {
-      onError('Something went wrong during sign up.');
+      onError('Something went wrong during sign up: $error');
     } finally {
       onLoadingEnd();
     }
