@@ -11,13 +11,14 @@ import 'package:cashlytics/presentation/pages/income_expense_management/home_pag
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
-  @override
+@override
   State<LoginPage> createState() => _LoginPageState();
 }
 
 class _LoginPageState extends State<LoginPage> {
   late final _email = TextEditingController();
   late final _password = TextEditingController();
+  
   late final _authService = AuthService();
 
   bool _rememberMe = false; // for remember me checkbox
@@ -110,7 +111,6 @@ class _LoginPageState extends State<LoginPage> {
         }
       },
       onError: (error) {
-        // Handle errors from the auth state change stream
         if (mounted) {
           context.showSnackBar('Authentication error: $error', isError: true);
         }

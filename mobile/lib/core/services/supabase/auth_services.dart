@@ -124,7 +124,9 @@ class AuthService {
 
       await supabase.auth.signInWithOAuth(
         OAuthProvider.facebook,
-        redirectTo: kIsWeb ? null : 'io.supabase.flutterquickstart://login-callback/',
+        redirectTo: kIsWeb
+            ? null
+            : dotenv.env['PUBLIC_SUPABASE_REDIRECT_URL'],
         scopes: 'email public_profile',
       );
     } on AuthException catch (error) {
@@ -136,8 +138,44 @@ class AuthService {
     }
   }
 
+  /// Sign up with email and password
+  ///
+  /// Calls [onLoadingStart] when operation begins
+  /// Calls [onLoadingEnd] when operation completes
+  /// Calls [onError] if an error occurs with error message
+  Future<void> signUpWithEmail({
+    required String email,
+    required String password,
+    required String displayName,
+    required String birthdate,
+    required String gender,
+    required VoidCallback onLoadingStart,
+    required VoidCallback onLoadingEnd,
+    required Function(String) onError,
+  }) async {
+    try {
+      onLoadingStart();
+
+      final AuthResponse res = await supabase.auth.signUp(
+        email: email,
+        password: password,
+        data: {'display_name': displayName},
+        emailRedirectTo: kIsWeb
+            ? null
+            : dotenv.env['PUBLIC_SUPABASE_REDIRECT_URL'],
+      );
+      print('AuthResponse: $res.user');
+    } on AuthException catch (error) {
+      onError(error.message);
+    } catch (error) {
+      onError('Something went wrong during sign up.');
+    } finally {
+      onLoadingEnd();
+    }
+  }
+
   /// Sign out the current user
-  /// 
+  ///
   /// Calls [onLoadingStart] when operation begins
   /// Calls [onLoadingEnd] when operation completes
   /// Calls [onError] if an error occurs with error message

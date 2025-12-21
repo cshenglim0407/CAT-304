@@ -14,8 +14,8 @@ class SupabaseInitService {
     // debug mode: .env.local
     // profile mode: .env.development
     // release mode: .env.production
-      await dotenv.load(fileName: "assets/env/.env");
-      _stage = dotenv.env['PUBLIC_STAGE'] ?? 'local';
+    await dotenv.load(fileName: "assets/env/.env");
+    _stage = dotenv.env['PUBLIC_STAGE'] ?? 'local';
     if (kReleaseMode || _stage == 'production') {
       await dotenv.load(fileName: "assets/env/.env.production");
       _uri = dotenv.env['PUBLIC_SUPABASE_URL'] ?? '';
@@ -24,10 +24,8 @@ class SupabaseInitService {
       _uri = dotenv.env['PUBLIC_SUPABASE_URL'] ?? '';
     } else {
       await dotenv.load(fileName: "assets/env/.env.local");
-      _uri = (kIsWeb
-              ? 'http://localhost'
-              : (defaultTargetPlatform == TargetPlatform.android ? 'http://10.0.2.2' : 'http://127.0.0.1')) +
-          (dotenv.env['PUBLIC_SUPABASE_PORT'] ?? '54321');
+      _uri =
+          '${kIsWeb ? 'http://localhost' : (defaultTargetPlatform == TargetPlatform.android ? 'http://10.0.2.2' : 'http://127.0.0.1')}:${dotenv.env['PUBLIC_SUPABASE_PORT'] ?? '54321'}';
     }
 
     // Check if user wants to persist session
@@ -40,7 +38,7 @@ class SupabaseInitService {
       anonKey: dotenv.env['PUBLIC_SUPABASE_ANON_KEY'] ?? '',
       authOptions: FlutterAuthClientOptions(
         authFlowType: AuthFlowType.pkce,
-        localStorage: rememberMe ? null : const EmptyLocalStorage()
+        localStorage: rememberMe ? null : const EmptyLocalStorage(),
       ),
     );
   }
