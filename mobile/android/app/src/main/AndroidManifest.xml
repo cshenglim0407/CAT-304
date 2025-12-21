@@ -44,17 +44,28 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- Supabase Deep Links -->
+            <!-- Supabase Login Callback -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <!-- Accepts URIs that begin with YOUR_SCHEME://YOUR_HOST -->
                 <data
-                android:scheme="io.supabase.flutterquickstart"
+                android:scheme="io.cashlytics.app"
                 android:host="login-callback" />
             </intent-filter>
-            <!-- End of Supabase Deep Links -->
+            <!-- End of Supabase Login Callback -->
+            <!-- Supabase Reset Password Callback -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <!-- Accepts URIs that begin with YOUR_SCHEME://YOUR_HOST -->
+                <data
+                android:scheme="io.cashlytics.app"
+                android:host="reset-password" />
+            </intent-filter>
+            <!-- End of Supabase Reset Password Callback -->
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

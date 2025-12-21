@@ -48,15 +48,26 @@
 	<!-- URL Schemes for Deep Links -->
 	<key>CFBundleURLTypes</key>
 	<array>
-		<!-- Supabase Deep Links -->
+		<!-- Supabase Login Callback -->
 		<dict>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>io.supabase.flutterquickstart</string>
+				<string>io.cashlytics.app</string>
 			</array>
 		</dict>
+		<!-- End of Supabase Login Callback -->
+		<!-- Supabase Reset Password Callback -->
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>io.cashlytics.app</string>
+			</array>
+		</dict>
+		<!-- End of Supabase Reset Password Callback -->
 		<!-- Google Sign-in -->
 		<dict>
 			<key>CFBundleTypeRole</key>
@@ -66,6 +77,7 @@
 				<string>${GOOGLE_CLIENT_ID}</string>
 			</array>
 		</dict>
+		<!-- End of Google Sign-in -->
 		<!-- Facebook SDK -->
 		<dict>
 			<key>CFBundleTypeRole</key>
@@ -75,6 +87,7 @@
 				<string>fb${FACEBOOK_APP_ID}</string>
 			</array>
 		</dict>
+		<!-- End of Facebook SDK -->
 	</array>
 	<!-- End of URL Schemes -->
 	<!-- Facebook SDK meta-data -->

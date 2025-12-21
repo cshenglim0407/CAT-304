@@ -1,10 +1,12 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
 import 'package:cashlytics/presentation/widgets/index.dart';
-import 'package:flutter/services.dart';
-import 'reset_password.dart';
+import 'package:cashlytics/presentation/pages/user_management/reset_password.dart';
 
 class OtpVerificationPage extends StatefulWidget {
   final String userEmail;

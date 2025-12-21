@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -126,7 +128,7 @@ class AuthService {
         OAuthProvider.facebook,
         redirectTo: kIsWeb
             ? null
-            : dotenv.env['PUBLIC_SUPABASE_REDIRECT_URL'],
+            : '${dotenv.env['PUBLIC_SUPABASE_REDIRECT_DOMAIN']}://login-callback',
         scopes: 'email public_profile',
       );
     } on AuthException catch (error) {
@@ -162,13 +164,40 @@ class AuthService {
         data: {'display_name': displayName},
         emailRedirectTo: kIsWeb
             ? null
-            : dotenv.env['PUBLIC_SUPABASE_REDIRECT_URL'],
+            : '${dotenv.env['PUBLIC_SUPABASE_REDIRECT_DOMAIN']}://login-callback',
       );
-      print('AuthResponse: $res.user');
     } on AuthException catch (error) {
       onError(error.message);
     } catch (error) {
       onError('Something went wrong during sign up.');
+    } finally {
+      onLoadingEnd();
+    }
+  }
+
+  /// Reset password for the given email
+  ///
+  /// Calls [onLoadingStart] when operation begins
+  /// Calls [onLoadingEnd] when operation completes
+  /// Calls [onError] if an error occurs with error message
+  Future<void> resetPassword({
+    required String email,
+    required VoidCallback onLoadingStart,
+    required VoidCallback onLoadingEnd,
+    required Function(String) onError,
+  }) async {
+    try {
+      onLoadingStart();
+      await supabase.auth.resetPasswordForEmail(
+        email,
+        redirectTo: kIsWeb
+            ? null
+            : '${dotenv.env['PUBLIC_SUPABASE_REDIRECT_DOMAIN']}://reset-password',
+      );
+    } on AuthException catch (error) {
+      onError(error.message);
+    } catch (error) {
+      onError('Something went wrong during password reset.');
     } finally {
       onLoadingEnd();
     }

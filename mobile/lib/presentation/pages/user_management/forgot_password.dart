@@ -1,8 +1,16 @@
+import 'dart:async';
+
+import 'package:cashlytics/core/services/supabase/auth_services.dart';
+import 'package:cashlytics/presentation/pages/user_management/login.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'package:cashlytics/main.dart';
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
 import 'package:cashlytics/presentation/widgets/index.dart';
-import 'otp_verification.dart';
+import 'package:cashlytics/presentation/pages/income_expense_management/home_page.dart';
+// import 'package:cashlytics/presentation/pages/user_management/otp_verification.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -12,10 +20,92 @@ class ForgotPasswordPage extends StatefulWidget {
 }
 
 class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
-  final _email = TextEditingController();
+  late final _email = TextEditingController();
+
+  bool _isLoading = false; // for loading state
+  bool _redirecting = false; // for redirecting state
+  StreamSubscription<AuthState>? _authStateSubscription;
+
+  Future<void> _forgotPassword() async {
+    String email = _email.text;
+
+    if (email.isNotEmpty && email.contains('@')) {
+      // Navigator.push(
+      //   context,
+      //   MaterialPageRoute(
+      //     builder: (context) => OtpVerificationPage(userEmail: email),
+      //   ),
+      // );
+      await AuthService().resetPassword(
+        email: email,
+        onLoadingStart: () {
+          if (mounted) {
+            context.showSnackBar(
+              'Sending password reset email...',
+              isError: false,
+            );
+            setState(() => _isLoading = true);
+          }
+        },
+        onLoadingEnd: () {
+          if (mounted) {
+            context.showSnackBar(
+              'Password reset email sent. Please check your inbox.',
+              isError: false,
+            );
+            setState(() => _isLoading = false);
+            Future.delayed(const Duration(seconds: 2), () {
+              if (mounted) {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                );
+              }
+            });
+          }
+        },
+        onError: (msg) {
+          if (mounted) {
+            setState(() => _isLoading = false);
+            context.showSnackBar('Error: $msg', isError: true);
+          }
+        },
+      );
+    } else {
+      context.showSnackBar(
+        "Please enter a valid email address.",
+        isError: true,
+      );
+      return;
+    }
+  }
+
+  @override
+  void initState() {
+    _authStateSubscription = supabase.auth.onAuthStateChange.listen(
+      (data) {
+        if (_redirecting) return;
+        final session = data.session;
+        if (session != null) {
+          if (mounted) {
+            setState(() => _redirecting = true);
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => const HomePage()),
+            );
+          }
+        }
+      },
+      onError: (error) {
+        if (mounted) {
+          context.showSnackBar('Authentication error: $error', isError: true);
+        }
+      },
+    );
+    super.initState();
+  }
 
   @override
   void dispose() {
+    _authStateSubscription?.cancel();
     _email.dispose();
     super.dispose();
   }
@@ -34,14 +124,15 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               AppBackButton(onPressed: () => Navigator.pop(context)),
 
               const SizedBox(height: 30),
-              
+
               const SizedBox(height: 40),
 
               // --- Title & Description ---
               SectionTitle(title: "Forgot Password?"),
               const SizedBox(height: 10),
               SectionSubtitle(
-                subtitle: "Don't worry! It occurs. Please enter the email address linked with your account.",
+                subtitle:
+                    "Don't worry! It occurs. Please enter the email address linked with your account.",
               ),
 
               const SizedBox(height: 32),
@@ -59,22 +150,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               // --- Send Code Button ---
               PrimaryButton(
                 label: "Send Code",
-                onPressed: () {
-                  String email = _email.text;
-                  
-                  if (email.isNotEmpty && email.contains('@')) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => OtpVerificationPage(userEmail: email),
-                      ),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Please enter a valid email address.")),
-                    );
-                  }
-                },
+                onPressed: _forgotPassword,
+                isLoading: _isLoading,
               ),
 
               const SizedBox(height: 30),
@@ -83,7 +160,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               Center(
                 child: RichText(
                   text: TextSpan(
-                    style: AppTypography.bodyMedium.copyWith(color: Colors.black87),
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: Colors.black87,
+                    ),
                     children: [
                       const TextSpan(text: "Remember Password? "),
                       WidgetSpan(
