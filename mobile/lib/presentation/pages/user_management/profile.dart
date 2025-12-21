@@ -45,6 +45,8 @@ class _ProfilePageState extends State<ProfilePage> {
   static const String _userProfileCacheKey = 'user_profile_cache';
 
   // --- User Data ---
+  late String _displayName = "";
+  late String _email = "";
   late String _dobString = "";
   late String _gender = "";
   late String _timezone = "";
@@ -107,6 +109,12 @@ class _ProfilePageState extends State<ProfilePage> {
     if (currentUserProfile == null) return;
 
     setState(() {
+      _displayName = currentUserProfile!['display_name'] ?? 'N/A';
+      _email =
+          currentUserProfile!['email'] ??
+          _authService.currentUser?.email ??
+          'N/A';
+      _dobString = currentUserProfile!['date_of_birth'] ?? 'N/A';
       _dobString = currentUserProfile!['date_of_birth'] ?? 'N/A';
       _gender = currentUserProfile!['gender'] ?? 'N/A';
       _timezone = currentUserProfile!['timezone'] ?? 'N/A';
@@ -197,14 +205,14 @@ class _ProfilePageState extends State<ProfilePage> {
                   children: [
                     const SizedBox(height: 12),
                     Text(
-                      "JSmith",
+                      _displayName,
                       style: AppTypography.headline3.copyWith(
                         color: Colors.black,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      "jonathansmith123@gmail.com",
+                      _email,
                       style: AppTypography.bodyMedium.copyWith(
                         color: Colors.grey,
                       ),
