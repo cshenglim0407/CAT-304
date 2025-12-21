@@ -95,12 +95,12 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _onNavBarTap(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-
     if (index == 0) {
-      debugPrint("Navigate to Home");
+      Navigator.pop(context);
+    } else {
+      setState(() {
+        _selectedIndex = index;
+      });
     }
   }
 
