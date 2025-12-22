@@ -18,7 +18,7 @@ class SectionSubtitle extends StatelessWidget {
       subtitle,
       textAlign: alignment,
       style: AppTypography.subtitle.copyWith(
-        color: AppColors.greyText,
+        color: AppColors.getTextSecondary(context),
       ),
     );
   }

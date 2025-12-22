@@ -25,7 +25,7 @@ class InfoRow extends StatelessWidget {
           Text(
             label,
             style: AppTypography.bodySmall.copyWith(
-              color: Colors.grey.shade500,
+              color: AppColors.getTextSecondary(context),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -33,7 +33,7 @@ class InfoRow extends StatelessWidget {
           Text(
             value,
             style: AppTypography.labelLarge.copyWith(
-              color: Colors.black87,
+              color: AppColors.getTextPrimary(context),
             ),
           ),
         ],

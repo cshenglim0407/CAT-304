@@ -15,10 +15,12 @@ class CustomBottomNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.getSurface(context),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
+            color: Theme.of(context).brightness == Brightness.light
+                ? Colors.grey.withValues(alpha: 0.1)
+                : Colors.black.withValues(alpha: 0.2),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),
@@ -27,10 +29,10 @@ class CustomBottomNavBar extends StatelessWidget {
       child: BottomNavigationBar(
         currentIndex: currentIndex,
         onTap: onTap,
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.getSurface(context),
         type: BottomNavigationBarType.fixed,
         selectedItemColor: AppColors.primary,
-        unselectedItemColor: Colors.grey.shade400,
+        unselectedItemColor: AppColors.getTextSecondary(context),
         showSelectedLabels: true,
         showUnselectedLabels: true,
         elevation: 0,

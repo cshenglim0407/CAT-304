@@ -34,25 +34,25 @@ class CustomTextFormField extends StatelessWidget {
       validator: validator, // Connects to the Form validation
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(
-          color: AppColors.greyHint,
+        hintStyle: TextStyle(
+          color: AppColors.getTextSecondary(context),
           fontSize: 14,
         ),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: AppColors.getSurface(context),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         suffixIcon: suffixIcon,
         
         // Default border
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.greyBorder),
+          borderSide: BorderSide(color: AppColors.getBorder(context)),
         ),
         
         // Enabled border (not focused, no error)
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.greyBorder),
+          borderSide: BorderSide(color: AppColors.getBorder(context)),
         ),
         
         // Focused border (active typing)

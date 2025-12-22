@@ -21,7 +21,7 @@ class SocialAuthButton extends StatelessWidget {
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16), // Consistent padding
-          side: const BorderSide(color: AppColors.greyBorder),
+          side: BorderSide(color: AppColors.getBorder(context)),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -36,7 +36,7 @@ class SocialAuthButton extends StatelessWidget {
                   Text(
                     label!,
                     style: AppTypography.labelLarge.copyWith(
-                      color: Colors.black87,
+                      color: AppColors.getTextPrimary(context),
                     ),
                   ),
                 ],

@@ -181,10 +181,8 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    const Color kBgColor = AppColors.white;
-
     return Scaffold(
-      backgroundColor: kBgColor,
+      backgroundColor: AppColors.getSurface(context),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
@@ -200,7 +198,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Text(
                   "Profile",
                   style: AppTypography.headline2.copyWith(
-                    color: Colors.black87,
+                    color: AppColors.getTextPrimary(context),
                   ),
                 ),
               ),
@@ -214,14 +212,14 @@ class _ProfilePageState extends State<ProfilePage> {
                     Text(
                       _displayName,
                       style: AppTypography.headline3.copyWith(
-                        color: Colors.black,
+                        color: AppColors.getTextPrimary(context),
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       _email,
                       style: AppTypography.bodyMedium.copyWith(
-                        color: Colors.grey,
+                        color: AppColors.getTextSecondary(context),
                       ),
                     ),
                   ],
@@ -234,11 +232,13 @@ class _ProfilePageState extends State<ProfilePage> {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.getSurface(context),
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withValues(alpha: 0.2),
+                      color: Theme.of(context).brightness == Brightness.light
+                          ? Colors.grey.withValues(alpha: 0.2)
+                          : Colors.black.withValues(alpha: 0.3),
                       blurRadius: 15,
                       offset: const Offset(0, 5),
                     ),
@@ -247,12 +247,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      "Information",
-                      style: AppTypography.headline3.copyWith(
-                        color: Colors.black87,
-                      ),
-                    ),
+                    const SectionTitle(title: "Information"),
                     const SizedBox(height: 10),
 
                     InfoRow(

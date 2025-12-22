@@ -26,12 +26,14 @@ class AppMenuItem extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.getSurface(context),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(color: AppColors.getBorder(context)),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.shade100,
+                color: Theme.of(context).brightness == Brightness.light
+                    ? Colors.grey.shade100
+                    : Colors.black.withValues(alpha: 0.2),
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),
@@ -51,14 +53,14 @@ class AppMenuItem extends StatelessWidget {
                   label,
                   style: AppTypography.labelLarge.copyWith(
                     // Keep text black for readability, or change to primary if preferred
-                    color: isDestructive ? AppColors.error : Colors.black87,
+                    color: isDestructive ? AppColors.error : AppColors.getTextPrimary(context),
                   ),
                 ),
               ),
               Icon(
                 Icons.arrow_forward_ios_rounded,
                 size: 16,
-                color: Colors.grey.shade400,
+                color: AppColors.getTextSecondary(context),
               ),
             ],
           ),

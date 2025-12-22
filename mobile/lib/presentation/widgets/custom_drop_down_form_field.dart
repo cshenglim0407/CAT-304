@@ -27,24 +27,24 @@ class CustomDropdownFormField extends StatelessWidget {
       hint: Text(
         hint,
         style: AppTypography.hintText.copyWith(
-          color: AppColors.greyHint,
+          color: AppColors.getTextSecondary(context),
         ),
       ),
-      icon: const Icon(
+      icon: Icon(
         Icons.keyboard_arrow_down_rounded,
-        color: AppColors.greyText,
+        color: AppColors.getTextSecondary(context),
       ),
       decoration: InputDecoration(
         filled: true,
-        fillColor: Colors.white,
+        fillColor: AppColors.getSurface(context),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.greyBorder),
+          borderSide: BorderSide(color: AppColors.getBorder(context)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.greyBorder),
+          borderSide: BorderSide(color: AppColors.getBorder(context)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
@@ -55,11 +55,13 @@ class CustomDropdownFormField extends StatelessWidget {
       selectedItemBuilder: selectedItemTransformer != null
           ? (BuildContext context) {
               return items.map<Widget>((String item) {
-                return Text(
-                  selectedItemTransformer!(item),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.black87),
+                return Builder(
+                  builder: (context) => Text(
+                    selectedItemTransformer!(item),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: AppColors.getTextPrimary(context)),
+                  ),
                 );
               }).toList();
             }

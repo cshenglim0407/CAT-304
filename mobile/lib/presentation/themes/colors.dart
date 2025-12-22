@@ -32,4 +32,28 @@ class AppColors {
   static const Color error = Color(0xFFF44336);
   static const Color warning = Color(0xFFFFC107);
   static const Color info = Color(0xFF2196F3);
+
+  // Dark Mode Colors
+  static const Color darkBackground = Color(0xFF121212);
+  static const Color darkSurface = Color(0xFF1E1E1E);
+  static const Color darkSurfaceVariant = Color(0xFF2C2C2C);
+  static const Color darkTextPrimary = Color(0xFFE1E1E1);
+  static const Color darkTextSecondary = Color(0xFFB0B0B0);
+  static const Color darkBorder = Color(0xFF3A3A3A);
+
+  // Get adaptive colors based on brightness
+  static Color getBackground(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark ? darkBackground : background;
+
+  static Color getSurface(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark ? darkSurface : white;
+
+  static Color getTextPrimary(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark ? darkTextPrimary : textDark;
+
+  static Color getTextSecondary(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark ? darkTextSecondary : textGrey;
+
+  static Color getBorder(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark ? darkBorder : greyBorder;
 }

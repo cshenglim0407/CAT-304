@@ -18,7 +18,7 @@ class FormLabel extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8.0),
       child: RichText(
         text: TextSpan(
-          style: AppTypography.labelMedium.copyWith(color: Colors.black),
+          style: AppTypography.labelMedium.copyWith(color: AppColors.getTextPrimary(context)),
           children: [
             TextSpan(text: label),
             if (required)

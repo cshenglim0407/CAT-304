@@ -13,13 +13,13 @@ class AppBackButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          border: Border.all(color: AppColors.greyBorder),
+          border: Border.all(color: AppColors.getBorder(context)),
           borderRadius: BorderRadius.circular(12),
         ),
-        child: const Icon(
+        child: Icon(
           Icons.arrow_back_ios_new_rounded,
           size: 20,
-          color: Colors.black,
+          color: AppColors.getTextPrimary(context),
         ),
       ),
     );

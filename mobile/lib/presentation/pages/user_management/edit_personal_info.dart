@@ -1,6 +1,7 @@
 import 'package:cashlytics/core/services/cache/cache_service.dart';
 import 'package:cashlytics/data/models/app_user_model.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import 'package:cashlytics/core/config/profile_constants.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
@@ -9,6 +10,7 @@ import 'package:cashlytics/core/utils/user_management/profile_helpers.dart';
 import 'package:cashlytics/data/repositories/app_user_repository_impl.dart';
 import 'package:cashlytics/domain/usecases/upsert_app_user.dart';
 import 'package:cashlytics/domain/entities/app_user.dart';
+import 'package:cashlytics/presentation/providers/theme_provider.dart';
 
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
@@ -155,11 +157,15 @@ class _EditPersonalInformationPageState
           themePreference: (_selectedTheme ?? 'System').toLowerCase(),
         );
 
+        // Save to database
         await _upsertAppUser(updatedUser);
 
         // Cache the updated user profile
         final userMap = AppUserModel.fromEntity(updatedUser).toMap();
         await CacheService.save(_userProfileCacheKey, userMap);
+
+        // Apply preferences (theme, locale, etc.)
+        _applyUserPreferences(updatedUser);
 
         if (mounted) {
           context.showSnackBar(
@@ -185,10 +191,24 @@ class _EditPersonalInformationPageState
     }
   }
 
+  /// Apply user preferences like theme to the app
+  void _applyUserPreferences(AppUser user) {
+    // Apply theme change immediately
+    Provider.of<ThemeProvider>(context, listen: false)
+        .setThemeFromPreference(user.themePreference);
+    
+    debugPrint('Applied theme preference: ${user.themePreference}');
+    
+    // Future enhancements:
+    // - Apply locale/language changes
+    // - Update notification preferences
+    // - Configure analytics settings
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.getSurface(context),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),

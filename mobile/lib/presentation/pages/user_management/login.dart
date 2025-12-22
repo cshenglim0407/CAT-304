@@ -131,7 +131,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.getSurface(context),
       body: SafeArea(
         child: Align(
           alignment: const Alignment(0, -0.3), 
