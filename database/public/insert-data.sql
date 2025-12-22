@@ -43,13 +43,13 @@ INSERT INTO
     ACCOUNTS (NAME, TYPE, INITIAL_BALANCE, CURRENT_BALANCE, DESCRIPTION, USER_ID)
 VALUES
 ('Cash Wallet', 'CASH', 1000.00, 500.00, 'Personal cash wallet', 
-    (SELECT USER_ID FROM APP_USERS WHERE EMAIL = 'johndoe@example.com')),
+    (SELECT USER_ID FROM APP_USERS WHERE EMAIL = 'cashlytics123@gmail.com')),
 ('Maybank', 'BANK', 5000.00, 5000.00, 'Main bank account',
-    (SELECT USER_ID FROM APP_USERS WHERE EMAIL = 'johndoe@example.com')),
+    (SELECT USER_ID FROM APP_USERS WHERE EMAIL = 'cashlytics123@gmail.com')),
 ('MaE Credit', 'CREDIT CARD', 0.00, -200.00, 'Maybank credit card',
-    (SELECT USER_ID FROM APP_USERS WHERE EMAIL = 'johndoe@example.com')),
+    (SELECT USER_ID FROM APP_USERS WHERE EMAIL = 'cashlytics123@gmail.com')),
 ('TnG eWallet', 'E-WALLET', 300.00, 300.00, 'Touch ''n Go eWallet',
-    (SELECT USER_ID FROM APP_USERS WHERE EMAIL = 'johndoe@example.com')),
+    (SELECT USER_ID FROM APP_USERS WHERE EMAIL = 'cashlytics123@gmail.com')),
 ('Jane''s Savings', 'BANK', 8000.00, 8000.00, 'Jane''s personal savings account',
     (SELECT USER_ID FROM APP_USERS WHERE EMAIL = 'janedoe@example.com')),
 ('Bob''s Cash', 'CASH', 500.00, 500.00, 'Bob''s cash on hand',
@@ -62,7 +62,7 @@ DECLARE
     v_from_account_id UUID;
     v_to_account_id UUID;
 BEGIN
-    SELECT USER_ID INTO v_user_id FROM APP_USERS WHERE EMAIL = 'johndoe@example.com';
+    SELECT USER_ID INTO v_user_id FROM APP_USERS WHERE EMAIL = 'cashlytics123@gmail.com';
     SELECT ACCOUNT_ID INTO v_from_account_id FROM ACCOUNTS WHERE NAME = 'Maybank' AND USER_ID = v_user_id;
     SELECT ACCOUNT_ID INTO v_to_account_id FROM ACCOUNTS WHERE NAME = 'Cash Wallet' AND USER_ID = v_user_id;
     CALL add_transfer(v_user_id, v_from_account_id, v_to_account_id, 'ATM Withdrawal', 200.00, 'Cash for weekly expenses', 'MYR');
@@ -74,7 +74,7 @@ DECLARE
     v_from_account_id UUID;
     v_to_account_id UUID;
 BEGIN
-    SELECT USER_ID INTO v_user_id FROM APP_USERS WHERE EMAIL = 'johndoe@example.com';
+    SELECT USER_ID INTO v_user_id FROM APP_USERS WHERE EMAIL = 'cashlytics123@gmail.com';
     SELECT ACCOUNT_ID INTO v_from_account_id FROM ACCOUNTS WHERE NAME = 'Maybank' AND USER_ID = v_user_id;
     SELECT ACCOUNT_ID INTO v_to_account_id FROM ACCOUNTS WHERE NAME = 'TnG eWallet' AND USER_ID = v_user_id;
     CALL add_transfer(v_user_id, v_from_account_id, v_to_account_id, 'Reload eWallet', 50.00, 'Monthly reload for TnG', 'MYR');
@@ -86,7 +86,7 @@ DECLARE
     v_user_id UUID;
     v_account_id UUID;
 BEGIN
-    SELECT USER_ID INTO v_user_id FROM APP_USERS WHERE EMAIL = 'johndoe@example.com';
+    SELECT USER_ID INTO v_user_id FROM APP_USERS WHERE EMAIL = 'cashlytics123@gmail.com';
     SELECT ACCOUNT_ID INTO v_account_id FROM ACCOUNTS WHERE NAME = 'Maybank' AND USER_ID = v_user_id;
     CALL add_income(v_user_id, v_account_id, 'Salary August', 3000.00, 'SALARY', 'Monthly salary for August', 'MYR', TRUE);
 END $$;
@@ -131,7 +131,7 @@ DECLARE
     v_user_id UUID;
     v_account_id UUID;
 BEGIN
-    SELECT USER_ID INTO v_user_id FROM APP_USERS WHERE EMAIL = 'johndoe@example.com';
+    SELECT USER_ID INTO v_user_id FROM APP_USERS WHERE EMAIL = 'cashlytics123@gmail.com';
     SELECT ACCOUNT_ID INTO v_account_id FROM ACCOUNTS WHERE NAME = 'Cash Wallet' AND USER_ID = v_user_id;
     CALL add_expense(
         v_user_id,
@@ -154,7 +154,7 @@ DECLARE
     v_user_id UUID;
     v_account_id UUID;
 BEGIN
-    SELECT USER_ID INTO v_user_id FROM APP_USERS WHERE EMAIL = 'johndoe@example.com';
+    SELECT USER_ID INTO v_user_id FROM APP_USERS WHERE EMAIL = 'cashlytics123@gmail.com';
     SELECT ACCOUNT_ID INTO v_account_id FROM ACCOUNTS WHERE NAME = 'Maybank' AND USER_ID = v_user_id;
     CALL add_expense_with_receipt(
         v_user_id,
@@ -178,7 +178,7 @@ DO $$
 DECLARE
     v_user_id UUID;
 BEGIN
-    SELECT USER_ID INTO v_user_id FROM APP_USERS WHERE EMAIL = 'johndoe@example.com';
+    SELECT USER_ID INTO v_user_id FROM APP_USERS WHERE EMAIL = 'cashlytics123@gmail.com';
     CALL add_user_budget(
         v_user_id,
         1000.00,
@@ -194,7 +194,7 @@ DECLARE
     v_user_id UUID;
     v_account_id UUID;
 BEGIN
-    SELECT USER_ID INTO v_user_id FROM APP_USERS WHERE EMAIL = 'johndoe@example.com';
+    SELECT USER_ID INTO v_user_id FROM APP_USERS WHERE EMAIL = 'cashlytics123@gmail.com';
     SELECT ACCOUNT_ID INTO v_account_id FROM ACCOUNTS WHERE NAME = 'Maybank' AND USER_ID = v_user_id;
     CALL add_account_budget(
         v_user_id,
@@ -211,7 +211,7 @@ DECLARE
     v_user_id UUID;
     v_category_id UUID;
 BEGIN
-    SELECT USER_ID INTO v_user_id FROM APP_USERS WHERE EMAIL = 'johndoe@example.com';
+    SELECT USER_ID INTO v_user_id FROM APP_USERS WHERE EMAIL = 'cashlytics123@gmail.com';
     SELECT EXPENSE_CAT_ID INTO v_category_id FROM EXPENSE_CATEGORY WHERE NAME = 'FOOD';
     CALL add_category_budget(
         v_user_id,
@@ -235,7 +235,7 @@ VALUES
 ('September 2024 Financial Health Report', 'An overview of your financial health for September 2024.',
  'Your financial health score for September 2024 is 85 out of 100. You have managed your expenses well and stayed within your budget limits. Keep up the good work!',
  '09-2024', 85,
-    (SELECT USER_ID FROM APP_USERS WHERE EMAIL = 'johndoe@example.com')),
+    (SELECT USER_ID FROM APP_USERS WHERE EMAIL = 'cashlytics123@gmail.com')),
 ('August 2024 Financial Health Report', 'An overview of your financial health for August 2024.',
  'Your financial health score for August 2024 is 78 out of 100. While you did a good job managing your income, there were some overspending instances in the entertainment category. Consider reviewing your budget allocations.',
  '08-2024', 78,
