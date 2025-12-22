@@ -45,8 +45,16 @@ class AccountRepositoryImpl implements AccountRepository {
         limit: 100,
       );
 
+      // Also fetch transfers where this account is the recipient
+      final incomingTransfers = await _databaseService.fetchAll(
+        'transfer',
+        filters: {'to_account_id': accountId},
+        limit: 100,
+      );
+
       final List<AccountTransactionView> views = [];
 
+      // Process regular transactions
       for (final tx in transactions) {
         final transactionId = tx['transaction_id'] as String;
         final type = tx['type'] as String;
@@ -108,7 +116,7 @@ class AccountRepositoryImpl implements AccountRepository {
             );
           }
         } else if (type == 'T') {
-          // Transfer
+          // Transfer - money going OUT of this account
           final transferData = await _databaseService.fetchSingle(
             'transfer',
             matchColumn: 'transaction_id',
@@ -116,22 +124,71 @@ class AccountRepositoryImpl implements AccountRepository {
           );
 
           if (transferData != null) {
+            // Get destination account name
+            final toAccount = await _databaseService.fetchSingle(
+              'accounts',
+              matchColumn: 'account_id',
+              matchValue: transferData['to_account_id'],
+              columns: 'name',
+            );
+
             views.add(
               AccountTransactionView(
                 transactionId: transactionId,
-                title: name,
+                title: 'Transfer to ${toAccount?['name'] ?? 'Account'}',
                 date: createdAt,
                 amount: _parseAmount(transferData['amount']),
-                isExpense: true,
-                icon: Icons.swap_horiz,
+                isExpense: true, // Deducting from this account
+                icon: Icons.arrow_upward,
               ),
             );
           }
         }
       }
 
+      // Process incoming transfers (money coming INTO this account)
+      for (final transfer in incomingTransfers) {
+        final transactionId = transfer['transaction_id'] as String;
+
+        // Get the transaction details
+        final tx = await _databaseService.fetchSingle(
+          'transaction',
+          matchColumn: 'transaction_id',
+          matchValue: transactionId,
+        );
+
+        if (tx != null) {
+          final createdAt =
+              DateTime.tryParse(tx['created_at'] as String? ?? '') ??
+              DateTime.now();
+
+          // Get source account name
+          final fromAccount = await _databaseService.fetchSingle(
+            'accounts',
+            matchColumn: 'account_id',
+            matchValue: transfer['from_account_id'],
+            columns: 'name',
+          );
+
+          views.add(
+            AccountTransactionView(
+              transactionId: transactionId,
+              title: 'Transfer from ${fromAccount?['name'] ?? 'Account'}',
+              date: createdAt,
+              amount: _parseAmount(transfer['amount']),
+              isExpense: false, // Adding to this account
+              icon: Icons.arrow_downward,
+            ),
+          );
+        }
+      }
+
+      // Sort by date (most recent first)
+      views.sort((a, b) => b.date.compareTo(a.date));
+
       return views;
     } catch (e) {
+      debugPrint('Error fetching account transactions: $e');
       // Return empty list on error instead of throwing
       return [];
     }
