@@ -74,6 +74,9 @@ class _ProfilePageState extends State<ProfilePage> {
 
       setState(() => _isUploadingPhoto = true);
 
+      // Clear old compressed image cache to force UI refresh
+      await ImageCacheService.clearCachedImage();
+
       // Ensure Supabase is initialized before uploading
       final currentUser = _authService.currentUser;
       if (currentUser == null) {
@@ -130,8 +133,14 @@ class _ProfilePageState extends State<ProfilePage> {
           if (currentUserProfile != null) {
             currentUserProfile!['image_path'] = relativePath;
 
-            // Compress and cache the image in background
-            ImageCacheService.compressAndCache(filePath).catchError((e) {
+            // Compress and cache the image in background, then refresh UI
+            ImageCacheService.compressAndCache(filePath).then((_) {
+              if (mounted) {
+                setState(() {
+                  debugPrint('Image compressed and cached, refreshing UI');
+                });
+              }
+            }).catchError((e) {
               debugPrint('Error caching compressed image: $e');
               return e;
             });

@@ -6,6 +6,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import 'package:cashlytics/core/services/supabase/client.dart';
+import 'package:cashlytics/core/services/supabase/auth/oauth_image_service.dart';
+import 'package:cashlytics/data/repositories/app_user_repository_impl.dart';
 
 class AuthService {
   /// Get the current authenticated user
@@ -28,7 +30,7 @@ class AuthService {
       onLoadingStart();
 
       // Save remember me preference
-     await CacheService.save('remember_me', rememberMe);
+      await CacheService.save('remember_me', rememberMe);
 
       await supabase.auth.signInWithPassword(email: email, password: password);
     } on AuthException catch (error) {
@@ -97,12 +99,142 @@ class AuthService {
         idToken: idToken,
         accessToken: auth.accessToken,
       );
+
+      // Fetch and save profile image from Google in background
+      if (currentUser != null) {
+        _fetchAndSaveGoogleProfileImageAsync(account, currentUser!.id);
+      }
     } on AuthException catch (error) {
       onError(error.message);
     } catch (error) {
       onError('Something went wrong during Google sign-in.');
     } finally {
       onLoadingEnd();
+    }
+  }
+
+  /// Asynchronously fetches and saves Google profile image without blocking auth flow
+  void _fetchAndSaveGoogleProfileImageAsync(
+    GoogleSignInAccount account,
+    String userId,
+  ) {
+    // Check if user already has a profile image before fetching
+    final repository = AppUserRepositoryImpl();
+    repository
+        .getCurrentUserProfile()
+        .then((appUser) {
+          if (appUser == null || appUser.imagePath != null) {
+            debugPrint(
+              'User already has a profile image, skipping Google OAuth image fetch',
+            );
+            return;
+          }
+
+          // Only proceed if user doesn't have an image
+          OAuthImageService.fetchAndSaveGoogleProfileImage(
+                account,
+                userId,
+                onStart: () {
+                  debugPrint('Starting to fetch Google profile image...');
+                },
+                onEnd: () {
+                  debugPrint('Finished fetching Google profile image');
+                },
+                onError: (error) {
+                  debugPrint('Error fetching Google profile image: $error');
+                },
+              )
+              .then((imagePath) {
+                if (imagePath != null) {
+                  debugPrint('Google profile image saved to: $imagePath');
+                  // Update user profile with image path
+                  _updateUserProfileWithOAuthImage(userId, imagePath);
+                }
+              })
+              .catchError((e) {
+                debugPrint('Error in async Google profile image fetch: $e');
+              });
+        })
+        .catchError((e) {
+          debugPrint('Error checking user profile for Google OAuth image: $e');
+        });
+  }
+
+  /// Asynchronously fetches and saves OAuth profile image from session
+  void _fetchAndSaveOAuthProfileImageAsync(Session session, String userId) {
+    // Check if user already has a profile image before fetching
+    final repository = AppUserRepositoryImpl();
+    repository
+        .getCurrentUserProfile()
+        .then((appUser) {
+          if (appUser == null || appUser.imagePath != null) {
+            debugPrint(
+              'User already has a profile image, skipping OAuth image fetch',
+            );
+            return;
+          }
+
+          // Only proceed if user doesn't have an image
+          OAuthImageService.fetchAndSaveOAuthProfileImage(
+                session,
+                userId,
+                onStart: () {
+                  debugPrint('Starting to fetch OAuth profile image...');
+                },
+                onEnd: () {
+                  debugPrint('Finished fetching OAuth profile image');
+                },
+                onError: (error) {
+                  debugPrint('Error fetching OAuth profile image: $error');
+                },
+              )
+              .then((imagePath) {
+                if (imagePath != null) {
+                  debugPrint('OAuth profile image saved to: $imagePath');
+                  // Update user profile with image path
+                  _updateUserProfileWithOAuthImage(userId, imagePath);
+                }
+              })
+              .catchError((e) {
+                debugPrint('Error in async OAuth profile image fetch: $e');
+              });
+        })
+        .catchError((e) {
+          debugPrint('Error checking user profile for OAuth image: $e');
+        });
+  }
+
+  /// Updates user profile cache and database with OAuth image path
+  void _updateUserProfileWithOAuthImage(String userId, String imagePath) {
+    try {
+      final repository = AppUserRepositoryImpl();
+      repository
+          .getCurrentUserProfile()
+          .then((appUser) {
+            if (appUser != null) {
+              final updatedUser = appUser.copyWith(imagePath: imagePath);
+              repository.upsertUser(updatedUser);
+
+              // Update cache with new image path
+              final cachedProfile = CacheService.load<Map<String, dynamic>>(
+                'user_profile_cache',
+              );
+              if (cachedProfile != null) {
+                cachedProfile['image_path'] = imagePath;
+                CacheService.save('user_profile_cache', cachedProfile);
+                debugPrint(
+                  'Cache updated with OAuth profile image: $imagePath',
+                );
+              }
+
+              debugPrint('Profile image updated from OAuth provider');
+            }
+          })
+          .catchError((e) {
+            debugPrint('Error updating user profile with OAuth image: $e');
+          });
+    } catch (e) {
+      debugPrint('Error in _updateUserProfileWithOAuthImage: $e');
     }
   }
 
@@ -130,6 +262,12 @@ class AuthService {
             : '${dotenv.env['PUBLIC_SUPABASE_REDIRECT_DOMAIN']}://login-callback',
         scopes: 'email public_profile',
       );
+
+      // Fetch and save profile image from Facebook in background
+      final session = supabase.auth.currentSession;
+      if (session != null && currentUser != null) {
+        _fetchAndSaveOAuthProfileImageAsync(session, currentUser!.id);
+      }
     } on AuthException catch (error) {
       onError(error.message);
     } catch (error) {
@@ -207,7 +345,7 @@ class AuthService {
   }
 
   /// Update the current user's password
-  /// 
+  ///
   /// Calls [onLoadingStart] when operation begins
   /// Calls [onLoadingEnd] when operation completes
   /// Calls [onError] if an error occurs with error message
@@ -219,9 +357,7 @@ class AuthService {
   }) async {
     try {
       onLoadingStart();
-      await supabase.auth.updateUser(
-        UserAttributes(password: newPassword),
-      );
+      await supabase.auth.updateUser(UserAttributes(password: newPassword));
     } on AuthException catch (error) {
       onError(error.message);
     } catch (error) {
@@ -248,7 +384,6 @@ class AuthService {
       // Clear cached data before signing out
       await CacheService.save('remember_me', false);
       await CacheService.remove('user_profile_cache');
-      
     } on AuthException catch (error) {
       onError(error.message);
     } catch (error) {
