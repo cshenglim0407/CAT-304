@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Import this for TextInputFormatter
 import 'package:cashlytics/presentation/themes/colors.dart';
 
 class CustomTextFormField extends StatelessWidget {
@@ -9,7 +10,8 @@ class CustomTextFormField extends StatelessWidget {
   final bool obscureText;
   final VoidCallback? onTap;
   final bool readOnly;
-  final String? Function(String?)? validator; // Added validator
+  final String? Function(String?)? validator;
+  final List<TextInputFormatter>? inputFormatters; // <--- ADD THIS
 
   const CustomTextFormField({
     super.key,
@@ -21,6 +23,7 @@ class CustomTextFormField extends StatelessWidget {
     this.onTap,
     this.readOnly = false,
     this.validator,
+    this.inputFormatters, // <--- ADD THIS
   });
 
   @override
@@ -31,7 +34,8 @@ class CustomTextFormField extends StatelessWidget {
       keyboardType: keyboardType,
       onTap: onTap,
       readOnly: readOnly,
-      validator: validator, // Connects to the Form validation
+      validator: validator,
+      inputFormatters: inputFormatters, // <--- CONNECT THIS
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: TextStyle(

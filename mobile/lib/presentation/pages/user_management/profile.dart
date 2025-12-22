@@ -20,6 +20,7 @@ import 'package:cashlytics/presentation/widgets/index.dart';
 
 import 'package:cashlytics/presentation/pages/user_management/edit_personal_info.dart';
 import 'package:cashlytics/presentation/pages/user_management/login.dart';
+import 'package:cashlytics/presentation/pages/user_management/edit_detail_information.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -35,11 +36,14 @@ class _ProfilePageState extends State<ProfilePage> {
   late Map<String, dynamic>? currentUserProfile = {};
   AppUser? _domainUser;
 
-  bool _isLoading = false; // for loading state
+  bool _isLoading = false;
   bool _redirecting = false;
+  
+  // State to toggle visibility of detailed info
+  bool _showDetailedInfo = false; 
+
   late final StreamSubscription<AuthState> _authStateSubscription;
 
-  // Sign out method
   Future<void> _signOut() async {
     await AuthService().signOut(
       onLoadingStart: () {
@@ -51,7 +55,6 @@ class _ProfilePageState extends State<ProfilePage> {
       onError: (msg) => context.showSnackBar(msg, isError: true),
     );
 
-    // Reset theme to system when user logs out
     if (mounted) {
       Provider.of<ThemeProvider>(
         context,
@@ -64,7 +67,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   static const String _userProfileCacheKey = 'user_profile_cache';
 
-  // --- User Data ---
+  // --- Basic User Data ---
   late String _displayName = "";
   late String _email = "";
   late String _dobString = "";
@@ -73,8 +76,14 @@ class _ProfilePageState extends State<ProfilePage> {
   late String _timezone = "";
   late String _currency = "";
   late String _themePref = "";
+  
+  // --- Detailed Info (Placeholders for Frontend) ---
+  String _educationLevel = "Bachelor's Degree";
+  String _employmentStatus = "Employed";
+  String _maritalStatus = "Single";
+  String _dependentNumber = "0";
+  String _estimatedLoan = "RM 12,000";
 
-  /// Fetch user profile from domain use case and update cache
   Future<void> _fetchUserProfile() async {
     try {
       _domainUser = await _getCurrentAppUser();
@@ -93,7 +102,6 @@ class _ProfilePageState extends State<ProfilePage> {
           'currency_pref': _domainUser!.currencyPreference,
           'theme_pref': _domainUser!.themePreference,
         };
-        debugPrint('User Profile Fetched: $currentUserProfile');
         await CacheService.save(_userProfileCacheKey, currentUserProfile!);
       }
     } catch (e) {
@@ -103,7 +111,6 @@ class _ProfilePageState extends State<ProfilePage> {
       );
     } finally {
       if (_authService.currentUser == null) {
-        debugPrint('No authenticated user found.');
         currentUserProfile = null;
         await CacheService.remove(_userProfileCacheKey);
         if (mounted) {
@@ -125,7 +132,6 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  /// Update UI with profile data
   void _updateUIWithProfile() {
     if (currentUserProfile == null || !mounted) return;
 
@@ -135,7 +141,6 @@ class _ProfilePageState extends State<ProfilePage> {
           currentUserProfile!['email'] ??
           _authService.currentUser?.email ??
           'N/A';
-      _dobString = currentUserProfile!['date_of_birth'] ?? 'N/A';
       _dobString = currentUserProfile!['date_of_birth'] ?? 'N/A';
       _gender = currentUserProfile!['gender'] ?? 'N/A';
       _timezone = currentUserProfile!['timezone'] != null
@@ -155,7 +160,6 @@ class _ProfilePageState extends State<ProfilePage> {
   void initState() {
     super.initState();
 
-    // Load from cache first (synchronous)
     final cachedProfile = CacheService.load<Map<String, dynamic>>(
       _userProfileCacheKey,
     );
@@ -164,11 +168,9 @@ class _ProfilePageState extends State<ProfilePage> {
       _updateUIWithProfile();
     }
 
-    // Fetch fresh data from database in background
     _fetchUserProfile().then((_) {
       if (!mounted) return;
       _updateUIWithProfile();
-      // Apply theme preference after fetching profile
       if (currentUserProfile != null) {
         final themePref =
             currentUserProfile!['theme_pref'] as String? ?? 'system';
@@ -184,11 +186,7 @@ class _ProfilePageState extends State<ProfilePage> {
       onRedirect: () {
         if (!mounted) return;
         setState(() => _redirecting = true);
-
-        // Clear cached profile data on logout
         CacheService.remove(_userProfileCacheKey);
-
-        // Navigate to login page
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const LoginPage()),
         );
@@ -215,7 +213,6 @@ class _ProfilePageState extends State<ProfilePage> {
           padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
           child: Column(
             children: [
-              // --- Back button + Title ---
               Align(
                 alignment: Alignment.centerLeft,
                 child: AppBackButton(onPressed: () => Navigator.pop(context)),
@@ -252,6 +249,22 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                     ),
                     const SizedBox(height: 12),
+                    // Placeholder Avatar
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.primary, width: 2),
+                      ),
+                      child: const Icon(
+                        Icons.person,
+                        size: 40,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     Text(
                       _displayName,
                       style: AppTypography.headline3.copyWith(
@@ -277,11 +290,12 @@ class _ProfilePageState extends State<ProfilePage> {
                 decoration: BoxDecoration(
                   color: AppColors.getSurface(context),
                   borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: AppColors.greyLight.withOpacity(0.5)),
                   boxShadow: [
                     BoxShadow(
                       color: Theme.of(context).brightness == Brightness.light
-                          ? Colors.grey.withValues(alpha: 0.2)
-                          : Colors.black.withValues(alpha: 0.3),
+                          ? Colors.grey.withOpacity(0.1)
+                          : Colors.black.withOpacity(0.3),
                       blurRadius: 15,
                       offset: const Offset(0, 5),
                     ),
@@ -290,6 +304,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Removed 'Basic' from title as requested
                     const SectionTitle(title: "Information"),
                     const SizedBox(height: 10),
 
@@ -318,6 +333,86 @@ class _ProfilePageState extends State<ProfilePage> {
                       value: _themePref,
                       icon: Icons.brightness_6_outlined,
                     ),
+
+                    const SizedBox(height: 20),
+                    const Divider(),
+                    
+                    // --- Toggle Button for Detailed Info ---
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _showDetailedInfo = !_showDetailedInfo;
+                        });
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              _showDetailedInfo 
+                                  ? "Hide Detailed Information" 
+                                  : "Show Detailed Information",
+                              style: AppTypography.labelLarge.copyWith(
+                                color: AppColors.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Icon(
+                              _showDetailedInfo 
+                                  ? Icons.keyboard_arrow_up_rounded 
+                                  : Icons.keyboard_arrow_down_rounded,
+                              color: AppColors.primary,
+                              size: 20,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // --- Animated Detailed Info Section ---
+                    AnimatedCrossFade(
+                      firstChild: Container(), // Empty when hidden
+                      secondChild: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 10),
+                          InfoRow(
+                            label: "Education Level",
+                            value: _educationLevel, 
+                            icon: Icons.school_rounded,
+                          ),
+                          InfoRow(
+                            label: "Employment Status",
+                            value: _employmentStatus, 
+                            icon: Icons.work_outline_rounded,
+                          ),
+                          InfoRow(
+                            label: "Marital Status",
+                            value: _maritalStatus == 'Preferred not to say' 
+                                ? '-' 
+                                : _maritalStatus, 
+                            icon: Icons.favorite_border_rounded,
+                          ),
+                          InfoRow(
+                            label: "Dependent Number",
+                            value: _dependentNumber, 
+                            icon: Icons.people_outline_rounded,
+                          ),
+                          InfoRow(
+                            label: "Estimated Loan",
+                            value: _estimatedLoan, 
+                            icon: Icons.account_balance_wallet_outlined,
+                          ),
+                          const SizedBox(height: 10),
+                          // Edit button removed as requested
+                        ],
+                      ),
+                      crossFadeState: _showDetailedInfo
+                          ? CrossFadeState.showSecond
+                          : CrossFadeState.showFirst,
+                      duration: const Duration(milliseconds: 300),
+                    ),
                   ],
                 ),
               ),
@@ -329,16 +424,14 @@ class _ProfilePageState extends State<ProfilePage> {
                 icon: Icons.edit_note_rounded,
                 label: "Edit Personal Information",
                 onTap: () async {
-                  final updatedProfile =
-                      await Navigator.push<Map<String, dynamic>>(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => EditPersonalInformationPage(
-                            profile: currentUserProfile,
-                          ),
-                        ),
-                      );
-                  // If profile was updated, refresh the UI
+                  final updatedProfile = await Navigator.push<Map<String, dynamic>>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EditPersonalInformationPage(
+                        profile: currentUserProfile,
+                      ),
+                    ),
+                  );
                   if (updatedProfile != null && mounted) {
                     setState(() {
                       currentUserProfile = updatedProfile;
@@ -347,6 +440,42 @@ class _ProfilePageState extends State<ProfilePage> {
                   }
                 },
               ),
+              
+              // --- NEW: Edit Detailed Information Menu Item ---
+              AppMenuItem(
+                icon: Icons.folder_shared_rounded,
+                label: "Edit Detailed Information",
+                onTap: () async {
+                  // 1. Navigate to Edit Page and wait for result
+                  final updatedDetails = await Navigator.push<Map<String, dynamic>>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EditDetailInformationPage(
+                        currentDetails: {
+                          'education_level': _educationLevel,
+                          'employment_status': _employmentStatus,
+                          'marital_status': _maritalStatus,
+                          'dependent_number': _dependentNumber,
+                          'estimated_loan': _estimatedLoan,
+                        },
+                      ),
+                    ),
+                  );
+
+                  // 2. Update UI if data returned
+                  if (updatedDetails != null && mounted) {
+                    setState(() {
+                      // Update local state with new values
+                      _educationLevel = updatedDetails['education_level'] ?? _educationLevel;
+                      _employmentStatus = updatedDetails['employment_status'] ?? _employmentStatus;
+                      _maritalStatus = updatedDetails['marital_status'] ?? _maritalStatus;
+                      _dependentNumber = updatedDetails['dependent_number'] ?? _dependentNumber;
+                      _estimatedLoan = updatedDetails['estimated_loan'] ?? _estimatedLoan;
+                    });
+                  }
+                },
+              ),
+
               AppMenuItem(
                 icon: Icons.logout_rounded,
                 label: "Logout",
