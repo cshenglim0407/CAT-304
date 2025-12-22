@@ -10,6 +10,7 @@ import 'package:cashlytics/core/services/cache/cache_service.dart';
 import 'package:cashlytics/presentation/providers/theme_provider.dart';
 import 'package:cashlytics/presentation/themes/app_themes.dart';
 import 'package:cashlytics/presentation/pages/income_expense_management/home_page.dart';
+import 'package:cashlytics/presentation/pages/income_expense_management/dashboard.dart';
 import 'package:cashlytics/presentation/pages/user_management/login.dart';
 import 'package:cashlytics/presentation/pages/user_management/sign_up.dart';
 import 'package:cashlytics/presentation/pages/user_management/forgot_password.dart';
@@ -83,6 +84,7 @@ class _MyAppState extends State<MyApp> {
         '/otpverification': (context) => OtpVerificationPage(userEmail: ''),
         '/resetpassword': (context) => const ResetPasswordPage(),
         '/profile': (context) => const ProfilePage(),
+        '/dashboard': (context) => const DashboardPage(),
       },
     );
   }
