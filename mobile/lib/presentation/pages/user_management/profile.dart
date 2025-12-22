@@ -233,6 +233,20 @@ class _ProfilePageState extends State<ProfilePage> {
               Center(
                 child: Column(
                   children: [
+                    // --- PROFILE AVATAR ---
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.primary, width: 2),
+                      ),
+                      child: const CircleAvatar(
+                        radius: 45,
+                        backgroundImage: AssetImage(
+                          'assets/avatar_placeholder.png',
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     Text(
                       _displayName,
