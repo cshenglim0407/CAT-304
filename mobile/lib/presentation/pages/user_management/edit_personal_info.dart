@@ -7,6 +7,7 @@ import 'package:cashlytics/core/config/profile_constants.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
 import 'package:cashlytics/core/utils/context_extensions.dart';
 import 'package:cashlytics/core/utils/user_management/profile_helpers.dart';
+import 'package:cashlytics/domain/repositories/app_user_repository.dart';
 import 'package:cashlytics/data/repositories/app_user_repository_impl.dart';
 import 'package:cashlytics/domain/usecases/app_users/upsert_app_user.dart';
 import 'package:cashlytics/domain/entities/app_user.dart';
@@ -31,7 +32,7 @@ class _EditPersonalInformationPageState
   final _formKey = GlobalKey<FormState>();
 
   late final _authService = AuthService();
-  late final _appUserRepository = AppUserRepositoryImpl();
+  late final AppUserRepository _appUserRepository = AppUserRepositoryImpl();
   late final _upsertAppUser = UpsertAppUser(_appUserRepository);
 
   // Text Controllers

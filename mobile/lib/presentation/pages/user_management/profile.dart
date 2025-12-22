@@ -14,6 +14,8 @@ import 'package:cashlytics/core/utils/context_extensions.dart';
 import 'package:cashlytics/core/utils/date_formatter.dart';
 import 'package:cashlytics/core/services/cache/image_cache_service.dart';
 
+import 'package:cashlytics/domain/repositories/app_user_repository.dart';
+import 'package:cashlytics/domain/repositories/detailed_repository.dart';
 import 'package:cashlytics/data/repositories/app_user_repository_impl.dart';
 import 'package:cashlytics/data/repositories/detailed_repository_impl.dart';
 import 'package:cashlytics/domain/usecases/app_users/get_current_app_user.dart';
@@ -38,8 +40,8 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   late final _authService = AuthService();
-  late final _appUserRepository = AppUserRepositoryImpl();
-  late final _detailedRepository = DetailedRepositoryImpl();
+  late final AppUserRepository _appUserRepository = AppUserRepositoryImpl();
+  late final DetailedRepository _detailedRepository = DetailedRepositoryImpl();
   late final _getCurrentAppUser = GetCurrentAppUser(_appUserRepository);
   late Map<String, dynamic>? currentUserProfile = {};
   AppUser? _domainUser;

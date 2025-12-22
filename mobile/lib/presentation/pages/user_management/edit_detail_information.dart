@@ -3,9 +3,10 @@ import 'package:flutter/services.dart';
 
 import 'package:cashlytics/core/config/detailed_constants.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
+import 'package:cashlytics/domain/repositories/detailed_repository.dart';
 import 'package:cashlytics/data/repositories/detailed_repository_impl.dart';
 import 'package:cashlytics/domain/entities/detailed.dart';
-import 'package:cashlytics/domain/repositories/detailed_repository.dart';
+import 'package:cashlytics/domain/usecases/detailed/upsert_detailed.dart';
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
 import 'package:cashlytics/presentation/widgets/index.dart';
@@ -26,6 +27,7 @@ class _EditDetailInformationPageState extends State<EditDetailInformationPage> {
 
   late final DetailedRepository _detailedRepository;
   late final AuthService _authService;
+  late final UpsertDetailed _upsertDetailed;
 
   // Controllers
   late final TextEditingController _dependentController;
@@ -40,6 +42,7 @@ class _EditDetailInformationPageState extends State<EditDetailInformationPage> {
   void initState() {
     super.initState();
     _detailedRepository = DetailedRepositoryImpl();
+    _upsertDetailed = UpsertDetailed(_detailedRepository);
     _authService = AuthService();
     _dependentController = TextEditingController();
     _loanController = TextEditingController();
@@ -115,7 +118,7 @@ class _EditDetailInformationPageState extends State<EditDetailInformationPage> {
       );
 
       // Save to database
-      final savedDetailed = await _detailedRepository.upsertDetailed(detailed);
+      final savedDetailed = await _upsertDetailed(detailed);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

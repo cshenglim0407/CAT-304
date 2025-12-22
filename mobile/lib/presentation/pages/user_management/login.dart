@@ -6,6 +6,7 @@ import 'package:cashlytics/core/services/cache/cache_service.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_state_listener.dart';
 import 'package:cashlytics/core/utils/context_extensions.dart';
+import 'package:cashlytics/domain/repositories/app_user_repository.dart';
 import 'package:cashlytics/data/repositories/app_user_repository_impl.dart';
 import 'package:cashlytics/domain/usecases/app_users/get_current_app_user.dart';
 import 'package:cashlytics/presentation/providers/theme_provider.dart';
@@ -32,7 +33,7 @@ class _LoginPageState extends State<LoginPage> {
   late final _password = TextEditingController();
 
   late final _authService = AuthService();
-  late final _appUserRepository = AppUserRepositoryImpl();
+  late final AppUserRepository _appUserRepository = AppUserRepositoryImpl();
   late final _getCurrentAppUser = GetCurrentAppUser(_appUserRepository);
   final _formKey = GlobalKey<FormState>();
 
