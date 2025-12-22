@@ -122,7 +122,9 @@ class _ProfilePageState extends State<ProfilePage> {
       _dobString = currentUserProfile!['date_of_birth'] ?? 'N/A';
       _dobString = currentUserProfile!['date_of_birth'] ?? 'N/A';
       _gender = currentUserProfile!['gender'] ?? 'N/A';
-      _timezone = currentUserProfile!['timezone'] ?? 'N/A';
+      _timezone = currentUserProfile!['timezone'] != null
+          ? "(UTC${currentUserProfile!['timezone']})"
+          : 'N/A';
       _currency = currentUserProfile!['currency_pref'] ?? 'MYR';
 
       final themePref = currentUserProfile!['theme_pref'] ?? 'system';
