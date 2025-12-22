@@ -75,6 +75,15 @@ class _ProfilePageState extends State<ProfilePage> {
           _userProfileCacheKey,
         );
       }
+    } else {
+      debugPrint('No authenticated user found.');
+      currentUserProfile = null;
+      await CacheService.remove(_userProfileCacheKey);
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+        );
+      }
     }
   }
 
