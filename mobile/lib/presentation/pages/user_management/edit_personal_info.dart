@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:cashlytics/core/config/profile_constants.dart';
 import 'package:cashlytics/core/utils/context_extensions.dart';
+import 'package:cashlytics/core/utils/user_management/profile_helpers.dart';
 
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
@@ -34,48 +35,6 @@ class _EditPersonalInformationPageState
 
   bool _isLoading = false;
 
-  String? _findTimezoneItemFromCode(String? code) {
-    if (code == null || code.isEmpty) return null;
-    final needle = "(UTC$code)"; // "+08:00" -> "(UTC+08:00)"
-    try {
-      return ProfileConstants.timezones.firstWhere(
-        (tz) => tz.startsWith(needle),
-      );
-    } catch (_) {
-      return null;
-    }
-  }
-
-  String? _findCurrencyItemFromCode(String? code) {
-    if (code == null || code.isEmpty) return null;
-    final upper = code.toUpperCase();
-    try {
-      return ProfileConstants.currencies.firstWhere(
-        (c) => c.startsWith("$upper "),
-      );
-    } catch (_) {
-      return null;
-    }
-  }
-
-  String? _normalizeTheme(String? raw) {
-    if (raw == null || raw.isEmpty) return null;
-    final t = raw.toLowerCase();
-    if (t == 'light' || t == 'dark' || t == 'system') {
-      return t[0].toUpperCase() + t.substring(1);
-    }
-    return null;
-  }
-
-  String? _normalizeGender(String? raw) {
-    if (raw == null || raw.isEmpty) return null;
-    final g = raw.toLowerCase();
-    if (g == 'male' || g == 'm') return 'Male';
-    if (g == 'female' || g == 'f') return 'Female';
-    if (g == 'other') return 'Other';
-    return null;
-  }
-
   @override
   void initState() {
     super.initState();
@@ -86,7 +45,7 @@ class _EditPersonalInformationPageState
     // Sensible defaults that exist in items
     _selectedGender = "Male";
     _selectedTimezone =
-        _findTimezoneItemFromCode("+08:00") ??
+        ProfileHelpers.findTimezoneFromCode("+08:00") ??
         "(UTC+08:00) Kuala Lumpur, Singapore, Beijing, Perth";
     _selectedCurrency = "MYR - Malaysian Ringgit";
     _selectedTheme = "Light";
@@ -108,15 +67,15 @@ class _EditPersonalInformationPageState
     }
 
     _selectedGender =
-        _normalizeGender(data['gender'] as String?) ?? _selectedGender;
+        ProfileHelpers.normalizeGender(data['gender'] as String?) ?? _selectedGender;
     _selectedTimezone =
-        _findTimezoneItemFromCode(data['timezone'] as String?) ??
+        ProfileHelpers.findTimezoneFromCode(data['timezone'] as String?) ??
         _selectedTimezone;
     _selectedCurrency =
-        _findCurrencyItemFromCode(data['currency_pref'] as String?) ??
+        ProfileHelpers.findCurrencyFromCode(data['currency_pref'] as String?) ??
         _selectedCurrency;
     _selectedTheme =
-        _normalizeTheme(data['theme_pref'] as String?) ?? _selectedTheme;
+        ProfileHelpers.normalizeTheme(data['theme_pref'] as String?) ?? _selectedTheme;
   }
 
   @override
@@ -288,13 +247,9 @@ class _EditPersonalInformationPageState
                   hint: "Select Timezone",
                   onChanged: (newValue) =>
                       setState(() => _selectedTimezone = newValue),
-                  // Parses "(UTC+08:00) City" -> "(UTC+08:00)"
-                  selectedItemTransformer: (val) {
-                    if (val.contains(')')) {
-                      return "${val.split(')').first})";
-                    }
-                    return val;
-                  },
+                  // Parses "(UTC+08:00) City" -> "+08:00"
+                  selectedItemTransformer: (val) =>
+                      ProfileHelpers.extractTimezoneCode(val) ?? val,
                 ),
 
                 const SizedBox(height: 16),
@@ -308,12 +263,8 @@ class _EditPersonalInformationPageState
                   onChanged: (newValue) =>
                       setState(() => _selectedCurrency = newValue),
                   // Parses "MYR - Malaysian Ringgit" -> "MYR"
-                  selectedItemTransformer: (val) {
-                    if (val.contains(' - ')) {
-                      return val.split(' - ').first;
-                    }
-                    return val;
-                  },
+                  selectedItemTransformer: (val) =>
+                      ProfileHelpers.extractCurrencyCode(val) ?? val,
                 ),
 
                 const SizedBox(height: 16),

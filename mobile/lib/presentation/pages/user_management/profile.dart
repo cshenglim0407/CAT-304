@@ -8,6 +8,7 @@ import 'package:cashlytics/core/services/supabase/auth/auth_state_listener.dart'
 import 'package:cashlytics/core/services/supabase/database/database_service.dart';
 import 'package:cashlytics/core/services/cache/cache_service.dart';
 import 'package:cashlytics/core/utils/context_extensions.dart';
+import 'package:cashlytics/core/utils/date_formatter.dart';
 
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
@@ -84,23 +85,6 @@ class _ProfilePageState extends State<ProfilePage> {
           MaterialPageRoute(builder: (context) => const LoginPage()),
         );
       }
-    }
-  }
-
-  // --- Age Calculation ---
-  String _getFormattedDob(String dateStr) {
-    if (dateStr == 'N/A' || dateStr.isEmpty) return dateStr;
-    try {
-      DateTime birthDate = DateTime.parse(dateStr);
-      DateTime today = DateTime.now();
-      int age = today.year - birthDate.year;
-      if (today.month < birthDate.month ||
-          (today.month == birthDate.month && today.day < birthDate.day)) {
-        age--;
-      }
-      return "$dateStr ($age)";
-    } catch (e) {
-      return dateStr;
     }
   }
 
@@ -260,7 +244,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
                     InfoRow(
                       label: "Date of Birth",
-                      value: _getFormattedDob(_dobString),
+                      value: DateFormatter.formatDateWithAge(_dobString),
                       icon: Icons.calendar_today_rounded,
                     ),
                     InfoRow(
