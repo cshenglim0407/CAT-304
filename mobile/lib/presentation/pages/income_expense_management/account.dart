@@ -1,15 +1,25 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:cashlytics/presentation/themes/colors.dart';
-import 'package:cashlytics/presentation/themes/typography.dart';
-import 'package:cashlytics/presentation/widgets/index.dart';
-import 'package:cashlytics/presentation/widgets/account_card.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
+import 'package:cashlytics/core/services/supabase/auth/auth_state_listener.dart';
+
 import 'package:cashlytics/domain/repositories/account_repository.dart';
 import 'package:cashlytics/data/repositories/account_repository_impl.dart';
 import 'package:cashlytics/domain/usecases/accounts/get_accounts.dart';
 import 'package:cashlytics/domain/usecases/accounts/get_account_transactions.dart';
 import 'package:cashlytics/domain/entities/account.dart';
 import 'package:cashlytics/domain/entities/account_transaction_view.dart';
+
+import 'package:cashlytics/presentation/themes/colors.dart';
+import 'package:cashlytics/presentation/themes/typography.dart';
+import 'package:cashlytics/presentation/widgets/index.dart';
+
+import 'package:cashlytics/presentation/widgets/account_card.dart';
+import 'package:cashlytics/presentation/pages/user_management/login.dart';
+
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -33,6 +43,9 @@ class _AccountPageState extends State<AccountPage> {
   late final GetAccountTransactions _getAccountTransactions;
   late final AuthService _authService;
 
+  bool _redirecting = false;
+  late final StreamSubscription<AuthState> _authStateSubscription;
+
   @override
   void initState() {
     super.initState();
@@ -42,6 +55,20 @@ class _AccountPageState extends State<AccountPage> {
     _getAccountTransactions = GetAccountTransactions(_accountRepository);
     _authService = AuthService();
     _loadAccounts();
+
+    _authStateSubscription = listenForSignedOutRedirect(
+      shouldRedirect: () => !_redirecting,
+      onRedirect: () {
+        if (!mounted) return;
+        setState(() => _redirecting = true);
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+        );
+      },
+      onError: (error) {
+        debugPrint('Auth State Listener Error: $error');
+      },
+    );
   }
 
   Future<void> _loadAccounts() async {
@@ -93,6 +120,7 @@ class _AccountPageState extends State<AccountPage> {
 
   @override
   void dispose() {
+    _authStateSubscription.cancel();
     _pageController.dispose();
     super.dispose();
   }
@@ -114,10 +142,12 @@ class _AccountPageState extends State<AccountPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text("Delete Account?"),
-        content: Text("Are you sure you want to remove '${account.name}'? This cannot be undone."),
+        content: Text(
+          "Are you sure you want to remove '${account.name}'? This cannot be undone.",
+        ),
         actions: [
           TextButton(
-            child: const Text("Cancel"), 
+            child: const Text("Cancel"),
             onPressed: () => Navigator.pop(ctx),
           ),
           TextButton(
@@ -155,7 +185,7 @@ class _AccountPageState extends State<AccountPage> {
                 ),
               ),
               const SizedBox(height: 20),
-              
+
               Text(
                 "Manage ${account.name}",
                 style: AppTypography.headline3.copyWith(fontSize: 18),
@@ -171,14 +201,17 @@ class _AccountPageState extends State<AccountPage> {
                   ),
                   child: const Icon(Icons.edit, color: Colors.blue),
                 ),
-                title: const Text("Edit Account", style: TextStyle(fontWeight: FontWeight.w600)),
+                title: const Text(
+                  "Edit Account",
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
                 subtitle: const Text("Change name, balance, or type"),
                 onTap: () {
                   Navigator.pop(context);
                   // Edit logic here
                 },
               ),
-              
+
               const Divider(),
 
               ListTile(
@@ -190,7 +223,10 @@ class _AccountPageState extends State<AccountPage> {
                   ),
                   child: const Icon(Icons.delete, color: Colors.red),
                 ),
-                title: const Text("Delete Account", style: TextStyle(fontWeight: FontWeight.w600)),
+                title: const Text(
+                  "Delete Account",
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
                 subtitle: const Text("Remove this account permanently"),
                 onTap: () {
                   Navigator.pop(context); // Close sheet
@@ -209,13 +245,15 @@ class _AccountPageState extends State<AccountPage> {
   Future<void> _deleteAccount(Account account) async {
     try {
       await AccountRepositoryImpl().deleteAccount(account.id!);
-      
+
       setState(() {
         _myAccounts.removeWhere((acc) => acc.id == account.id);
 
         // Adjust the current card index safely
         if (_currentCardIndex >= _myAccounts.length) {
-          _currentCardIndex = _myAccounts.isNotEmpty ? _myAccounts.length - 1 : 0;
+          _currentCardIndex = _myAccounts.isNotEmpty
+              ? _myAccounts.length - 1
+              : 0;
         }
 
         // Load transactions for the new current account
@@ -227,16 +265,16 @@ class _AccountPageState extends State<AccountPage> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("${account.name} deleted")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("${account.name} deleted")));
       }
     } catch (e) {
       debugPrint('Error deleting account: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Failed to delete account: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Failed to delete account: $e")));
       }
     }
   }
@@ -302,9 +340,7 @@ class _AccountPageState extends State<AccountPage> {
                           color: Colors.grey.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(24),
                         ),
-                        child: const Center(
-                          child: CircularProgressIndicator(),
-                        ),
+                        child: const Center(child: CircularProgressIndicator()),
                       )
                     else if (_myAccounts.isEmpty)
                       // EMPTY STATE
@@ -314,15 +350,24 @@ class _AccountPageState extends State<AccountPage> {
                         decoration: BoxDecoration(
                           color: Colors.grey.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
+                          border: Border.all(
+                            color: Colors.grey.withValues(alpha: 0.3),
+                          ),
                         ),
                         child: const Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.account_balance_wallet_outlined, size: 40, color: Colors.grey),
+                              Icon(
+                                Icons.account_balance_wallet_outlined,
+                                size: 40,
+                                color: Colors.grey,
+                              ),
                               SizedBox(height: 10),
-                              Text("No accounts found", style: TextStyle(color: Colors.grey)),
+                              Text(
+                                "No accounts found",
+                                style: TextStyle(color: Colors.grey),
+                              ),
                             ],
                           ),
                         ),
@@ -343,7 +388,9 @@ class _AccountPageState extends State<AccountPage> {
                           itemBuilder: (context, index) {
                             final acc = _myAccounts[index];
                             return Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8.0,
+                              ),
                               child: AccountCard(
                                 accountName: acc.name,
                                 accountType: acc.type,
@@ -398,7 +445,9 @@ class _AccountPageState extends State<AccountPage> {
                     if (_myAccounts.isEmpty)
                       const Padding(
                         padding: EdgeInsets.all(22),
-                        child: Center(child: Text("No transactions available.")),
+                        child: Center(
+                          child: Text("No transactions available."),
+                        ),
                       )
                     else if (_isLoadingTransactions)
                       const Padding(
@@ -408,7 +457,9 @@ class _AccountPageState extends State<AccountPage> {
                     else if (_currentTransactions.isEmpty)
                       const Padding(
                         padding: EdgeInsets.all(22),
-                        child: Center(child: Text("No transactions for this account.")),
+                        child: Center(
+                          child: Text("No transactions for this account."),
+                        ),
                       )
                     else
                       ListView.builder(
@@ -453,7 +504,20 @@ class _AccountPageState extends State<AccountPage> {
   }
 
   String _monthName(int month) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return months[month - 1];
   }
 

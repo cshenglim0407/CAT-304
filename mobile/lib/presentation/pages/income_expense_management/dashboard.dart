@@ -1,14 +1,22 @@
+import 'dart:async';
+
+import 'package:cashlytics/core/services/supabase/auth/auth_state_listener.dart';
+import 'package:cashlytics/presentation/pages/user_management/login.dart';
 import 'package:flutter/material.dart';
-import 'package:cashlytics/presentation/themes/colors.dart';
-import 'package:cashlytics/presentation/themes/typography.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
+
 import 'package:cashlytics/domain/repositories/dashboard_repository.dart';
 import 'package:cashlytics/data/repositories/dashboard_repository_impl.dart';
 import 'package:cashlytics/domain/usecases/dashboard/get_monthly_weekly_balances.dart';
 import 'package:cashlytics/domain/usecases/dashboard/get_yearly_quarterly_balances.dart';
 import 'package:cashlytics/domain/entities/weekly_balance.dart';
 import 'package:cashlytics/domain/entities/quarterly_balance.dart';
-import '../../widgets/index.dart';
+
+import 'package:cashlytics/presentation/themes/colors.dart';
+import 'package:cashlytics/presentation/themes/typography.dart';
+import 'package:cashlytics/presentation/widgets/index.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -375,6 +383,9 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
   late final GetYearlyQuarterlyBalances _getYearlyQuarterlyBalances;
   late final AuthService _authService;
 
+  bool _redirecting = false;
+  late final StreamSubscription<AuthState> _authStateSubscription;
+
   @override
   void initState() {
     super.initState();
@@ -383,6 +394,26 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
     _getYearlyQuarterlyBalances = GetYearlyQuarterlyBalances(_dashboardRepository);
     _authService = AuthService();
     _loadData();
+
+    _authStateSubscription = listenForSignedOutRedirect(
+      shouldRedirect: () => !_redirecting,
+      onRedirect: () {
+        if (!mounted) return;
+        setState(() => _redirecting = true);
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+        );
+      },
+      onError: (error) {
+        debugPrint('Auth State Listener Error: $error');
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _authStateSubscription.cancel();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
