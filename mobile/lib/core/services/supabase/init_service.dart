@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-import 'package:cashlytics/core/utils/cache_service.dart';
+import 'package:cashlytics/core/services/cache/cache_service.dart';
 
 class SupabaseInitService {
   static late String _uri;

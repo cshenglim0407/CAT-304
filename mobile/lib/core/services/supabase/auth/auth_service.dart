@@ -1,4 +1,4 @@
-import 'package:cashlytics/core/utils/cache_service.dart';
+import 'package:cashlytics/core/services/cache/cache_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 

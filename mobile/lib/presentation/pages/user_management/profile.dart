@@ -6,7 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_state_listener.dart';
 import 'package:cashlytics/core/services/supabase/database/database_service.dart';
-import 'package:cashlytics/core/utils/cache_service.dart';
+import 'package:cashlytics/core/services/cache/cache_service.dart';
 import 'package:cashlytics/core/utils/context_extensions.dart';
 
 import 'package:cashlytics/presentation/themes/colors.dart';

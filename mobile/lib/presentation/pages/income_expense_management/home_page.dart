@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
 import 'package:cashlytics/core/services/supabase/client.dart';
-import 'package:cashlytics/core/utils/cache_service.dart';
+import 'package:cashlytics/core/services/cache/cache_service.dart';
 import 'package:cashlytics/core/utils/context_extensions.dart';
 
 class HomePage extends StatefulWidget {

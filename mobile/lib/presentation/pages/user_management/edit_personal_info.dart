@@ -167,7 +167,10 @@ class _EditPersonalInformationPageState
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted) {
           setState(() => _isLoading = false);
-          context.showSnackBar("Profile settings updated successfully!", isSuccess: true);
+          context.showSnackBar(
+            "Profile settings updated successfully!",
+            isSuccess: true,
+          );
           Navigator.pop(context);
         }
       });
@@ -211,6 +214,7 @@ class _EditPersonalInformationPageState
                 CustomTextFormField(
                   controller: _usernameController,
                   hint: "Enter username",
+                  readOnly: true,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return "Username is required";
@@ -229,6 +233,7 @@ class _EditPersonalInformationPageState
                   controller: _emailController,
                   hint: "Email Address",
                   keyboardType: TextInputType.emailAddress,
+                  readOnly: true,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return "Email is required";
