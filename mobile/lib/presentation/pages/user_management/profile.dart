@@ -69,7 +69,10 @@ class _ProfilePageState extends State<ProfilePage> {
           'email': _domainUser!.email,
           'display_name': _domainUser!.displayName,
           'gender': _domainUser!.gender,
-          'date_of_birth': _domainUser!.dateOfBirth?.toIso8601String().split('T').first,
+          'date_of_birth': _domainUser!.dateOfBirth
+              ?.toIso8601String()
+              .split('T')
+              .first,
           'timezone': _domainUser!.timezone,
           'currency_pref': _domainUser!.currencyPreference,
           'theme_pref': _domainUser!.themePreference,
@@ -285,15 +288,23 @@ class _ProfilePageState extends State<ProfilePage> {
               AppMenuItem(
                 icon: Icons.edit_note_rounded,
                 label: "Edit Personal Information",
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => EditPersonalInformationPage(
-                        profile: currentUserProfile,
-                      ),
-                    ),
-                  );
+                onTap: () async {
+                  final updatedProfile =
+                      await Navigator.push<Map<String, dynamic>>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => EditPersonalInformationPage(
+                            profile: currentUserProfile,
+                          ),
+                        ),
+                      );
+                  // If profile was updated, refresh the UI
+                  if (updatedProfile != null) {
+                    setState(() {
+                      currentUserProfile = updatedProfile;
+                    });
+                    _updateUIWithProfile();
+                  }
                 },
               ),
               AppMenuItem(

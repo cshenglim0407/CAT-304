@@ -1,3 +1,5 @@
+import 'package:cashlytics/core/services/cache/cache_service.dart';
+import 'package:cashlytics/data/models/app_user_model.dart';
 import 'package:flutter/material.dart';
 
 import 'package:cashlytics/core/config/profile_constants.dart';
@@ -34,6 +36,8 @@ class _EditPersonalInformationPageState
   late final TextEditingController _usernameController;
   late final TextEditingController _emailController;
   late final TextEditingController _birthdateController;
+
+  static const String _userProfileCacheKey = 'user_profile_cache';
 
   // Dropdown State Variables
   String? _selectedGender;
@@ -153,12 +157,17 @@ class _EditPersonalInformationPageState
 
         await _upsertAppUser(updatedUser);
 
+        // Cache the updated user profile
+        final userMap = AppUserModel.fromEntity(updatedUser).toMap();
+        await CacheService.save(_userProfileCacheKey, userMap);
+
         if (mounted) {
           context.showSnackBar(
             "Profile settings updated successfully!",
             isSuccess: true,
           );
-          Navigator.pop(context);
+          // Return the updated profile map to parent page
+          Navigator.pop(context, userMap);
         }
       } catch (e) {
         debugPrint('Error saving profile: $e');
