@@ -3,6 +3,13 @@ import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
 import 'package:cashlytics/presentation/widgets/index.dart';
 import 'package:cashlytics/presentation/widgets/account_card.dart';
+import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
+import 'package:cashlytics/domain/repositories/account_repository.dart';
+import 'package:cashlytics/data/repositories/account_repository_impl.dart';
+import 'package:cashlytics/domain/usecases/accounts/get_accounts.dart';
+import 'package:cashlytics/domain/usecases/accounts/get_account_transactions.dart';
+import 'package:cashlytics/domain/entities/account.dart';
+import 'package:cashlytics/domain/entities/account_transaction_view.dart';
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -16,10 +23,72 @@ class _AccountPageState extends State<AccountPage> {
   int _currentCardIndex = 0;
   late PageController _pageController;
 
+  bool _isLoadingAccounts = true;
+  bool _isLoadingTransactions = true;
+  List<Account> _myAccounts = [];
+  List<AccountTransactionView> _currentTransactions = [];
+
+  late final AccountRepository _accountRepository;
+  late final GetAccounts _getAccounts;
+  late final GetAccountTransactions _getAccountTransactions;
+  late final AuthService _authService;
+
   @override
   void initState() {
     super.initState();
     _pageController = PageController(viewportFraction: 0.85);
+    _accountRepository = AccountRepositoryImpl();
+    _getAccounts = GetAccounts(_accountRepository);
+    _getAccountTransactions = GetAccountTransactions(_accountRepository);
+    _authService = AuthService();
+    _loadAccounts();
+  }
+
+  Future<void> _loadAccounts() async {
+    setState(() => _isLoadingAccounts = true);
+
+    try {
+      final user = _authService.currentUser;
+      if (user == null) {
+        throw Exception('User not authenticated');
+      }
+
+      final accounts = await _getAccounts(user.id);
+      setState(() {
+        _myAccounts = accounts;
+        _isLoadingAccounts = false;
+        _currentCardIndex = 0;
+      });
+
+      // Load transactions for the first account if available
+      if (accounts.isNotEmpty) {
+        await _loadTransactions(accounts[0].id!);
+      }
+    } catch (e) {
+      debugPrint('Error loading accounts: $e');
+      setState(() {
+        _isLoadingAccounts = false;
+        _myAccounts = [];
+      });
+    }
+  }
+
+  Future<void> _loadTransactions(String accountId) async {
+    setState(() => _isLoadingTransactions = true);
+
+    try {
+      final transactions = await _getAccountTransactions(accountId);
+      setState(() {
+        _currentTransactions = transactions;
+        _isLoadingTransactions = false;
+      });
+    } catch (e) {
+      debugPrint('Error loading transactions: $e');
+      setState(() {
+        _isLoadingTransactions = false;
+        _currentTransactions = [];
+      });
+    }
   }
 
   @override
@@ -27,100 +96,6 @@ class _AccountPageState extends State<AccountPage> {
     _pageController.dispose();
     super.dispose();
   }
-
-  // --- MOCK DATA ---
-  // Using a Growable list so we can remove items
-  final List<Map<String, dynamic>> _myAccounts = [
-    {
-      'id': '1',
-      'name': 'Maybank Savings',
-      'type': 'BANK',
-      'initial': 1000.00,
-      'current': 3450.50,
-      'desc': 'Primary salary account',
-    },
-    {
-      'id': '2',
-      'name': 'Touch n Go',
-      'type': 'E-WALLET',
-      'initial': 50.00,
-      'current': 12.40,
-      'desc': 'For tolls and parking',
-    },
-    {
-      'id': '3',
-      'name': 'Emergency Cash',
-      'type': 'CASH',
-      'initial': 500.00,
-      'current': 450.00,
-      'desc': 'Stashed in safe',
-    },
-  ];
-
-  final List<List<Map<String, dynamic>>> _allTransactions = [
-    [
-      {
-        'title': 'Salary',
-        'date': '01 Mar',
-        'amount': '+ \$3,500',
-        'isExpense': false,
-        'icon': Icons.work,
-      },
-      {
-        'title': 'Transfer to TNG',
-        'date': '02 Mar',
-        'amount': '- \$50',
-        'isExpense': true,
-        'icon': Icons.account_balance_wallet,
-      },
-      {
-        'title': 'Netflix Sub',
-        'date': '28 Feb',
-        'amount': '- \$12',
-        'isExpense': true,
-        'icon': Icons.movie,
-      },
-    ],
-    [
-      {
-        'title': 'Toll Payment',
-        'date': '05 Mar',
-        'amount': '- \$4.50',
-        'isExpense': true,
-        'icon': Icons.directions_car,
-      },
-      {
-        'title': 'Reload from Bank',
-        'date': '02 Mar',
-        'amount': '+ \$50',
-        'isExpense': false,
-        'icon': Icons.add_card,
-      },
-      {
-        'title': '7-Eleven',
-        'date': '01 Mar',
-        'amount': '- \$8.20',
-        'isExpense': true,
-        'icon': Icons.local_convenience_store,
-      },
-    ],
-    [
-      {
-        'title': 'Lunch',
-        'date': 'Today',
-        'amount': '- \$15',
-        'isExpense': true,
-        'icon': Icons.fastfood,
-      },
-      {
-        'title': 'Found cash',
-        'date': 'Yesterday',
-        'amount': '+ \$10',
-        'isExpense': false,
-        'icon': Icons.attach_money,
-      },
-    ],
-  ];
 
   void _onNavBarTap(int index) {
     setState(() {
@@ -134,12 +109,12 @@ class _AccountPageState extends State<AccountPage> {
   }
 
   // --- LOGIC: Confirm Dialog ---
-  void _confirmDelete(BuildContext context, Map<String, dynamic> account) {
+  void _confirmDelete(BuildContext context, Account account) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text("Delete Account?"),
-        content: Text("Are you sure you want to remove '${account['name']}'? This cannot be undone."),
+        content: Text("Are you sure you want to remove '${account.name}'? This cannot be undone."),
         actions: [
           TextButton(
             child: const Text("Cancel"), 
@@ -158,7 +133,7 @@ class _AccountPageState extends State<AccountPage> {
   }
 
   // --- UI: Edit Menu ---
-  void _showEditOptions(BuildContext context, Map<String, dynamic> account) {
+  void _showEditOptions(BuildContext context, Account account) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -182,7 +157,7 @@ class _AccountPageState extends State<AccountPage> {
               const SizedBox(height: 20),
               
               Text(
-                "Manage ${account['name']}",
+                "Manage ${account.name}",
                 style: AppTypography.headline3.copyWith(fontSize: 18),
               ),
               const SizedBox(height: 20),
@@ -231,36 +206,43 @@ class _AccountPageState extends State<AccountPage> {
   }
 
   // --- LOGIC: Delete Account ---
-  void _deleteAccount(Map<String, dynamic> account) {
-    // 1. Find the index of the account to delete
-    int indexToRemove = _myAccounts.indexOf(account);
-    if (indexToRemove == -1) return;
+  Future<void> _deleteAccount(Account account) async {
+    try {
+      await AccountRepositoryImpl().deleteAccount(account.id!);
+      
+      setState(() {
+        _myAccounts.removeWhere((acc) => acc.id == account.id);
 
-    setState(() {
-      // 2. Remove the account and its transactions
-      _myAccounts.removeAt(indexToRemove);
-      _allTransactions.removeAt(indexToRemove);
+        // Adjust the current card index safely
+        if (_currentCardIndex >= _myAccounts.length) {
+          _currentCardIndex = _myAccounts.isNotEmpty ? _myAccounts.length - 1 : 0;
+        }
 
-      // 3. Adjust the current card index safely
-      // If we deleted the last item, move index back by one.
-      // If the list is empty, index becomes 0.
-      if (_currentCardIndex >= _myAccounts.length) {
-        _currentCardIndex = _myAccounts.isNotEmpty ? _myAccounts.length - 1 : 0;
+        // Load transactions for the new current account
+        if (_myAccounts.isNotEmpty) {
+          _loadTransactions(_myAccounts[_currentCardIndex].id!);
+        } else {
+          _currentTransactions = [];
+        }
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("${account.name} deleted")),
+        );
       }
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("${account['name']} deleted")),
-    );
+    } catch (e) {
+      debugPrint('Error deleting account: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to delete account: $e")),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Safety check: if empty, show no transactions
-    final currentTransactions = _myAccounts.isNotEmpty 
-        ? _allTransactions[_currentCardIndex] 
-        : <Map<String, dynamic>>[];
-
     return Scaffold(
       backgroundColor: AppColors.getSurface(context),
       bottomNavigationBar: CustomBottomNavBar(
@@ -291,7 +273,7 @@ class _AccountPageState extends State<AccountPage> {
                           ),
                           GestureDetector(
                             onTap: () {
-                              // Add account logic
+                              // Add account logic - to be implemented
                             },
                             child: Container(
                               padding: const EdgeInsets.all(8),
@@ -311,8 +293,20 @@ class _AccountPageState extends State<AccountPage> {
 
                     const SizedBox(height: 20),
 
-                    // --- SWIPEABLE CARDS ---
-                    if (_myAccounts.isEmpty)
+                    // --- ACCOUNTS LOADING / EMPTY / CARDS ---
+                    if (_isLoadingAccounts)
+                      Container(
+                        height: 220,
+                        margin: const EdgeInsets.symmetric(horizontal: 22),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        child: const Center(
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
+                    else if (_myAccounts.isEmpty)
                       // EMPTY STATE
                       Container(
                         height: 220,
@@ -320,7 +314,7 @@ class _AccountPageState extends State<AccountPage> {
                         decoration: BoxDecoration(
                           color: Colors.grey.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: Colors.grey.withValues(alpha: 0.3), style: BorderStyle.solid),
+                          border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
                         ),
                         child: const Center(
                           child: Column(
@@ -336,7 +330,7 @@ class _AccountPageState extends State<AccountPage> {
                     else
                       // CARDS
                       SizedBox(
-                        height: 200, 
+                        height: 200,
                         child: PageView.builder(
                           controller: _pageController,
                           itemCount: _myAccounts.length,
@@ -344,19 +338,20 @@ class _AccountPageState extends State<AccountPage> {
                             setState(() {
                               _currentCardIndex = index;
                             });
+                            _loadTransactions(_myAccounts[index].id!);
                           },
                           itemBuilder: (context, index) {
                             final acc = _myAccounts[index];
                             return Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 8.0),
                               child: AccountCard(
-                                accountName: acc['name'],
-                                accountType: acc['type'],
-                                initialBalance: acc['initial'],
-                                currentBalance: acc['current'],
-                                description: acc['desc'],
-                                onTap: () {}, 
-                                onEditTap: () => _showEditOptions(context, acc), 
+                                accountName: acc.name,
+                                accountType: acc.type,
+                                initialBalance: acc.initialBalance,
+                                currentBalance: acc.currentBalance,
+                                description: acc.description ?? '',
+                                onTap: () {},
+                                onEditTap: () => _showEditOptions(context, acc),
                               ),
                             );
                           },
@@ -399,26 +394,36 @@ class _AccountPageState extends State<AccountPage> {
 
                     const SizedBox(height: 10),
 
-                    // --- Transaction List ---
-                    if (_myAccounts.isEmpty || currentTransactions.isEmpty)
+                    // --- Transaction List / Loading / Empty ---
+                    if (_myAccounts.isEmpty)
                       const Padding(
                         padding: EdgeInsets.all(22),
                         child: Center(child: Text("No transactions available.")),
+                      )
+                    else if (_isLoadingTransactions)
+                      const Padding(
+                        padding: EdgeInsets.all(22),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else if (_currentTransactions.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.all(22),
+                        child: Center(child: Text("No transactions for this account.")),
                       )
                     else
                       ListView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         padding: const EdgeInsets.symmetric(horizontal: 22),
-                        itemCount: currentTransactions.length,
+                        itemCount: _currentTransactions.length,
                         itemBuilder: (context, index) {
-                          final tx = currentTransactions[index];
+                          final tx = _currentTransactions[index];
                           return _TransactionTile(
-                            title: tx['title'],
-                            subtitle: tx['date'],
-                            amount: tx['amount'],
-                            icon: tx['icon'],
-                            isExpense: tx['isExpense'],
+                            title: tx.title,
+                            subtitle: _formatDate(tx.date),
+                            amount: _formatCurrency(tx.amount, tx.isExpense),
+                            isExpense: tx.isExpense,
+                            icon: tx.icon,
                           );
                         },
                       ),
@@ -431,21 +436,46 @@ class _AccountPageState extends State<AccountPage> {
       ),
     );
   }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final dateOnly = DateTime(date.year, date.month, date.day);
+
+    if (dateOnly == today) {
+      return 'Today';
+    } else if (dateOnly == yesterday) {
+      return 'Yesterday';
+    } else {
+      return '${date.day} ${_monthName(date.month)}';
+    }
+  }
+
+  String _monthName(int month) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return months[month - 1];
+  }
+
+  String _formatCurrency(double amount, bool isExpense) {
+    final sign = isExpense ? '- ' : '+ ';
+    return '$sign\$${amount.toStringAsFixed(2)}';
+  }
 }
 
 class _TransactionTile extends StatelessWidget {
   final String title;
   final String subtitle;
   final String amount;
-  final IconData icon;
   final bool isExpense;
+  final IconData? icon;
 
   const _TransactionTile({
     required this.title,
     required this.subtitle,
     required this.amount,
-    required this.icon,
     required this.isExpense,
+    this.icon,
   });
 
   @override
@@ -464,7 +494,7 @@ class _TransactionTile extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             child: Icon(
-              icon,
+              icon ?? (isExpense ? Icons.remove : Icons.add),
               color: isExpense ? Colors.black : AppColors.success,
               size: 24,
             ),

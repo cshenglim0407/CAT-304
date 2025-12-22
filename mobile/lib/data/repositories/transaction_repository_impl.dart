@@ -11,6 +11,18 @@ class TransactionRepositoryImpl implements TransactionRepository {
   static const String _table = 'transaction';
 
   @override
+  Future<List<TransactionRecord>> getTransactionsByAccountId(String accountId) async {
+    final data = await _databaseService.fetchAll(
+      _table,
+      filters: {'account_id': accountId},
+      orderBy: 'created_at',
+      ascending: false,
+      limit: 100,
+    );
+    return data.map((map) => TransactionRecordModel.fromMap(map)).toList();
+  }
+
+  @override
   Future<TransactionRecord> upsertTransaction(TransactionRecord transaction) async {
     final model = TransactionRecordModel.fromEntity(transaction);
     final bool isInsert = transaction.id == null;
