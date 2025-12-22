@@ -38,9 +38,9 @@ class _ProfilePageState extends State<ProfilePage> {
 
   bool _isLoading = false;
   bool _redirecting = false;
-  
+
   // State to toggle visibility of detailed info
-  bool _showDetailedInfo = false; 
+  bool _showDetailedInfo = false;
 
   late final StreamSubscription<AuthState> _authStateSubscription;
 
@@ -76,7 +76,7 @@ class _ProfilePageState extends State<ProfilePage> {
   late String _timezone = "";
   late String _currency = "";
   late String _themePref = "";
-  
+
   // --- Detailed Info (Placeholders for Frontend) ---
   String _educationLevel = "Bachelor's Degree";
   String _employmentStatus = "Employed";
@@ -265,7 +265,9 @@ class _ProfilePageState extends State<ProfilePage> {
                 decoration: BoxDecoration(
                   color: AppColors.getSurface(context),
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: AppColors.greyLight.withValues(alpha: 0.5)),
+                  border: Border.all(
+                    color: AppColors.greyLight.withValues(alpha: 0.5),
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: Theme.of(context).brightness == Brightness.light
@@ -311,7 +313,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
                     const SizedBox(height: 20),
                     const Divider(),
-                    
+
                     // --- Toggle Button for Detailed Info ---
                     GestureDetector(
                       onTap: () {
@@ -325,17 +327,17 @@ class _ProfilePageState extends State<ProfilePage> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              _showDetailedInfo 
-                                  ? "Hide Detailed Information" 
-                                  : "Show Detailed Information",
+                              _showDetailedInfo
+                                  ? "Hide AI Analysis Profile"
+                                  : "Show AI Analysis Profile",
                               style: AppTypography.labelLarge.copyWith(
                                 color: AppColors.primary,
                               ),
                             ),
                             const SizedBox(width: 8),
                             Icon(
-                              _showDetailedInfo 
-                                  ? Icons.keyboard_arrow_up_rounded 
+                              _showDetailedInfo
+                                  ? Icons.keyboard_arrow_up_rounded
                                   : Icons.keyboard_arrow_down_rounded,
                               color: AppColors.primary,
                               size: 20,
@@ -354,29 +356,29 @@ class _ProfilePageState extends State<ProfilePage> {
                           const SizedBox(height: 10),
                           InfoRow(
                             label: "Education Level",
-                            value: _educationLevel, 
+                            value: _educationLevel,
                             icon: Icons.school_rounded,
                           ),
                           InfoRow(
                             label: "Employment Status",
-                            value: _employmentStatus, 
+                            value: _employmentStatus,
                             icon: Icons.work_outline_rounded,
                           ),
                           InfoRow(
                             label: "Marital Status",
-                            value: _maritalStatus == 'Preferred not to say' 
-                                ? '-' 
-                                : _maritalStatus, 
+                            value: _maritalStatus == 'Preferred not to say'
+                                ? '-'
+                                : _maritalStatus,
                             icon: Icons.favorite_border_rounded,
                           ),
                           InfoRow(
                             label: "Dependent Number",
-                            value: _dependentNumber, 
+                            value: _dependentNumber,
                             icon: Icons.people_outline_rounded,
                           ),
                           InfoRow(
                             label: "Estimated Loan",
-                            value: _estimatedLoan, 
+                            value: _estimatedLoan,
                             icon: Icons.account_balance_wallet_outlined,
                           ),
                           const SizedBox(height: 10),
@@ -399,14 +401,15 @@ class _ProfilePageState extends State<ProfilePage> {
                 icon: Icons.edit_note_rounded,
                 label: "Edit Personal Information",
                 onTap: () async {
-                  final updatedProfile = await Navigator.push<Map<String, dynamic>>(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => EditPersonalInformationPage(
-                        profile: currentUserProfile,
-                      ),
-                    ),
-                  );
+                  final updatedProfile =
+                      await Navigator.push<Map<String, dynamic>>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => EditPersonalInformationPage(
+                            profile: currentUserProfile,
+                          ),
+                        ),
+                      );
                   if (updatedProfile != null && mounted) {
                     setState(() {
                       currentUserProfile = updatedProfile;
@@ -415,37 +418,45 @@ class _ProfilePageState extends State<ProfilePage> {
                   }
                 },
               ),
-              
-              // --- NEW: Edit Detailed Information Menu Item ---
+
+              // --- NEW: Edit AI Analysis Profile Menu Item ---
               AppMenuItem(
                 icon: Icons.folder_shared_rounded,
-                label: "Edit Detailed Information",
+                label: "Edit AI Analysis Profile",
                 onTap: () async {
                   // 1. Navigate to Edit Page and wait for result
-                  final updatedDetails = await Navigator.push<Map<String, dynamic>>(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => EditDetailInformationPage(
-                        currentDetails: {
-                          'education_level': _educationLevel,
-                          'employment_status': _employmentStatus,
-                          'marital_status': _maritalStatus,
-                          'dependent_number': _dependentNumber,
-                          'estimated_loan': _estimatedLoan,
-                        },
-                      ),
-                    ),
-                  );
+                  final updatedDetails =
+                      await Navigator.push<Map<String, dynamic>>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => EditDetailInformationPage(
+                            currentDetails: {
+                              'education_level': _educationLevel,
+                              'employment_status': _employmentStatus,
+                              'marital_status': _maritalStatus,
+                              'dependent_number': _dependentNumber,
+                              'estimated_loan': _estimatedLoan,
+                            },
+                          ),
+                        ),
+                      );
 
                   // 2. Update UI if data returned
                   if (updatedDetails != null && mounted) {
                     setState(() {
                       // Update local state with new values
-                      _educationLevel = updatedDetails['education_level'] ?? _educationLevel;
-                      _employmentStatus = updatedDetails['employment_status'] ?? _employmentStatus;
-                      _maritalStatus = updatedDetails['marital_status'] ?? _maritalStatus;
-                      _dependentNumber = updatedDetails['dependent_number'] ?? _dependentNumber;
-                      _estimatedLoan = updatedDetails['estimated_loan'] ?? _estimatedLoan;
+                      _educationLevel =
+                          updatedDetails['education_level'] ?? _educationLevel;
+                      _employmentStatus =
+                          updatedDetails['employment_status'] ??
+                          _employmentStatus;
+                      _maritalStatus =
+                          updatedDetails['marital_status'] ?? _maritalStatus;
+                      _dependentNumber =
+                          updatedDetails['dependent_number'] ??
+                          _dependentNumber;
+                      _estimatedLoan =
+                          updatedDetails['estimated_loan'] ?? _estimatedLoan;
                     });
                   }
                 },
