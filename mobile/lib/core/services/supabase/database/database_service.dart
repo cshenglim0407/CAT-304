@@ -18,25 +18,25 @@ class DatabaseService {
     int? limit,
     int? offset,
   }) async {
-    final query = _table(table).select(columns);
+    dynamic query = _table(table).select(columns);
     if (filters != null) {
       for (final entry in filters.entries) {
         final key = entry.key;
         final value = entry.value;
         if (value is List) {
-          query.inFilter(key, value);
+          query = query.inFilter(key, value);
         } else {
-          query.eq(key, value);
+          query = query.eq(key, value);
         }
       }
     }
     if (orderBy != null) {
-      query.order(orderBy, ascending: ascending);
+      query = query.order(orderBy, ascending: ascending);
     }
     if (offset != null && limit != null) {
-      query.range(offset, offset + limit - 1);
+      query = query.range(offset, offset + limit - 1);
     } else if (limit != null) {
-      query.limit(limit);
+      query = query.limit(limit);
     }
     final data = await query;
     return List<Map<String, dynamic>>.from(data);

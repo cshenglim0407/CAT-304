@@ -380,6 +380,8 @@ class _AccountPageState extends State<AccountPage> {
                           controller: _pageController,
                           itemCount: _myAccounts.length,
                           onPageChanged: (index) {
+                            final selectedAccount = _myAccounts[index];
+                            debugPrint('Selected account: ${selectedAccount.name} (id: ${selectedAccount.id})');
                             setState(() {
                               _currentCardIndex = index;
                             });
