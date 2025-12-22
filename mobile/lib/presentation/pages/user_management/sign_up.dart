@@ -228,7 +228,7 @@ class _SignUpPageState extends State<SignUpPage> {
                     label: "Facebook",
                     icon: const Icon(
                       Icons.facebook,
-                      color: Color(0xFF1877F2),
+                      color: AppColors.facebook,
                       size: 22,
                     ),
                     onPressed: _signUpWithFacebook,

@@ -9,6 +9,7 @@ import 'package:cashlytics/core/services/supabase/database/database_service.dart
 import 'package:cashlytics/core/utils/cache_service.dart';
 import 'package:cashlytics/core/utils/context_extensions.dart';
 
+import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
 import 'package:cashlytics/presentation/widgets/index.dart';
 
@@ -174,7 +175,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    const Color kBgColor = Color(0xFFF8F8F8);
+    const Color kBgColor = AppColors.white;
 
     return Scaffold(
       backgroundColor: kBgColor,
