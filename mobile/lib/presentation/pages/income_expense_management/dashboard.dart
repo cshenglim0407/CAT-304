@@ -197,7 +197,7 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.getSurface(context),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -303,9 +303,9 @@ class _SuggestionTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: AppColors.getSurface(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: AppColors.greyBorder),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -327,13 +327,14 @@ class _SuggestionTile extends StatelessWidget {
                   title,
                   style: AppTypography.labelLarge.copyWith(
                     fontWeight: FontWeight.bold,
+                    color: AppColors.getTextPrimary(context),
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   body,
                   style: AppTypography.bodySmall.copyWith(
-                    color: AppColors.greyText,
+                    color: AppColors.getTextSecondary(context),
                     height: 1.4,
                   ),
                 ),
@@ -398,11 +399,13 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.getSurface(context),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.08),
+            color: Theme.of(context).brightness == Brightness.light
+                ? Colors.grey.withOpacity(0.08)
+                : Colors.black.withOpacity(0.3),
             blurRadius: 20,
             offset: const Offset(0, 5),
           ),
@@ -555,11 +558,13 @@ class _CashFlowCardState extends State<_CashFlowCard> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.getSurface(context),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.08),
+            color: Theme.of(context).brightness == Brightness.light
+                ? Colors.grey.withOpacity(0.08)
+                : Colors.black.withOpacity(0.3),
             blurRadius: 20,
             offset: const Offset(0, 5),
           ),
@@ -774,11 +779,13 @@ class _ExpenseDistributionCardState extends State<_ExpenseDistributionCard> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.getSurface(context),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.08),
+            color: Theme.of(context).brightness == Brightness.light
+                ? Colors.grey.withOpacity(0.08)
+                : Colors.black.withOpacity(0.3),
             blurRadius: 20,
             offset: const Offset(0, 5),
           ),
