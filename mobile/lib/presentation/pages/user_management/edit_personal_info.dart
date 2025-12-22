@@ -212,10 +212,12 @@ class _EditPersonalInformationPageState
                   controller: _usernameController,
                   hint: "Enter username",
                   validator: (value) {
-                    if (value == null || value.isEmpty)
+                    if (value == null || value.isEmpty) {
                       return "Username is required";
-                    if (value.length < 3)
+                    }
+                    if (value.length < 3) {
                       return "Username must be at least 3 chars";
+                    }
                     return null;
                   },
                 ),
@@ -228,8 +230,9 @@ class _EditPersonalInformationPageState
                   hint: "Email Address",
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) {
-                    if (value == null || value.isEmpty)
+                    if (value == null || value.isEmpty) {
                       return "Email is required";
+                    }
                     if (!value.contains('@')) return "Invalid email";
                     return null;
                   },
