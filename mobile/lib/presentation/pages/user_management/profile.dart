@@ -11,7 +11,7 @@ import 'package:cashlytics/core/services/cache/cache_service.dart';
 import 'package:cashlytics/core/services/supabase/storage/storage_service.dart';
 import 'package:cashlytics/core/utils/context_extensions.dart';
 import 'package:cashlytics/core/utils/date_formatter.dart';
-import 'package:cashlytics/core/utils/image_cache_service.dart';
+import 'package:cashlytics/core/services/cache/image_cache_service.dart';
 
 import 'package:cashlytics/data/repositories/app_user_repository_impl.dart';
 import 'package:cashlytics/domain/usecases/get_current_app_user.dart';
@@ -133,7 +133,7 @@ class _ProfilePageState extends State<ProfilePage> {
             // Compress and cache the image in background
             ImageCacheService.compressAndCache(filePath).catchError((e) {
               debugPrint('Error caching compressed image: $e');
-              // Continue even if caching fails
+              return e;
             });
 
             // Update user profile in database
