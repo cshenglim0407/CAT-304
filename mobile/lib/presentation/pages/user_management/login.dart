@@ -2,9 +2,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:cashlytics/core/services/cache/cache_service.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_state_listener.dart';
 import 'package:cashlytics/core/utils/context_extensions.dart';
+import 'package:cashlytics/data/repositories/app_user_repository_impl.dart';
+import 'package:cashlytics/domain/usecases/get_current_app_user.dart';
+import 'package:cashlytics/presentation/providers/theme_provider.dart';
 
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
@@ -13,6 +17,7 @@ import 'package:cashlytics/presentation/widgets/index.dart';
 import 'package:cashlytics/presentation/pages/user_management/forgot_password.dart';
 import 'package:cashlytics/presentation/pages/income_expense_management/home_page.dart';
 import 'package:cashlytics/presentation/pages/user_management/sign_up.dart'; 
+import 'package:provider/provider.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -27,6 +32,8 @@ class _LoginPageState extends State<LoginPage> {
   late final _password = TextEditingController();
 
   late final _authService = AuthService();
+  late final _appUserRepository = AppUserRepositoryImpl();
+  late final _getCurrentAppUser = GetCurrentAppUser(_appUserRepository);
   final _formKey = GlobalKey<FormState>();
 
   bool _rememberMe = false;
@@ -34,6 +41,8 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
   bool _redirecting = false;
   late final StreamSubscription<AuthState> _authStateSubscription;
+
+  static const String _userProfileCacheKey = 'user_profile_cache';
 
   Future<void> _signInWithEmail() async {
     await _authService.signInWithEmail(
@@ -56,6 +65,41 @@ class _LoginPageState extends State<LoginPage> {
         }
       },
     );
+  }
+
+  Future<String> _prefetchUserProfile() async {
+    String? themePref;
+    try {
+      final user = await _getCurrentAppUser();
+      if (user != null) {
+        final profile = {
+          'user_id': user.id,
+          'email': user.email,
+          'display_name': user.displayName,
+          'gender': user.gender,
+          'date_of_birth':
+              user.dateOfBirth?.toIso8601String().split('T').first,
+          'timezone': user.timezone,
+          'currency_pref': user.currencyPreference,
+          'theme_pref': user.themePreference,
+        };
+
+        await CacheService.save(_userProfileCacheKey, profile);
+        themePref = user.themePreference;
+      }
+
+      // If profile fetch failed or returned null, try cached profile
+      themePref ??=
+          CacheService.load<Map<String, dynamic>>(_userProfileCacheKey)?['theme_pref']
+              as String?;
+
+    } catch (error) {
+      debugPrint('Prefetch user profile failed: $error');
+      themePref = CacheService.load<Map<String, dynamic>>(_userProfileCacheKey)?['theme_pref']
+          as String?;
+    }
+
+    return themePref?.isNotEmpty == true ? themePref! : 'system';
   }
 
   Future<void> _signInWithGoogle() async {
@@ -104,9 +148,14 @@ class _LoginPageState extends State<LoginPage> {
   void initState() {
     _authStateSubscription = listenForSignedInRedirect(
       shouldRedirect: () => !_redirecting,
-      onRedirect: () {
+      onRedirect: () async {
         if (!mounted) return;
         setState(() => _redirecting = true);
+        final themePref = await _prefetchUserProfile();
+        if (mounted) {
+          context.read<ThemeProvider>().setThemeFromPreference(themePref);
+        }
+        if (!mounted) return;
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const HomePage()),
         );

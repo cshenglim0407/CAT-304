@@ -245,8 +245,10 @@ class AuthService {
       onLoadingStart();
       await supabase.auth.signOut();
 
-      // Clear remember me preference
+      // Clear cached data before signing out
       await CacheService.save('remember_me', false);
+      await CacheService.remove('user_profile_cache');
+      
     } on AuthException catch (error) {
       onError(error.message);
     } catch (error) {

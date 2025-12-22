@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
@@ -14,6 +15,7 @@ import 'package:cashlytics/domain/entities/app_user.dart';
 
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
+import 'package:cashlytics/presentation/providers/theme_provider.dart';
 import 'package:cashlytics/presentation/widgets/index.dart';
 
 import 'package:cashlytics/presentation/pages/user_management/edit_personal_info.dart';
@@ -40,10 +42,22 @@ class _ProfilePageState extends State<ProfilePage> {
   // Sign out method
   Future<void> _signOut() async {
     await AuthService().signOut(
-      onLoadingStart: () => setState(() => _isLoading = true),
-      onLoadingEnd: () => setState(() => _isLoading = false),
+      onLoadingStart: () {
+        if (mounted) setState(() => _isLoading = true);
+      },
+      onLoadingEnd: () {
+        if (mounted) setState(() => _isLoading = false);
+      },
       onError: (msg) => context.showSnackBar(msg, isError: true),
     );
+
+    // Reset theme to system when user logs out
+    if (mounted) {
+      Provider.of<ThemeProvider>(
+        context,
+        listen: false,
+      ).setThemeFromPreference('system');
+    }
   }
 
   int _selectedIndex = 1;
@@ -111,7 +125,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   /// Update UI with profile data
   void _updateUIWithProfile() {
-    if (currentUserProfile == null) return;
+    if (currentUserProfile == null || !mounted) return;
 
     setState(() {
       _displayName = currentUserProfile!['display_name'] ?? 'N/A';
@@ -150,12 +164,23 @@ class _ProfilePageState extends State<ProfilePage> {
 
     // Fetch fresh data from database in background
     _fetchUserProfile().then((_) {
+      if (!mounted) return;
       _updateUIWithProfile();
+      // Apply theme preference after fetching profile
+      if (currentUserProfile != null) {
+        final themePref =
+            currentUserProfile!['theme_pref'] as String? ?? 'system';
+        Provider.of<ThemeProvider>(
+          context,
+          listen: false,
+        ).setThemeFromPreference(themePref);
+      }
     });
 
     _authStateSubscription = listenForSignedOutRedirect(
       shouldRedirect: () => !_redirecting,
       onRedirect: () {
+        if (!mounted) return;
         setState(() => _redirecting = true);
 
         // Clear cached profile data on logout
@@ -296,7 +321,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                       );
                   // If profile was updated, refresh the UI
-                  if (updatedProfile != null) {
+                  if (updatedProfile != null && mounted) {
                     setState(() {
                       currentUserProfile = updatedProfile;
                     });

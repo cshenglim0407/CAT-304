@@ -30,7 +30,7 @@ class _DashboardPageState extends State<DashboardPage> {
   void _showAISuggestions(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.getSurface(context),
       isScrollControlled: true,
       builder: (context) {
         return Container(

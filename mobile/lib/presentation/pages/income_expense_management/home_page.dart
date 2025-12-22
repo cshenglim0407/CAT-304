@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
 import 'package:cashlytics/core/services/supabase/client.dart';
 import 'package:cashlytics/core/services/cache/cache_service.dart';
 import 'package:cashlytics/core/utils/context_extensions.dart';
+
+import 'package:cashlytics/presentation/providers/theme_provider.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -22,6 +25,12 @@ class _HomePageState extends State<HomePage> {
       onLoadingEnd: () => setState(() => _isLoading = false),
       onError: (msg) => context.showSnackBar(msg, isError: true),
     );
+
+    // Reset theme to system when user logs out
+    if (mounted) {
+      Provider.of<ThemeProvider>(context, listen: false)
+          .setThemeFromPreference('system');
+    }
   }
 
   @override
