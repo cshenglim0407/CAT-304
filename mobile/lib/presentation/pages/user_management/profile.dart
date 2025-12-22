@@ -218,15 +218,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: AppBackButton(onPressed: () => Navigator.pop(context)),
               ),
               const SizedBox(height: 16),
-              Center(
-                child: Text(
-                  "Profile",
-                  style: AppTypography.headline2.copyWith(
-                    color: AppColors.getTextPrimary(context),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
 
               // --- Profile Header ---
               Center(
@@ -246,22 +237,6 @@ class _ProfilePageState extends State<ProfilePage> {
                               ? 'assets/images/default_avatar.png'
                               : _imagePath,
                         ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    // Placeholder Avatar
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.primary, width: 2),
-                      ),
-                      child: const Icon(
-                        Icons.person,
-                        size: 40,
-                        color: AppColors.primary,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -290,12 +265,12 @@ class _ProfilePageState extends State<ProfilePage> {
                 decoration: BoxDecoration(
                   color: AppColors.getSurface(context),
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: AppColors.greyLight.withOpacity(0.5)),
+                  border: Border.all(color: AppColors.greyLight.withValues(alpha: 0.5)),
                   boxShadow: [
                     BoxShadow(
                       color: Theme.of(context).brightness == Brightness.light
-                          ? Colors.grey.withOpacity(0.1)
-                          : Colors.black.withOpacity(0.3),
+                          ? Colors.grey.withValues(alpha: 0.1)
+                          : Colors.black.withValues(alpha: 0.3),
                       blurRadius: 15,
                       offset: const Offset(0, 5),
                     ),
@@ -305,7 +280,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Removed 'Basic' from title as requested
-                    const SectionTitle(title: "Information"),
+                    const SectionTitle(title: "Profile"),
                     const SizedBox(height: 10),
 
                     InfoRow(
