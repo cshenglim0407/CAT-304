@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:cashlytics/core/config/detailed_constants.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_state_listener.dart';
 import 'package:cashlytics/core/services/cache/cache_service.dart';
@@ -14,8 +15,10 @@ import 'package:cashlytics/core/utils/date_formatter.dart';
 import 'package:cashlytics/core/services/cache/image_cache_service.dart';
 
 import 'package:cashlytics/data/repositories/app_user_repository_impl.dart';
-import 'package:cashlytics/domain/usecases/get_current_app_user.dart';
+import 'package:cashlytics/data/repositories/detailed_repository_impl.dart';
+import 'package:cashlytics/domain/usecases/app_users/get_current_app_user.dart';
 import 'package:cashlytics/domain/entities/app_user.dart';
+import 'package:cashlytics/domain/entities/detailed.dart';
 
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
@@ -36,9 +39,11 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   late final _authService = AuthService();
   late final _appUserRepository = AppUserRepositoryImpl();
+  late final _detailedRepository = DetailedRepositoryImpl();
   late final _getCurrentAppUser = GetCurrentAppUser(_appUserRepository);
   late Map<String, dynamic>? currentUserProfile = {};
   AppUser? _domainUser;
+  Detailed? _currentDetailed;
 
   final _storageService = StorageService();
   bool _isUploadingPhoto = false;
@@ -134,16 +139,18 @@ class _ProfilePageState extends State<ProfilePage> {
             currentUserProfile!['image_path'] = relativePath;
 
             // Compress and cache the image in background, then refresh UI
-            ImageCacheService.compressAndCache(filePath).then((_) {
-              if (mounted) {
-                setState(() {
-                  debugPrint('Image compressed and cached, refreshing UI');
+            ImageCacheService.compressAndCache(filePath)
+                .then((_) {
+                  if (mounted) {
+                    setState(() {
+                      debugPrint('Image compressed and cached, refreshing UI');
+                    });
+                  }
+                })
+                .catchError((e) {
+                  debugPrint('Error caching compressed image: $e');
+                  return e;
                 });
-              }
-            }).catchError((e) {
-              debugPrint('Error caching compressed image: $e');
-              return e;
-            });
 
             // Update user profile in database
             _appUserRepository
@@ -208,12 +215,53 @@ class _ProfilePageState extends State<ProfilePage> {
   late String _currency = "";
   late String _themePref = "";
 
-  // --- Detailed Info (Placeholders for Frontend) ---
-  String _educationLevel = "Bachelor's Degree";
-  String _employmentStatus = "Employed";
-  String _maritalStatus = "Single";
+  // --- Detailed Info (loaded from database) ---
+  String _educationLevel = "N/A";
+  String _employmentStatus = "N/A";
+  String _maritalStatus = "N/A";
   String _dependentNumber = "0";
-  String _estimatedLoan = "RM 12,000";
+  String _estimatedLoan = "RM 0";
+
+  Future<void> _fetchDetailedInfo() async {
+    try {
+      final currentUser = _authService.currentUser;
+      if (currentUser == null) return;
+
+      _currentDetailed = await _detailedRepository.getDetailedByUserId(
+        currentUser.id,
+      );
+
+      if (_currentDetailed != null && mounted) {
+        setState(() {
+          // Convert database values to UI display values
+          _educationLevel =
+              DetailedConstants.toDisplayValue(
+                _currentDetailed!.educationLevel,
+                DetailedConstants.educationMap,
+              ) ??
+              "N/A";
+          _employmentStatus =
+              DetailedConstants.toDisplayValue(
+                _currentDetailed!.employmentStatus,
+                DetailedConstants.employmentMap,
+              ) ??
+              "N/A";
+          _maritalStatus =
+              DetailedConstants.toDisplayValue(
+                _currentDetailed!.maritalStatus,
+                DetailedConstants.maritalMap,
+              ) ??
+              "N/A";
+          _dependentNumber =
+              _currentDetailed!.dependentNumber?.toString() ?? "0";
+          _estimatedLoan =
+              "RM ${_currentDetailed!.estimatedLoan?.toStringAsFixed(2) ?? '0'}";
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching detailed info: $e');
+    }
+  }
 
   Future<void> _fetchUserProfile() async {
     try {
@@ -299,6 +347,9 @@ class _ProfilePageState extends State<ProfilePage> {
       currentUserProfile = cachedProfile;
       _updateUIWithProfile();
     }
+
+    // Fetch detailed info from database
+    _fetchDetailedInfo();
 
     _fetchUserProfile().then((_) {
       if (!mounted) return;
@@ -627,39 +678,43 @@ class _ProfilePageState extends State<ProfilePage> {
                 icon: Icons.folder_shared_rounded,
                 label: "Edit AI Analysis Profile",
                 onTap: () async {
-                  // 1. Navigate to Edit Page and wait for result
-                  final updatedDetails =
-                      await Navigator.push<Map<String, dynamic>>(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => EditDetailInformationPage(
-                            currentDetails: {
-                              'education_level': _educationLevel,
-                              'employment_status': _employmentStatus,
-                              'marital_status': _maritalStatus,
-                              'dependent_number': _dependentNumber,
-                              'estimated_loan': _estimatedLoan,
-                            },
-                          ),
-                        ),
-                      );
+                  // Navigate to Edit Page and pass current Detailed entity
+                  final updatedDetailed = await Navigator.push<Detailed>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EditDetailInformationPage(
+                        currentDetails: _currentDetailed,
+                      ),
+                    ),
+                  );
 
-                  // 2. Update UI if data returned
-                  if (updatedDetails != null && mounted) {
+                  // Update UI if data returned
+                  if (updatedDetailed != null && mounted) {
                     setState(() {
-                      // Update local state with new values
+                      _currentDetailed = updatedDetailed;
+                      // Convert database values to UI display values
                       _educationLevel =
-                          updatedDetails['education_level'] ?? _educationLevel;
+                          DetailedConstants.toDisplayValue(
+                            updatedDetailed.educationLevel,
+                            DetailedConstants.educationMap,
+                          ) ??
+                          "N/A";
                       _employmentStatus =
-                          updatedDetails['employment_status'] ??
-                          _employmentStatus;
+                          DetailedConstants.toDisplayValue(
+                            updatedDetailed.employmentStatus,
+                            DetailedConstants.employmentMap,
+                          ) ??
+                          "N/A";
                       _maritalStatus =
-                          updatedDetails['marital_status'] ?? _maritalStatus;
+                          DetailedConstants.toDisplayValue(
+                            updatedDetailed.maritalStatus,
+                            DetailedConstants.maritalMap,
+                          ) ??
+                          "N/A";
                       _dependentNumber =
-                          updatedDetails['dependent_number'] ??
-                          _dependentNumber;
+                          updatedDetailed.dependentNumber?.toString() ?? "0";
                       _estimatedLoan =
-                          updatedDetails['estimated_loan'] ?? _estimatedLoan;
+                          "RM ${updatedDetailed.estimatedLoan?.toStringAsFixed(2) ?? '0'}";
                     });
                   }
                 },

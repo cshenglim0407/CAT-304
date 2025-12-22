@@ -8,7 +8,7 @@ import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
 import 'package:cashlytics/core/utils/context_extensions.dart';
 import 'package:cashlytics/core/utils/user_management/profile_helpers.dart';
 import 'package:cashlytics/data/repositories/app_user_repository_impl.dart';
-import 'package:cashlytics/domain/usecases/app_user/upsert_app_user.dart';
+import 'package:cashlytics/domain/usecases/app_users/upsert_app_user.dart';
 import 'package:cashlytics/domain/entities/app_user.dart';
 import 'package:cashlytics/presentation/providers/theme_provider.dart';
 

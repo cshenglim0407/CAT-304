@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:cashlytics/core/config/detailed_constants.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
 import 'package:cashlytics/data/repositories/detailed_repository_impl.dart';
 import 'package:cashlytics/domain/entities/detailed.dart';
@@ -35,32 +36,6 @@ class _EditDetailInformationPageState extends State<EditDetailInformationPage> {
   String? _employmentStatus;
   String? _maritalStatus;
 
-  // Dropdown Options
-  final List<String> _educationOptions = [
-    'High School',
-    'Diploma',
-    "Bachelor's Degree",
-    "Master's Degree",
-    'PhD',
-    'Other',
-  ];
-
-  final List<String> _employmentOptions = [
-    'Employed',
-    'Self-Employed',
-    'Unemployed',
-    'Student',
-    'Retired',
-  ];
-
-  // CHANGED: Replaced 'Widowed' with 'Preferred not to say'
-  final List<String> _maritalOptions = [
-    'Single',
-    'Married',
-    'Divorced',
-    'Preferred not to say',
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -77,15 +52,21 @@ class _EditDetailInformationPageState extends State<EditDetailInformationPage> {
     final data = widget.currentDetails!;
 
     _dependentController.text = data.dependentNumber.toString();
-    _loanController.text = data.estimatedLoan.toStringAsFixed(2);
+    _loanController.text = data.estimatedLoan?.toStringAsFixed(2) ?? '0';
 
-    _educationLevel = _educationOptions.contains(data.educationLevel)
-        ? data.educationLevel
-        : null;
-
-    // Convert bool to String for dropdown
-    _employmentStatus = data.employmentStatus ? 'Employed' : 'Unemployed';
-    _maritalStatus = data.maritalStatus ? 'Married' : 'Single';
+    // Convert database values to UI display values
+    _educationLevel = DetailedConstants.toDisplayValue(
+      data.educationLevel,
+      DetailedConstants.educationMap,
+    );
+    _employmentStatus = DetailedConstants.toDisplayValue(
+      data.employmentStatus,
+      DetailedConstants.employmentMap,
+    );
+    _maritalStatus = DetailedConstants.toDisplayValue(
+      data.maritalStatus,
+      DetailedConstants.maritalMap,
+    );
   }
 
   @override
@@ -106,23 +87,27 @@ class _EditDetailInformationPageState extends State<EditDetailInformationPage> {
         throw Exception('User not authenticated');
       }
 
-      // Convert String dropdown values back to bool
-      final employmentBool =
-          _employmentStatus == 'Employed' ||
-          _employmentStatus == 'Self-Employed';
-      final maritalBool = _maritalStatus == 'Married';
-
       // Parse values
       final dependentNum = int.tryParse(_dependentController.text.trim()) ?? 0;
       final loanAmount = double.tryParse(_loanController.text.trim()) ?? 0.0;
 
       // Create or update Detailed entity
+      // Convert UI display values to database format
       final detailed = Detailed(
         id: widget.currentDetails?.id,
         userId: currentUser.id,
-        educationLevel: _educationLevel,
-        employmentStatus: employmentBool,
-        maritalStatus: maritalBool,
+        educationLevel: DetailedConstants.toDbValue(
+          _educationLevel,
+          DetailedConstants.educationMap,
+        ),
+        employmentStatus: DetailedConstants.toDbValue(
+          _employmentStatus,
+          DetailedConstants.employmentMap,
+        ),
+        maritalStatus: DetailedConstants.toDbValue(
+          _maritalStatus,
+          DetailedConstants.maritalMap,
+        ),
         dependentNumber: dependentNum,
         estimatedLoan: loanAmount,
         createdAt: widget.currentDetails?.createdAt,
@@ -188,7 +173,7 @@ class _EditDetailInformationPageState extends State<EditDetailInformationPage> {
                 const FormLabel(label: "Education Level"),
                 CustomDropdownFormField(
                   value: _educationLevel,
-                  items: _educationOptions,
+                  items: DetailedConstants.educationOptions,
                   hint: "Select Education",
                   onChanged: (val) => setState(() => _educationLevel = val),
                 ),
@@ -199,7 +184,7 @@ class _EditDetailInformationPageState extends State<EditDetailInformationPage> {
                 const FormLabel(label: "Employment Status"),
                 CustomDropdownFormField(
                   value: _employmentStatus,
-                  items: _employmentOptions,
+                  items: DetailedConstants.employmentOptions,
                   hint: "Select Status",
                   onChanged: (val) => setState(() => _employmentStatus = val),
                 ),
@@ -210,7 +195,7 @@ class _EditDetailInformationPageState extends State<EditDetailInformationPage> {
                 const FormLabel(label: "Marital Status"),
                 CustomDropdownFormField(
                   value: _maritalStatus,
-                  items: _maritalOptions,
+                  items: DetailedConstants.maritalOptions,
                   hint: "Select Status",
                   onChanged: (val) => setState(() => _maritalStatus = val),
                 ),
