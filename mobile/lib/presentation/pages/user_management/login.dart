@@ -7,7 +7,7 @@ import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_state_listener.dart';
 import 'package:cashlytics/core/utils/context_extensions.dart';
 import 'package:cashlytics/data/repositories/app_user_repository_impl.dart';
-import 'package:cashlytics/domain/usecases/get_current_app_user.dart';
+import 'package:cashlytics/domain/usecases/app_user/get_current_app_user.dart';
 import 'package:cashlytics/presentation/providers/theme_provider.dart';
 
 import 'package:cashlytics/presentation/themes/colors.dart';

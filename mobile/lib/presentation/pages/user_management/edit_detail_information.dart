@@ -1,22 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
+import 'package:cashlytics/data/repositories/detailed_repository_impl.dart';
+import 'package:cashlytics/domain/entities/detailed.dart';
+import 'package:cashlytics/domain/repositories/detailed_repository.dart';
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
 import 'package:cashlytics/presentation/widgets/index.dart';
 
 class EditDetailInformationPage extends StatefulWidget {
-  final Map<String, dynamic>? currentDetails;
+  final Detailed? currentDetails;
 
   const EditDetailInformationPage({super.key, this.currentDetails});
 
   @override
-  State<EditDetailInformationPage> createState() => _EditDetailInformationPageState();
+  State<EditDetailInformationPage> createState() =>
+      _EditDetailInformationPageState();
 }
 
 class _EditDetailInformationPageState extends State<EditDetailInformationPage> {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
+
+  late final DetailedRepository _detailedRepository;
+  late final AuthService _authService;
 
   // Controllers
   late final TextEditingController _dependentController;
@@ -34,7 +42,7 @@ class _EditDetailInformationPageState extends State<EditDetailInformationPage> {
     "Bachelor's Degree",
     "Master's Degree",
     'PhD',
-    'Other'
+    'Other',
   ];
 
   final List<String> _employmentOptions = [
@@ -42,7 +50,7 @@ class _EditDetailInformationPageState extends State<EditDetailInformationPage> {
     'Self-Employed',
     'Unemployed',
     'Student',
-    'Retired'
+    'Retired',
   ];
 
   // CHANGED: Replaced 'Widowed' with 'Preferred not to say'
@@ -50,12 +58,14 @@ class _EditDetailInformationPageState extends State<EditDetailInformationPage> {
     'Single',
     'Married',
     'Divorced',
-    'Preferred not to say', 
+    'Preferred not to say',
   ];
 
   @override
   void initState() {
     super.initState();
+    _detailedRepository = DetailedRepositoryImpl();
+    _authService = AuthService();
     _dependentController = TextEditingController();
     _loanController = TextEditingController();
     _initializeData();
@@ -66,22 +76,16 @@ class _EditDetailInformationPageState extends State<EditDetailInformationPage> {
 
     final data = widget.currentDetails!;
 
-    _dependentController.text = data['dependent_number'] ?? '';
-    
-    String loan = data['estimated_loan'] ?? '';
-    _loanController.text = loan.replaceAll('RM ', '').replaceAll(',', '');
+    _dependentController.text = data.dependentNumber.toString();
+    _loanController.text = data.estimatedLoan.toStringAsFixed(2);
 
-    _educationLevel = _educationOptions.contains(data['education_level'])
-        ? data['education_level']
+    _educationLevel = _educationOptions.contains(data.educationLevel)
+        ? data.educationLevel
         : null;
-    
-    _employmentStatus = _employmentOptions.contains(data['employment_status'])
-        ? data['employment_status']
-        : null;
-    
-    _maritalStatus = _maritalOptions.contains(data['marital_status'])
-        ? data['marital_status']
-        : null;
+
+    // Convert bool to String for dropdown
+    _employmentStatus = data.employmentStatus ? 'Employed' : 'Unemployed';
+    _maritalStatus = data.maritalStatus ? 'Married' : 'Single';
   }
 
   @override
@@ -92,33 +96,65 @@ class _EditDetailInformationPageState extends State<EditDetailInformationPage> {
   }
 
   Future<void> _handleSave() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
+    if (!_formKey.currentState!.validate()) return;
 
-      await Future.delayed(const Duration(seconds: 1));
+    setState(() => _isLoading = true);
+
+    try {
+      final currentUser = _authService.currentUser;
+      if (currentUser == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Convert String dropdown values back to bool
+      final employmentBool =
+          _employmentStatus == 'Employed' ||
+          _employmentStatus == 'Self-Employed';
+      final maritalBool = _maritalStatus == 'Married';
+
+      // Parse values
+      final dependentNum = int.tryParse(_dependentController.text.trim()) ?? 0;
+      final loanAmount = double.tryParse(_loanController.text.trim()) ?? 0.0;
+
+      // Create or update Detailed entity
+      final detailed = Detailed(
+        id: widget.currentDetails?.id,
+        userId: currentUser.id,
+        educationLevel: _educationLevel,
+        employmentStatus: employmentBool,
+        maritalStatus: maritalBool,
+        dependentNumber: dependentNum,
+        estimatedLoan: loanAmount,
+        createdAt: widget.currentDetails?.createdAt,
+        updatedAt: widget.currentDetails?.updatedAt,
+      );
+
+      // Save to database
+      final savedDetailed = await _detailedRepository.upsertDetailed(detailed);
 
       if (mounted) {
-        setState(() => _isLoading = false);
-        
-        final loanValue = _loanController.text.trim();
-        final formattedLoan = loanValue.isNotEmpty ? "RM $loanValue" : "";
-
-        final updatedData = {
-          'education_level': _educationLevel,
-          'employment_status': _employmentStatus,
-          'marital_status': _maritalStatus,
-          'dependent_number': _dependentController.text.trim(),
-          'estimated_loan': formattedLoan,
-        };
-
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text("Details updated successfully!"),
             backgroundColor: AppColors.success,
           ),
         );
-        
-        Navigator.pop(context, updatedData);
+
+        // Return the saved entity with generated fields
+        Navigator.pop(context, savedDetailed);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Failed to save details: ${e.toString()}"),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
       }
     }
   }
@@ -142,7 +178,8 @@ class _EditDetailInformationPageState extends State<EditDetailInformationPage> {
                 const SectionTitle(title: "Edit Detailed Info"),
                 const SizedBox(height: 8),
                 const SectionSubtitle(
-                  subtitle: "Provide additional details to improve your financial insights.",
+                  subtitle:
+                      "Provide additional details to improve your financial insights.",
                 ),
 
                 const SizedBox(height: 32),
@@ -199,7 +236,9 @@ class _EditDetailInformationPageState extends State<EditDetailInformationPage> {
                 CustomTextFormField(
                   controller: _loanController,
                   hint: "e.g. 12000",
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   validator: (value) {
                     if (value != null && value.isNotEmpty) {
                       if (double.tryParse(value) == null) {
@@ -209,11 +248,13 @@ class _EditDetailInformationPageState extends State<EditDetailInformationPage> {
                     return null;
                   },
                 ),
-                
+
                 const SizedBox(height: 8),
                 Text(
                   "Total estimated value of current loans (Car, House, PTPTN, etc.)",
-                  style: AppTypography.caption.copyWith(color: AppColors.greyText),
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.greyText,
+                  ),
                 ),
 
                 const SizedBox(height: 40),
