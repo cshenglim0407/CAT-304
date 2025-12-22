@@ -69,6 +69,7 @@ class _ProfilePageState extends State<ProfilePage> {
   late String _email = "";
   late String _dobString = "";
   late String _gender = "";
+  late String _imagePath = "";
   late String _timezone = "";
   late String _currency = "";
   late String _themePref = "";
@@ -82,11 +83,12 @@ class _ProfilePageState extends State<ProfilePage> {
           'user_id': _domainUser!.id,
           'email': _domainUser!.email,
           'display_name': _domainUser!.displayName,
-          'gender': _domainUser!.gender,
           'date_of_birth': _domainUser!.dateOfBirth
               ?.toIso8601String()
               .split('T')
               .first,
+          'gender': _domainUser!.gender,
+          'image_path': _domainUser!.imagePath,
           'timezone': _domainUser!.timezone,
           'currency_pref': _domainUser!.currencyPreference,
           'theme_pref': _domainUser!.themePreference,
@@ -240,10 +242,12 @@ class _ProfilePageState extends State<ProfilePage> {
                         shape: BoxShape.circle,
                         border: Border.all(color: AppColors.primary, width: 2),
                       ),
-                      child: const CircleAvatar(
-                        radius: 45,
+                      child: CircleAvatar(
+                        radius: 55,
                         backgroundImage: AssetImage(
-                          'assets/avatar_placeholder.png',
+                          _imagePath == ""
+                              ? 'assets/images/default_avatar.png'
+                              : _imagePath,
                         ),
                       ),
                     ),

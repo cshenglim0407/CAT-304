@@ -11,6 +11,7 @@ class AppUserModel extends AppUser {
     required super.themePreference,
     super.gender,
     super.dateOfBirth,
+    super.imagePath,
   });
 
   factory AppUserModel.fromEntity(AppUser entity) {
@@ -20,6 +21,7 @@ class AppUserModel extends AppUser {
       displayName: entity.displayName,
       gender: entity.gender,
       dateOfBirth: entity.dateOfBirth,
+      imagePath: entity.imagePath,
       timezone: entity.timezone,
       currencyPreference: entity.currencyPreference,
       themePreference: entity.themePreference,
@@ -33,6 +35,7 @@ class AppUserModel extends AppUser {
       displayName: map['display_name'] as String? ?? '',
       gender: map['gender'] as String?,
       dateOfBirth: _parseDate(map['date_of_birth']),
+      imagePath: map['image_path'] as String?,
       timezone: map['timezone'] as String? ?? '+08:00',
       currencyPreference: map['currency_pref'] as String? ?? 'MYR',
       themePreference: map['theme_pref'] as String? ?? 'system',
@@ -46,6 +49,7 @@ class AppUserModel extends AppUser {
       'display_name': displayName,
       'gender': gender,
       'date_of_birth': _formatDate(dateOfBirth),
+      'image_path': imagePath,
       'timezone': timezone,
       'currency_pref': currencyPreference,
       'theme_pref': themePreference,

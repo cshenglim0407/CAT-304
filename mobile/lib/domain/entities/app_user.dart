@@ -11,6 +11,7 @@ class AppUser {
     required this.themePreference,
     this.gender,
     this.dateOfBirth,
+    this.imagePath,
   });
 
   final String id;
@@ -18,6 +19,7 @@ class AppUser {
   final String displayName;
   final String? gender;
   final DateTime? dateOfBirth;
+  final String? imagePath;
   final String timezone;
   final String currencyPreference;
   final String themePreference;
@@ -28,6 +30,7 @@ class AppUser {
     String? displayName,
     String? gender,
     DateTime? dateOfBirth,
+    String? imagePath,
     String? timezone,
     String? currencyPreference,
     String? themePreference,
@@ -38,6 +41,7 @@ class AppUser {
       displayName: displayName ?? this.displayName,
       gender: gender ?? this.gender,
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      imagePath: imagePath ?? this.imagePath,
       timezone: timezone ?? this.timezone,
       currencyPreference: currencyPreference ?? this.currencyPreference,
       themePreference: themePreference ?? this.themePreference,
@@ -53,6 +57,7 @@ class AppUser {
         other.displayName == displayName &&
         other.gender == gender &&
         other.dateOfBirth == dateOfBirth &&
+        other.imagePath == imagePath &&
         other.timezone == timezone &&
         other.currencyPreference == currencyPreference &&
         other.themePreference == themePreference;
@@ -65,6 +70,7 @@ class AppUser {
         displayName,
         gender,
         dateOfBirth,
+        imagePath,
         timezone,
         currencyPreference,
         themePreference,

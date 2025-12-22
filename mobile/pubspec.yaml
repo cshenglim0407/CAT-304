@@ -63,6 +63,7 @@ flutter:
   assets:
       - assets/logo/logo.webp
       - assets/logo/logo_without_word.webp
+      - assets/images/default_avatar.png
       - assets/env/.env
       - assets/env/.env.local
       - assets/env/.env.development
