@@ -63,7 +63,7 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  int _selectedIndex = 1;
+  int _selectedIndex = 2;
 
   static const String _userProfileCacheKey = 'user_profile_cache';
 
@@ -122,11 +122,9 @@ class _ProfilePageState extends State<ProfilePage> {
 
   void _onNavBarTap(int index) {
     if (index == 0) {
-      Navigator.pop(context);
-    } else {
-      setState(() {
-        _selectedIndex = index;
-      });
+      Navigator.pushReplacementNamed(context, '/dashboard'); // Go Home
+    } else if (index == 1) {
+      Navigator.pushReplacementNamed(context, '/account'); // Go Account
     }
   }
 
@@ -236,7 +234,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       width: 80,
                       height: 80,
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: AppColors.primary.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                         border: Border.all(color: AppColors.primary, width: 2),
                       ),
@@ -272,12 +270,12 @@ class _ProfilePageState extends State<ProfilePage> {
                 decoration: BoxDecoration(
                   color: AppColors.getSurface(context),
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: AppColors.greyLight.withOpacity(0.5)),
+                  border: Border.all(color: AppColors.greyLight.withValues(alpha: 0.5)),
                   boxShadow: [
                     BoxShadow(
                       color: Theme.of(context).brightness == Brightness.light
-                          ? Colors.grey.withOpacity(0.1)
-                          : Colors.black.withOpacity(0.3),
+                          ? Colors.grey.withValues(alpha: 0.1)
+                          : Colors.black.withValues(alpha: 0.3),
                       blurRadius: 15,
                       offset: const Offset(0, 5),
                     ),
