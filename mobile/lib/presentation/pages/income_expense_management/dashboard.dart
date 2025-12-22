@@ -79,9 +79,9 @@ class _DashboardPageState extends State<DashboardPage> {
                 margin: const EdgeInsets.symmetric(horizontal: 20),
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.05),
+                  color: AppColors.primary.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.1)),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
                 ),
                 child: Row(
                   children: [
@@ -238,7 +238,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primary.withOpacity(0.3),
+                            color: AppColors.primary.withValues(alpha: 0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 4),
                           ),
@@ -313,7 +313,7 @@ class _SuggestionTile extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: color, size: 20),
@@ -404,8 +404,8 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
         boxShadow: [
           BoxShadow(
             color: Theme.of(context).brightness == Brightness.light
-                ? Colors.grey.withOpacity(0.08)
-                : Colors.black.withOpacity(0.3),
+                ? Colors.grey.withValues(alpha: 0.08)
+                : Colors.black.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 5),
           ),
@@ -563,8 +563,8 @@ class _CashFlowCardState extends State<_CashFlowCard> {
         boxShadow: [
           BoxShadow(
             color: Theme.of(context).brightness == Brightness.light
-                ? Colors.grey.withOpacity(0.08)
-                : Colors.black.withOpacity(0.3),
+                ? Colors.grey.withValues(alpha: 0.08)
+                : Colors.black.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 5),
           ),
@@ -784,8 +784,8 @@ class _ExpenseDistributionCardState extends State<_ExpenseDistributionCard> {
         boxShadow: [
           BoxShadow(
             color: Theme.of(context).brightness == Brightness.light
-                ? Colors.grey.withOpacity(0.08)
-                : Colors.black.withOpacity(0.3),
+                ? Colors.grey.withValues(alpha: 0.08)
+                : Colors.black.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 5),
           ),
@@ -869,28 +869,28 @@ class _ExpenseDistributionCardState extends State<_ExpenseDistributionCard> {
           ),
           const SizedBox(height: 12),
           _LegendItem(
-            color: AppColors.primary.withOpacity(0.8),
+            color: AppColors.primary.withValues(alpha: 0.8),
             label: "Marketing",
             pct: "25%",
             amt: "(\$39,000)",
           ),
           const SizedBox(height: 12),
           _LegendItem(
-            color: AppColors.primary.withOpacity(0.6),
+            color: AppColors.primary.withValues(alpha: 0.6),
             label: "Payroll",
             pct: "20%",
             amt: "(\$31,200)",
           ),
           const SizedBox(height: 12),
           _LegendItem(
-            color: AppColors.primary.withOpacity(0.4),
+            color: AppColors.primary.withValues(alpha: 0.4),
             label: "IT & Tools",
             pct: "12%",
             amt: "(\$18,700)",
           ),
           const SizedBox(height: 12),
           _LegendItem(
-            color: AppColors.primary.withOpacity(0.2),
+            color: AppColors.primary.withValues(alpha: 0.2),
             label: "Others",
             pct: "8%",
             amt: "(\$12,500)",
@@ -979,8 +979,8 @@ class _DynamicLineChartPainter extends CustomPainter {
       ..style = PaintingStyle.fill
       ..shader = LinearGradient(
         colors: [
-          AppColors.primary.withOpacity(0.2),
-          Colors.white.withOpacity(0),
+          AppColors.primary.withValues(alpha: 0.2),
+          Colors.white.withValues(alpha: 0),
         ],
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
@@ -1079,19 +1079,19 @@ class _DonutChartPainter extends CustomPainter {
     start += sweep1;
 
     double sweep2 = 0.25 * fullCircle;
-    drawSegment(start, sweep2, AppColors.primary.withOpacity(0.8));
+    drawSegment(start, sweep2, AppColors.primary.withValues(alpha: 0.8));
     start += sweep2;
 
     double sweep3 = 0.20 * fullCircle;
-    drawSegment(start, sweep3, AppColors.primary.withOpacity(0.6));
+    drawSegment(start, sweep3, AppColors.primary.withValues(alpha: 0.6));
     start += sweep3;
 
     double sweep4 = 0.12 * fullCircle;
-    drawSegment(start, sweep4, AppColors.primary.withOpacity(0.4));
+    drawSegment(start, sweep4, AppColors.primary.withValues(alpha: 0.4));
     start += sweep4;
 
     double sweep5 = 0.08 * fullCircle;
-    drawSegment(start, sweep5, AppColors.primary.withOpacity(0.2));
+    drawSegment(start, sweep5, AppColors.primary.withValues(alpha: 0.2));
   }
 
   @override
