@@ -42,11 +42,11 @@ VALUES
 INSERT INTO
     ACCOUNTS (NAME, TYPE, INITIAL_BALANCE, CURRENT_BALANCE, DESCRIPTION, USER_ID)
 VALUES
-('Cash Wallet', 'CASH', 1000.00, 500.00, 'Personal cash wallet', 
+('Cash Wallet', 'CASH', 1000.00, 1000.00, 'Personal cash wallet', 
     (SELECT USER_ID FROM APP_USERS WHERE EMAIL = 'cashlytics123@gmail.com')),
 ('Maybank', 'BANK', 5000.00, 5000.00, 'Main bank account',
     (SELECT USER_ID FROM APP_USERS WHERE EMAIL = 'cashlytics123@gmail.com')),
-('MaE Credit', 'CREDIT CARD', 0.00, -200.00, 'Maybank credit card',
+('MaE Credit', 'CREDIT CARD', 0.00, 0.00, 'Maybank credit card',
     (SELECT USER_ID FROM APP_USERS WHERE EMAIL = 'cashlytics123@gmail.com')),
 ('TnG eWallet', 'E-WALLET', 300.00, 300.00, 'Touch ''n Go eWallet',
     (SELECT USER_ID FROM APP_USERS WHERE EMAIL = 'cashlytics123@gmail.com')),
