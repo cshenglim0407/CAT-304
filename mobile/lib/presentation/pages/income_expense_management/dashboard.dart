@@ -3,7 +3,6 @@ import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
 import '../../widgets/index.dart';
 
-import 'package:cashlytics/presentation/pages/user_management/profile.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -13,19 +12,21 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  int _selectedIndex = 0;
+  int _selectedIndex = 0; // Home is always 0
 
   void _onNavBarTap(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+
     if (index == 1) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const ProfilePage()),
-      ).then((_) {
-        setState(() => _selectedIndex = 0);
-      });
+      // Index 1 is now ACCOUNT
+      Navigator.pushReplacementNamed(context, '/account'); 
+    } else if (index == 2) {
+      // Index 2 is now PROFILE
+      Navigator.pushReplacementNamed(context, '/profile'); 
     }
   }
-
   // --- AI Suggestions Modal ---
   void _showAISuggestions(BuildContext context) {
     showModalBottomSheet(

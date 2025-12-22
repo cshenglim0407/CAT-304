@@ -201,7 +201,7 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  int _selectedIndex = 1;
+  final int _selectedIndex = 2;
 
   static const String _userProfileCacheKey = 'user_profile_cache';
 
@@ -303,11 +303,9 @@ class _ProfilePageState extends State<ProfilePage> {
 
   void _onNavBarTap(int index) {
     if (index == 0) {
-      Navigator.pop(context);
-    } else {
-      setState(() {
-        _selectedIndex = index;
-      });
+      Navigator.pushReplacementNamed(context, '/dashboard'); // Go Home
+    } else if (index == 1) {
+      Navigator.pushReplacementNamed(context, '/account'); // Go Account
     }
   }
 

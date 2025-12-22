@@ -17,6 +17,7 @@ import 'package:cashlytics/presentation/pages/user_management/forgot_password.da
 import 'package:cashlytics/presentation/pages/user_management/otp_verification.dart';
 import 'package:cashlytics/presentation/pages/user_management/reset_password.dart';
 import 'package:cashlytics/presentation/pages/user_management/profile.dart';
+import 'package:cashlytics/presentation/pages/income_expense_management/account.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -85,6 +86,7 @@ class _MyAppState extends State<MyApp> {
         '/resetpassword': (context) => const ResetPasswordPage(),
         '/profile': (context) => const ProfilePage(),
         '/dashboard': (context) => const DashboardPage(),
+        '/account': (context) => const AccountPage(),
       },
     );
   }

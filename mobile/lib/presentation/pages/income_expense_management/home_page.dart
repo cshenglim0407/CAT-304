@@ -98,6 +98,15 @@ class _HomePageState extends State<HomePage> {
               },
               child: const Text('Go to Dashboard'),
             ),
+
+            const SizedBox(height: 8),
+
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/account'); 
+              },
+              child: const Text('Go to Account Page'),
+            ),
           ],
         ),
       ),

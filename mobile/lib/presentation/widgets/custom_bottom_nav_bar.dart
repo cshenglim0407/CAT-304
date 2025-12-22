@@ -3,7 +3,7 @@ import 'package:cashlytics/presentation/themes/colors.dart';
 
 class CustomBottomNavBar extends StatelessWidget {
   final int currentIndex;
-  final ValueChanged<int> onTap;
+  final Function(int) onTap;
 
   const CustomBottomNavBar({
     super.key,
@@ -18,9 +18,7 @@ class CustomBottomNavBar extends StatelessWidget {
         color: AppColors.getSurface(context),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).brightness == Brightness.light
-                ? Colors.grey.withValues(alpha: 0.1)
-                : Colors.black.withValues(alpha: 0.2),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),
@@ -29,41 +27,33 @@ class CustomBottomNavBar extends StatelessWidget {
       child: BottomNavigationBar(
         currentIndex: currentIndex,
         onTap: onTap,
-        backgroundColor: AppColors.getSurface(context),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         type: BottomNavigationBarType.fixed,
         selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.getTextSecondary(context),
+        unselectedItemColor: AppColors.greyText,
         showSelectedLabels: true,
         showUnselectedLabels: true,
-        elevation: 0,
-        items: [
-          // --- Home Item ---
+        items: const [
+          // Index 0: Home
           BottomNavigationBarItem(
-            icon: const Icon(Icons.home_outlined),
-            activeIcon: _buildActiveIcon(Icons.home_filled),
+            icon: Icon(Icons.home_rounded),
             label: 'Home',
           ),
           
-          // --- Profile Item ---
+          // Index 1: Account (NEW ADDITION)
           BottomNavigationBarItem(
-            icon: const Icon(Icons.person_outline_rounded),
-            activeIcon: _buildActiveIcon(Icons.person_rounded),
+            icon: Icon(Icons.account_balance_wallet_rounded),
+            label: 'Account',
+          ),
+
+          // Index 2: Profile
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_rounded),
             label: 'Profile',
           ),
         ],
       ),
-    );
-  }
-
-  // Helper method to build the pill-shaped background
-  Widget _buildActiveIcon(IconData icon) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Icon(icon, color: AppColors.primary),
     );
   }
 }
