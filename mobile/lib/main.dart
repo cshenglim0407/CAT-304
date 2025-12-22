@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 // import the other pages
 import 'package:cashlytics/core/services/supabase/init_service.dart';
 import 'package:cashlytics/core/services/supabase/client.dart';
+import 'package:cashlytics/core/utils/cache_service.dart';
 import 'package:cashlytics/presentation/pages/income_expense_management/home_page.dart';
 import 'package:cashlytics/presentation/pages/user_management/login.dart';
 import 'package:cashlytics/presentation/pages/user_management/sign_up.dart';
@@ -18,6 +19,9 @@ Future<void> main() async {
 
   // Initialize Supabase
   await SupabaseInitService.initialize();
+
+  // Initialize Cache Service
+  await CacheService.initialize();
 
   // Use path URL strategy for web
   usePathUrlStrategy();

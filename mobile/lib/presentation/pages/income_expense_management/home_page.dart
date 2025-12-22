@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 
-import 'package:shared_preferences/shared_preferences.dart';
-
 import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
 import 'package:cashlytics/core/services/supabase/client.dart';
+import 'package:cashlytics/core/utils/cache_service.dart';
 import 'package:cashlytics/core/utils/context_extensions.dart';
 
 class HomePage extends StatefulWidget {
@@ -14,7 +13,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-
   bool _isLoading = false; // for loading state
 
   // Sign out method
@@ -36,10 +34,14 @@ class _HomePageState extends State<HomePage> {
           children: [
             const Text('This is the Home Page'),
             const SizedBox(height: 8),
-            Text('(Status: ${supabase.auth.currentUser != null ? "Logged In" : "Logged Out"})'),
+            Text(
+              '(Status: ${supabase.auth.currentUser != null ? "Logged In" : "Logged Out"})',
+            ),
             const SizedBox(height: 8),
             FutureBuilder<bool>(
-              future: SharedPreferences.getInstance().then((prefs) => prefs.getBool('remember_me') ?? false),
+              future: CacheService.load<bool>('remember_me') != null
+                  ? Future.value(CacheService.load<bool>('remember_me'))
+                  : Future.value(false),
               builder: (context, snapshot) {
                 return Text('(Remember Me: ${snapshot.data ?? false})');
               },
