@@ -1,14 +1,17 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_state_listener.dart';
 import 'package:cashlytics/core/services/cache/cache_service.dart';
+import 'package:cashlytics/core/services/supabase/storage/storage_service.dart';
 import 'package:cashlytics/core/utils/context_extensions.dart';
 import 'package:cashlytics/core/utils/date_formatter.dart';
+
 import 'package:cashlytics/data/repositories/app_user_repository_impl.dart';
 import 'package:cashlytics/domain/usecases/get_current_app_user.dart';
 import 'package:cashlytics/domain/entities/app_user.dart';
@@ -36,6 +39,9 @@ class _ProfilePageState extends State<ProfilePage> {
   late Map<String, dynamic>? currentUserProfile = {};
   AppUser? _domainUser;
 
+  final _storageService = StorageService();
+  bool _isUploadingPhoto = false;
+
   bool _isLoading = false;
   bool _redirecting = false;
 
@@ -43,6 +49,100 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _showDetailedInfo = false;
 
   late final StreamSubscription<AuthState> _authStateSubscription;
+
+  Future<void> _uploadProfilePhoto() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['jpg', 'jpeg', 'png'],
+      );
+
+      if (result == null || result.files.isEmpty) {
+        return;
+      }
+
+      final file = result.files.first;
+      final filePath = file.path ?? '';
+
+      if (filePath.isEmpty) {
+        if (mounted) {
+          context.showSnackBar('Unable to access file', isError: true);
+        }
+        return;
+      }
+
+      setState(() => _isUploadingPhoto = true);
+
+      // Ensure Supabase is initialized before uploading
+      final currentUser = _authService.currentUser;
+      if (currentUser == null) {
+        if (mounted) {
+          context.showSnackBar('User not authenticated', isError: true);
+        }
+        setState(() => _isUploadingPhoto = false);
+        return;
+      }
+
+      // Upload to 'profile-pictures' bucket
+      final uploadedPath = await _storageService.uploadFile(
+        bucketId: 'profile-pictures',
+        filePath: filePath,
+        fileName: '${currentUser.id}_profile.${file.extension}',
+        onProgress: (progress) {
+          debugPrint(
+            'Upload progress: ${(progress * 100).toStringAsFixed(0)}%',
+          );
+        },
+        onError: (error) {
+          if (mounted) {
+            context.showSnackBar(error, isError: true);
+          }
+        },
+      );
+
+      if (uploadedPath != null && mounted) {
+        setState(() {
+          debugPrint('Uploaded photo path: $uploadedPath');
+
+          // Strip 'profile-pictures/' prefix if present, store only relative path
+          final relativePath = uploadedPath.startsWith('profile-pictures/')
+              ? uploadedPath.replaceFirst('profile-pictures/', '')
+              : uploadedPath;
+
+          _imagePath = relativePath;
+
+          if (currentUserProfile != null) {
+            currentUserProfile!['image_path'] = relativePath;
+
+            // Update user profile in database
+            _appUserRepository
+                .upsertUser(_domainUser!.copyWith(imagePath: relativePath))
+                .then((updatedUser) {
+                  _domainUser = updatedUser;
+                  debugPrint('Profile photo updated in database');
+                })
+                .catchError((e) {
+                  debugPrint('Error updating profile in database: $e');
+                });
+
+            // Update cache
+            CacheService.save(_userProfileCacheKey, currentUserProfile!);
+          }
+        });
+        context.showSnackBar('Profile photo updated successfully');
+      }
+
+      if (mounted) {
+        setState(() => _isUploadingPhoto = false);
+      }
+    } catch (e) {
+      debugPrint('Photo upload error: $e');
+      if (mounted) {
+        context.showSnackBar('Error uploading photo: $e', isError: true);
+        setState(() => _isUploadingPhoto = false);
+      }
+    }
+  }
 
   Future<void> _signOut() async {
     await AuthService().signOut(
@@ -143,6 +243,7 @@ class _ProfilePageState extends State<ProfilePage> {
           'N/A';
       _dobString = currentUserProfile!['date_of_birth'] ?? 'N/A';
       _gender = currentUserProfile!['gender'] ?? 'N/A';
+      _imagePath = currentUserProfile!['image_path'] ?? '';
       _timezone = currentUserProfile!['timezone'] != null
           ? "(UTC${currentUserProfile!['timezone']})"
           : 'N/A';
@@ -204,6 +305,28 @@ class _ProfilePageState extends State<ProfilePage> {
     super.dispose();
   }
 
+  ImageProvider _getProfileImage() {
+    if (_imagePath.isEmpty) {
+      return const AssetImage('assets/images/default_avatar.png');
+    }
+
+    // If it's a storage path (doesn't start with http), construct the public URL
+    if (!_imagePath.startsWith('http')) {
+      final publicUrl = _storageService.getPublicUrl(
+        bucketId: 'profile-pictures',
+        filePath:
+            _imagePath, // Pass the path directly without removing anything
+      );
+
+      if (publicUrl != null && publicUrl.isNotEmpty) {
+        return NetworkImage(publicUrl);
+      }
+    }
+
+    // Fallback to asset or local path
+    return AssetImage(_imagePath);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -224,20 +347,64 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Column(
                   children: [
                     // --- PROFILE AVATAR ---
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.primary, width: 2),
-                      ),
-                      child: CircleAvatar(
-                        radius: 55,
-                        backgroundImage: AssetImage(
-                          _imagePath == ""
-                              ? 'assets/images/default_avatar.png'
-                              : _imagePath,
+                    Stack(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: AppColors.primary,
+                              width: 2,
+                            ),
+                          ),
+                          child: CircleAvatar(
+                            radius: 55,
+                            backgroundImage: _getProfileImage(),
+                          ),
                         ),
-                      ),
+                        // --- EDIT PHOTO BUTTON ---
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: GestureDetector(
+                            onTap: _isUploadingPhoto
+                                ? null
+                                : _uploadProfilePhoto,
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: AppColors.primary,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.2),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: _isUploadingPhoto
+                                  ? SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              AppColors.white,
+                                            ),
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.edit_rounded,
+                                      color: Colors.white,
+                                      size: 18,
+                                    ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 12),
                     Text(

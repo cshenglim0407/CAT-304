@@ -2,6 +2,11 @@
 -- Profile Pictures Storage Bucket
 -- ==============================================
 
+DROP POLICY IF EXISTS "Users can upload their own profile picture" ON storage.objects;
+DROP POLICY IF EXISTS "Users can update their own profile picture" ON storage.objects;
+DROP POLICY IF EXISTS "Users can delete their own profile picture" ON storage.objects;
+DROP POLICY IF EXISTS "Anyone can view profile pictures" ON storage.objects;
+
 CREATE POLICY "Users can upload their own profile picture"
 ON storage.objects FOR INSERT
 TO authenticated
@@ -33,9 +38,4 @@ USING (
 CREATE POLICY "Anyone can view profile pictures"
 ON storage.objects FOR SELECT
 TO public
-USING (bucket_id = 'profile-pictures');
-
-CREATE POLICY "Authenticated users can view profile pictures"
-ON storage.objects FOR SELECT
-TO authenticated
 USING (bucket_id = 'profile-pictures');
