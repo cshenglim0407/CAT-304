@@ -83,6 +83,21 @@ class _ProfilePageState extends State<ProfilePage> {
         return;
       }
 
+      // Delete old profile picture if exists
+      if (_imagePath.isNotEmpty) {
+        final deleteSuccess = await _storageService.deleteFile(
+          bucketId: 'profile-pictures',
+          filePath: _imagePath,
+          onError: (error) {
+            debugPrint('Error deleting old profile picture: $error');
+            // Don't stop upload if delete fails
+          },
+        );
+        if (deleteSuccess) {
+          debugPrint('Old profile picture deleted');
+        }
+      }
+
       // Upload to 'profile-pictures' bucket
       final uploadedPath = await _storageService.uploadFile(
         bucketId: 'profile-pictures',
