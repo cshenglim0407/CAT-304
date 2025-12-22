@@ -5,7 +5,9 @@ import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
 import 'package:cashlytics/domain/repositories/dashboard_repository.dart';
 import 'package:cashlytics/data/repositories/dashboard_repository_impl.dart';
 import 'package:cashlytics/domain/usecases/dashboard/get_monthly_weekly_balances.dart';
+import 'package:cashlytics/domain/usecases/dashboard/get_yearly_quarterly_balances.dart';
 import 'package:cashlytics/domain/entities/weekly_balance.dart';
+import 'package:cashlytics/domain/entities/quarterly_balance.dart';
 import '../../widgets/index.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -366,9 +368,11 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
   String _selectedFilter = 'This month';
   bool _isLoading = true;
   List<WeeklyBalance> _weeklyBalances = [];
+  List<QuarterlyBalance> _quarterlyBalances = [];
 
   late final DashboardRepository _dashboardRepository;
   late final GetMonthlyWeeklyBalances _getMonthlyWeeklyBalances;
+  late final GetYearlyQuarterlyBalances _getYearlyQuarterlyBalances;
   late final AuthService _authService;
 
   @override
@@ -376,11 +380,12 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
     super.initState();
     _dashboardRepository = DashboardRepositoryImpl();
     _getMonthlyWeeklyBalances = GetMonthlyWeeklyBalances(_dashboardRepository);
+    _getYearlyQuarterlyBalances = GetYearlyQuarterlyBalances(_dashboardRepository);
     _authService = AuthService();
-    _loadWeeklyBalances();
+    _loadData();
   }
 
-  Future<void> _loadWeeklyBalances() async {
+  Future<void> _loadData() async {
     setState(() => _isLoading = true);
 
     try {
@@ -390,37 +395,59 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
       }
 
       final now = DateTime.now();
-      DateTime targetMonth;
 
-      // Determine which month to query based on selected filter
+      // Determine what data to load based on selected filter
       switch (_selectedFilter) {
-        case 'Last month':
-          targetMonth = DateTime(now.year, now.month - 1, 1);
+        case 'This month':
+          final balances = await _getMonthlyWeeklyBalances(user.id, now);
+          setState(() {
+            _weeklyBalances = balances;
+            _quarterlyBalances = [];
+            _isLoading = false;
+          });
           break;
+
+        case 'Last month':
+          final lastMonth = DateTime(now.year, now.month - 1, 1);
+          final balances = await _getMonthlyWeeklyBalances(user.id, lastMonth);
+          setState(() {
+            _weeklyBalances = balances;
+            _quarterlyBalances = [];
+            _isLoading = false;
+          });
+          break;
+
         case 'This year':
+          final balances = await _getYearlyQuarterlyBalances(user.id, now.year);
+          setState(() {
+            _quarterlyBalances = balances;
+            _weeklyBalances = [];
+            _isLoading = false;
+          });
+          break;
+
         case 'Last year':
-          // For year views, we'll use aggregated data (not implemented yet)
+          final balances = await _getYearlyQuarterlyBalances(user.id, now.year - 1);
+          setState(() {
+            _quarterlyBalances = balances;
+            _weeklyBalances = [];
+            _isLoading = false;
+          });
+          break;
+
+        default:
           setState(() {
             _isLoading = false;
             _weeklyBalances = [];
+            _quarterlyBalances = [];
           });
-          return;
-        case 'This month':
-        default:
-          targetMonth = now;
       }
-
-      final balances = await _getMonthlyWeeklyBalances(user.id, targetMonth);
-
-      setState(() {
-        _weeklyBalances = balances;
-        _isLoading = false;
-      });
     } catch (e) {
-      debugPrint('Error loading weekly balances: $e');
+      debugPrint('Error loading data: $e');
       setState(() {
         _isLoading = false;
         _weeklyBalances = [];
+        _quarterlyBalances = [];
       });
     }
   }
@@ -429,58 +456,104 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
     return '\$${amount.toStringAsFixed(2)}';
   }
 
+  String _getCompareText() {
+    switch (_selectedFilter) {
+      case 'This month':
+        return 'vs last month';
+      case 'Last month':
+        return 'vs prev month';
+      case 'This year':
+        return 'vs last year';
+      case 'Last year':
+        return 'vs prev year';
+      default:
+        return '';
+    }
+  }
+
   double _calculateTotalBalance() {
-    if (_weeklyBalances.isEmpty) return 0.0;
-    return _weeklyBalances.fold(0.0, (sum, week) => sum + week.balance);
+    if (_weeklyBalances.isNotEmpty) {
+      return _weeklyBalances.fold(0.0, (sum, week) => sum + week.balance);
+    } else if (_quarterlyBalances.isNotEmpty) {
+      return _quarterlyBalances.fold(0.0, (sum, quarter) => sum + quarter.balance);
+    }
+    return 0.0;
   }
 
   String _calculatePercentageChange() {
-    if (_weeklyBalances.isEmpty) return '+0.0%';
+    List<double> balances;
+    
+    if (_weeklyBalances.isNotEmpty) {
+      balances = _weeklyBalances.map((w) => w.balance).toList();
+    } else if (_quarterlyBalances.isNotEmpty) {
+      balances = _quarterlyBalances.map((q) => q.balance).toList();
+    } else {
+      return '+0.0%';
+    }
 
-    // Calculate change based on first week vs last available week
-    final firstWeek = _weeklyBalances.first.balance;
-    final lastWeek = _weeklyBalances.last.balance;
+    if (balances.isEmpty) return '+0.0%';
 
-    if (firstWeek == 0) return '+0.0%';
+    // Calculate change based on first vs last available period
+    final first = balances.first;
+    final last = balances.last;
 
-    final change = ((lastWeek - firstWeek) / firstWeek.abs()) * 100;
+    if (first == 0) return '+0.0%';
+
+    final change = ((last - first) / first.abs()) * 100;
     return '${change >= 0 ? '+' : ''}${change.toStringAsFixed(1)}%';
   }
 
   Color _getPercentageColor() {
-    if (_weeklyBalances.isEmpty) return AppColors.greyText;
+    List<double> balances;
+    
+    if (_weeklyBalances.isNotEmpty) {
+      balances = _weeklyBalances.map((w) => w.balance).toList();
+    } else if (_quarterlyBalances.isNotEmpty) {
+      balances = _quarterlyBalances.map((q) => q.balance).toList();
+    } else {
+      return AppColors.greyText;
+    }
 
-    final firstWeek = _weeklyBalances.first.balance;
-    final lastWeek = _weeklyBalances.last.balance;
+    if (balances.isEmpty) return AppColors.greyText;
 
-    return lastWeek >= firstWeek ? AppColors.success : Colors.red;
+    final first = balances.first;
+    final last = balances.last;
+
+    return last >= first ? AppColors.success : Colors.red;
   }
 
   List<double> _getChartData() {
-    if (_weeklyBalances.isEmpty) {
+    List<double> balances;
+    
+    if (_weeklyBalances.isNotEmpty) {
+      balances = _weeklyBalances.map((w) => w.balance).toList();
+    } else if (_quarterlyBalances.isNotEmpty) {
+      balances = _quarterlyBalances.map((q) => q.balance).toList();
+    } else {
       return [0.2, 0.5, 0.4, 0.7, 0.6, 0.9, 0.8]; // Default placeholder
     }
 
     // Normalize balance values to 0-1 range for chart
-    final maxBalance = _weeklyBalances
-        .map((w) => w.balance.abs())
+    final maxBalance = balances
+        .map((b) => b.abs())
         .reduce((a, b) => a > b ? a : b);
 
     if (maxBalance == 0) {
-      return List.filled(_weeklyBalances.length, 0.5);
+      return List.filled(balances.length, 0.5);
     }
 
-    return _weeklyBalances
-        .map((w) => (w.balance.abs() / maxBalance).clamp(0.1, 1.0))
+    return balances
+        .map((b) => (b.abs() / maxBalance).clamp(0.1, 1.0))
         .toList();
   }
 
   List<String> _getLabels() {
-    if (_weeklyBalances.isEmpty) {
-      return ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+    if (_weeklyBalances.isNotEmpty) {
+      return _weeklyBalances.map((w) => 'Week ${w.weekNumber}').toList();
+    } else if (_quarterlyBalances.isNotEmpty) {
+      return _quarterlyBalances.map((q) => 'Q${q.quarterNumber}').toList();
     }
-
-    return _weeklyBalances.map((w) => 'Week ${w.weekNumber}').toList();
+    return ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
   }
 
   final Map<String, dynamic> _data = {
@@ -520,11 +593,9 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
 
   @override
   Widget build(BuildContext context) {
-    // Use real data if available, otherwise fallback to mock data
-    final bool useRealData =
-        (_selectedFilter == 'This month' || _selectedFilter == 'Last month') &&
-        !_isLoading &&
-        _weeklyBalances.isNotEmpty;
+    // Use real data if available for any filter
+    final bool useRealData = !_isLoading &&
+        (_weeklyBalances.isNotEmpty || _quarterlyBalances.isNotEmpty);
 
     final currentData = useRealData ? null : _data[_selectedFilter];
 
@@ -541,7 +612,7 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
         : currentData['pctColor'];
 
     final displayCompare = useRealData
-        ? (_selectedFilter == 'This month' ? 'vs last month' : 'vs prev month')
+        ? _getCompareText()
         : currentData['compare'];
 
     final chartData = useRealData ? _getChartData() : currentData['chart'];
@@ -574,7 +645,7 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
               PopupMenuButton<String>(
                 onSelected: (value) {
                   setState(() => _selectedFilter = value);
-                  _loadWeeklyBalances();
+                  _loadData();
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(
