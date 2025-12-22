@@ -18,6 +18,29 @@ BEFORE INSERT ON EXPENSE_ITEMS
 FOR EACH ROW
 EXECUTE FUNCTION set_expense_item_id();
 
+---
+-- Trigger to sync current balance before insert or update on ACCOUNTS
+---
+DROP TRIGGER IF EXISTS trigger_sync_account_current_balance ON ACCOUNTS;
+DROP FUNCTION IF EXISTS sync_account_current_balance();
+
+CREATE OR REPLACE FUNCTION init_account_current_balance()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- If client didn't provide CURRENT_BALANCE, or it's 0 while INITIAL_BALANCE is non-zero,
+    -- initialize it from INITIAL_BALANCE. This avoids overwriting legitimate zeros later.
+    IF (NEW.CURRENT_BALANCE IS NULL) OR (NEW.CURRENT_BALANCE = 0 AND NEW.INITIAL_BALANCE <> 0) THEN
+        NEW.CURRENT_BALANCE := NEW.INITIAL_BALANCE;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_init_account_current_balance
+    BEFORE INSERT ON ACCOUNTS
+    FOR EACH ROW
+    EXECUTE FUNCTION init_account_current_balance();
 
 ---
 -- Updates the UPDATED_AT column to the current timestamp before any update operation. 

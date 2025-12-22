@@ -40,19 +40,19 @@ VALUES
     (SELECT USER_ID FROM APP_USERS WHERE EMAIL = 'bobsmith@example.com'));
 
 INSERT INTO
-    ACCOUNTS (NAME, TYPE, INITIAL_BALANCE, CURRENT_BALANCE, DESCRIPTION, USER_ID)
+    ACCOUNTS (NAME, TYPE, INITIAL_BALANCE, DESCRIPTION, USER_ID)
 VALUES
-('Cash Wallet', 'CASH', 1000.00, 1000.00, 'Personal cash wallet', 
+('Cash Wallet', 'CASH', 1000.00, 'Personal cash wallet', 
     (SELECT USER_ID FROM APP_USERS WHERE EMAIL = 'cashlytics123@gmail.com')),
-('Maybank', 'BANK', 5000.00, 5000.00, 'Main bank account',
+('Maybank', 'BANK', 5000.00, 'Main bank account',
     (SELECT USER_ID FROM APP_USERS WHERE EMAIL = 'cashlytics123@gmail.com')),
-('MaE Credit', 'CREDIT CARD', 0.00, 0.00, 'Maybank credit card',
+('MaE Credit', 'CREDIT CARD', 0.00, 'Maybank credit card',
     (SELECT USER_ID FROM APP_USERS WHERE EMAIL = 'cashlytics123@gmail.com')),
-('TnG eWallet', 'E-WALLET', 300.00, 300.00, 'Touch ''n Go eWallet',
+('TnG eWallet', 'E-WALLET', 300.00, 'Touch ''n Go eWallet',
     (SELECT USER_ID FROM APP_USERS WHERE EMAIL = 'cashlytics123@gmail.com')),
-('Jane''s Savings', 'BANK', 8000.00, 8000.00, 'Jane''s personal savings account',
+('Jane''s Savings', 'BANK', 8000.00, 'Jane''s personal savings account',
     (SELECT USER_ID FROM APP_USERS WHERE EMAIL = 'janedoe@example.com')),
-('Bob''s Cash', 'CASH', 500.00, 500.00, 'Bob''s cash on hand',
+('Bob''s Cash', 'CASH', 500.00, 'Bob''s cash on hand',
     (SELECT USER_ID FROM APP_USERS WHERE EMAIL = 'bobsmith@example.com'));
 
 -- CALL add_transfer
