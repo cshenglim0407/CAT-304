@@ -5,10 +5,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_state_listener.dart';
-import 'package:cashlytics/core/services/supabase/database/database_service.dart';
 import 'package:cashlytics/core/services/cache/cache_service.dart';
 import 'package:cashlytics/core/utils/context_extensions.dart';
 import 'package:cashlytics/core/utils/date_formatter.dart';
+import 'package:cashlytics/data/repositories/app_user_repository_impl.dart';
+import 'package:cashlytics/domain/usecases/get_current_app_user.dart';
+import 'package:cashlytics/domain/entities/app_user.dart';
 
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
@@ -26,8 +28,10 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   late final _authService = AuthService();
-  late final _databaseService = DatabaseService();
+  late final _appUserRepository = AppUserRepositoryImpl();
+  late final _getCurrentAppUser = GetCurrentAppUser(_appUserRepository);
   late Map<String, dynamic>? currentUserProfile = {};
+  AppUser? _domainUser;
 
   bool _isLoading = false; // for loading state
   bool _redirecting = false;
@@ -55,35 +59,39 @@ class _ProfilePageState extends State<ProfilePage> {
   late String _currency = "";
   late String _themePref = "";
 
-  /// Fetch user profile from database and update cache
+  /// Fetch user profile from domain use case and update cache
   Future<void> _fetchUserProfile() async {
-    final user = _authService.currentUser;
-    if (user != null) {
-      try {
-        currentUserProfile = await _databaseService.fetchSingle(
-          'app_users',
-          matchColumn: 'user_id',
-          matchValue: user.id,
-        );
+    try {
+      _domainUser = await _getCurrentAppUser();
+      if (_domainUser != null) {
+        currentUserProfile = {
+          'user_id': _domainUser!.id,
+          'email': _domainUser!.email,
+          'display_name': _domainUser!.displayName,
+          'gender': _domainUser!.gender,
+          'date_of_birth': _domainUser!.dateOfBirth?.toIso8601String().split('T').first,
+          'timezone': _domainUser!.timezone,
+          'currency_pref': _domainUser!.currencyPreference,
+          'theme_pref': _domainUser!.themePreference,
+        };
         debugPrint('User Profile Fetched: $currentUserProfile');
-
-        if (currentUserProfile != null) {
-          await CacheService.save(_userProfileCacheKey, currentUserProfile!);
-        }
-      } catch (e) {
-        debugPrint('Error fetching profile: $e');
-        currentUserProfile = CacheService.load<Map<String, dynamic>>(
-          _userProfileCacheKey,
-        );
+        await CacheService.save(_userProfileCacheKey, currentUserProfile!);
       }
-    } else {
-      debugPrint('No authenticated user found.');
-      currentUserProfile = null;
-      await CacheService.remove(_userProfileCacheKey);
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const LoginPage()),
-        );
+    } catch (e) {
+      debugPrint('Error fetching profile: $e');
+      currentUserProfile = CacheService.load<Map<String, dynamic>>(
+        _userProfileCacheKey,
+      );
+    } finally {
+      if (_authService.currentUser == null) {
+        debugPrint('No authenticated user found.');
+        currentUserProfile = null;
+        await CacheService.remove(_userProfileCacheKey);
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const LoginPage()),
+          );
+        }
       }
     }
   }

@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 
 import 'package:cashlytics/core/config/profile_constants.dart';
+import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
 import 'package:cashlytics/core/utils/context_extensions.dart';
 import 'package:cashlytics/core/utils/user_management/profile_helpers.dart';
+import 'package:cashlytics/data/repositories/app_user_repository_impl.dart';
+import 'package:cashlytics/domain/usecases/upsert_app_user.dart';
+import 'package:cashlytics/domain/entities/app_user.dart';
 
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
@@ -21,6 +25,10 @@ class EditPersonalInformationPage extends StatefulWidget {
 class _EditPersonalInformationPageState
     extends State<EditPersonalInformationPage> {
   final _formKey = GlobalKey<FormState>();
+
+  late final _authService = AuthService();
+  late final _appUserRepository = AppUserRepositoryImpl();
+  late final _upsertAppUser = UpsertAppUser(_appUserRepository);
 
   // Text Controllers
   late final TextEditingController _usernameController;
@@ -119,20 +127,52 @@ class _EditPersonalInformationPageState
     }
   }
 
-  void _handleSave() {
+  void _handleSave() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
 
-      Future.delayed(const Duration(seconds: 2), () {
+      try {
+        final currentUser = _authService.currentUser;
+        if (currentUser == null) {
+          context.showSnackBar("No user authenticated", isError: true);
+          return;
+        }
+
+        final updatedUser = AppUser(
+          id: currentUser.id,
+          email: _emailController.text,
+          displayName: _usernameController.text,
+          gender: _selectedGender?.toUpperCase(),
+          dateOfBirth: _birthdateController.text.isNotEmpty
+              ? DateTime.tryParse(_birthdateController.text)
+              : null,
+          timezone: ProfileHelpers.extractTimezoneCode(_selectedTimezone) ?? '+08:00',
+          currencyPreference: ProfileHelpers.extractCurrencyCode(_selectedCurrency) ?? 'MYR',
+          themePreference: (_selectedTheme ?? 'System').toLowerCase(),
+        );
+
+        await _upsertAppUser(updatedUser);
+
         if (mounted) {
-          setState(() => _isLoading = false);
           context.showSnackBar(
             "Profile settings updated successfully!",
             isSuccess: true,
           );
           Navigator.pop(context);
         }
-      });
+      } catch (e) {
+        debugPrint('Error saving profile: $e');
+        if (mounted) {
+          context.showSnackBar(
+            "Failed to update profile: ${e.toString()}",
+            isError: true,
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      }
     }
   }
 
