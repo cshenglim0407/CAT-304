@@ -5,6 +5,7 @@ import 'package:cashlytics/data/models/account_model.dart';
 import 'package:cashlytics/domain/entities/account.dart';
 import 'package:cashlytics/domain/entities/account_transaction_view.dart';
 import 'package:cashlytics/domain/repositories/account_repository.dart';
+import 'package:cashlytics/core/config/icons.dart';
 
 class AccountRepositoryImpl implements AccountRepository {
   AccountRepositoryImpl({DatabaseService? databaseService})
@@ -72,7 +73,7 @@ class AccountRepositoryImpl implements AccountRepository {
                 amount: _parseAmount(incomeData['amount']),
                 isExpense: false,
                 category: category,
-                icon: _getIncomeIcon(category),
+                icon: getIncomeIcon(category),
               ),
             );
           }
@@ -102,7 +103,7 @@ class AccountRepositoryImpl implements AccountRepository {
                 amount: _parseAmount(expenseData['amount']),
                 isExpense: true,
                 category: category,
-                icon: _getExpenseIcon(categoryData?["name"]),
+                icon: getExpenseIcon(categoryData?["name"]),
               ),
             );
           }
@@ -144,45 +145,7 @@ class AccountRepositoryImpl implements AccountRepository {
     return 0.0;
   }
 
-  IconData _getIncomeIcon(String? category) {
-    switch (category?.toUpperCase()) {
-      case 'SALARY':
-        return Icons.attach_money;
-      case 'BUSINESS':
-        return Icons.business;
-      case 'GIFT':
-        return Icons.card_giftcard;
-      case 'INVESTMENT':
-        return Icons.trending_up;
-      default:
-        return Icons.add_circle;
-    }
-  }
-
-  IconData _getExpenseIcon(String? category) {
-    switch (category?.toUpperCase()) {
-      case 'FOOD':
-        return Icons.fastfood;
-      case 'TRANSPORT':
-        return Icons.directions_car;
-      case 'ENTERTAINMENT':
-        return Icons.movie;
-      case 'UTILITIES':
-        return Icons.electric_bolt;
-      case 'HEALTHCARE':
-        return Icons.local_hospital;
-      case 'SHOPPING':
-        return Icons.shopping_bag;
-      case 'TRAVEL':
-        return Icons.flight_takeoff;
-      case 'EDUCATION':
-        return Icons.school;
-      case 'RENT':
-        return Icons.home;
-      default:
-        return Icons.attach_money;
-    }
-  }
+  // Icon mapping moved to config/icons.dart
 
   @override
   Future<Account> upsertAccount(Account account) async {

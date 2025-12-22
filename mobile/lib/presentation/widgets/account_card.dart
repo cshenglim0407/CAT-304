@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cashlytics/core/config/icons.dart';
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
 
@@ -22,17 +23,7 @@ class AccountCard extends StatelessWidget {
     this.onEditTap, // <--- Add to constructor
   });
 
-  IconData _getTypeIcon() {
-    switch (accountType.toUpperCase()) {
-      case 'CASH': return Icons.payments_rounded;
-      case 'BANK': return Icons.account_balance_rounded;
-      case 'E-WALLET': return Icons.account_balance_wallet_rounded;
-      case 'CREDIT CARD': return Icons.credit_card_rounded;
-      case 'INVESTMENT': return Icons.trending_up_rounded;
-      case 'LOAN': return Icons.money_off_rounded;
-      default: return Icons.account_box_rounded;
-    }
-  }
+  // Type icon mapping moved to config/icons.dart
 
   @override
   Widget build(BuildContext context) {
@@ -76,7 +67,7 @@ class AccountCard extends StatelessWidget {
                     color: Colors.white.withValues(alpha: 0.2), 
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Icon(_getTypeIcon(), color: iconTint, size: 24),
+                  child: Icon(getAccountTypeIcon(accountType), color: iconTint, size: 24),
                 ),
                 const SizedBox(width: 14),
                 
