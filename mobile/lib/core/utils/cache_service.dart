@@ -3,29 +3,37 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CacheService {
-  static late SharedPreferences _prefs;
+  static SharedPreferences? _prefs;
 
   /// Initialize the cache service (call once at app startup)
   static Future<void> initialize() async {
     _prefs = await SharedPreferences.getInstance();
   }
 
+  /// Check if the cache service is initialized
+  static bool get isInitialized => _prefs != null;
+
   /// Save any data to cache with a key
   static Future<void> save<T>(String key, T value) async {
+    if (!isInitialized) {
+      debugPrint('Cache service not initialized, cannot save [$key]');
+      return;
+    }
+    
     try {
       if (value is String) {
-        await _prefs.setString(key, value);
+        await _prefs!.setString(key, value);
       } else if (value is int) {
-        await _prefs.setInt(key, value);
+        await _prefs!.setInt(key, value);
       } else if (value is double) {
-        await _prefs.setDouble(key, value);
+        await _prefs!.setDouble(key, value);
       } else if (value is bool) {
-        await _prefs.setBool(key, value);
+        await _prefs!.setBool(key, value);
       } else if (value is List<String>) {
-        await _prefs.setStringList(key, value);
+        await _prefs!.setStringList(key, value);
       } else if (value is Map<String, dynamic>) {
         final jsonString = jsonEncode(value);
-        await _prefs.setString(key, jsonString);
+        await _prefs!.setString(key, jsonString);
       } else {
         debugPrint('Unsupported type for cache: ${T.toString()}');
       }
@@ -37,22 +45,29 @@ class CacheService {
 
   /// Load data from cache
   static T? load<T>(String key) {
+    if (!isInitialized) {
+      debugPrint('Cache service not initialized, cannot load [$key]');
+      return null;
+    }
+    
     try {
-      final value = _prefs.get(key);
+      if (!containsKey(key)) return null;
+
+      final value = _prefs!.get(key);
       if (value == null) return null;
 
       if (T == String) {
-        return _prefs.getString(key) as T?;
+        return _prefs!.getString(key) as T?;
       } else if (T == int) {
-        return _prefs.getInt(key) as T?;
+        return _prefs!.getInt(key) as T?;
       } else if (T == double) {
-        return _prefs.getDouble(key) as T?;
+        return _prefs!.getDouble(key) as T?;
       } else if (T == bool) {
-        return _prefs.getBool(key) as T?;
+        return _prefs!.getBool(key) as T?;
       } else if (T == List<String>) {
-        return _prefs.getStringList(key) as T?;
+        return _prefs!.getStringList(key) as T?;
       } else if (T == Map<String, dynamic>) {
-        final jsonString = _prefs.getString(key);
+        final jsonString = _prefs!.getString(key);
         if (jsonString != null) {
           return jsonDecode(jsonString) as T?;
         }
@@ -67,8 +82,15 @@ class CacheService {
 
   /// Clear a specific cache key
   static Future<void> remove(String key) async {
+    if (!isInitialized) {
+      debugPrint('Cache service not initialized, cannot remove [$key]');
+      return;
+    }
+    
     try {
-      await _prefs.remove(key);
+      if (!containsKey(key)) return;
+      
+      await _prefs!.remove(key);
       debugPrint('Cache removed: $key');
     } catch (e) {
       debugPrint('Error removing cache [$key]: $e');
@@ -77,8 +99,13 @@ class CacheService {
 
   /// Clear all cache
   static Future<void> clearAll() async {
+    if (!isInitialized) {
+      debugPrint('Cache service not initialized, cannot clear all');
+      return;
+    }
+    
     try {
-      await _prefs.clear();
+      await _prefs!.clear();
       debugPrint('All cache cleared');
     } catch (e) {
       debugPrint('Error clearing all cache: $e');
@@ -87,6 +114,7 @@ class CacheService {
 
   /// Check if key exists
   static bool containsKey(String key) {
-    return _prefs.containsKey(key);
+    if (!isInitialized) return false;
+    return _prefs!.containsKey(key);
   }
 }
