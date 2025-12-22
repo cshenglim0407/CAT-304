@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
+import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
+import 'package:cashlytics/domain/repositories/dashboard_repository.dart';
+import 'package:cashlytics/data/repositories/dashboard_repository_impl.dart';
+import 'package:cashlytics/domain/usecases/dashboard/get_monthly_weekly_balances.dart';
+import 'package:cashlytics/domain/entities/weekly_balance.dart';
 import '../../widgets/index.dart';
-
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -21,12 +25,13 @@ class _DashboardPageState extends State<DashboardPage> {
 
     if (index == 1) {
       // Index 1 is now ACCOUNT
-      Navigator.pushReplacementNamed(context, '/account'); 
+      Navigator.pushReplacementNamed(context, '/account');
     } else if (index == 2) {
       // Index 2 is now PROFILE
-      Navigator.pushReplacementNamed(context, '/profile'); 
+      Navigator.pushReplacementNamed(context, '/profile');
     }
   }
+
   // --- AI Suggestions Modal ---
   void _showAISuggestions(BuildContext context) {
     showModalBottomSheet(
@@ -82,7 +87,9 @@ class _DashboardPageState extends State<DashboardPage> {
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -357,6 +364,124 @@ class _TotalBalanceCard extends StatefulWidget {
 
 class _TotalBalanceCardState extends State<_TotalBalanceCard> {
   String _selectedFilter = 'This month';
+  bool _isLoading = true;
+  List<WeeklyBalance> _weeklyBalances = [];
+
+  late final DashboardRepository _dashboardRepository;
+  late final GetMonthlyWeeklyBalances _getMonthlyWeeklyBalances;
+  late final AuthService _authService;
+
+  @override
+  void initState() {
+    super.initState();
+    _dashboardRepository = DashboardRepositoryImpl();
+    _getMonthlyWeeklyBalances = GetMonthlyWeeklyBalances(_dashboardRepository);
+    _authService = AuthService();
+    _loadWeeklyBalances();
+  }
+
+  Future<void> _loadWeeklyBalances() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final user = _authService.currentUser;
+      if (user == null) {
+        throw Exception('User not authenticated');
+      }
+
+      final now = DateTime.now();
+      DateTime targetMonth;
+
+      // Determine which month to query based on selected filter
+      switch (_selectedFilter) {
+        case 'Last month':
+          targetMonth = DateTime(now.year, now.month - 1, 1);
+          break;
+        case 'This year':
+        case 'Last year':
+          // For year views, we'll use aggregated data (not implemented yet)
+          setState(() {
+            _isLoading = false;
+            _weeklyBalances = [];
+          });
+          return;
+        case 'This month':
+        default:
+          targetMonth = now;
+      }
+
+      final balances = await _getMonthlyWeeklyBalances(user.id, targetMonth);
+
+      setState(() {
+        _weeklyBalances = balances;
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Error loading weekly balances: $e');
+      setState(() {
+        _isLoading = false;
+        _weeklyBalances = [];
+      });
+    }
+  }
+
+  String _formatCurrency(double amount) {
+    return '\$${amount.toStringAsFixed(2)}';
+  }
+
+  double _calculateTotalBalance() {
+    if (_weeklyBalances.isEmpty) return 0.0;
+    return _weeklyBalances.fold(0.0, (sum, week) => sum + week.balance);
+  }
+
+  String _calculatePercentageChange() {
+    if (_weeklyBalances.isEmpty) return '+0.0%';
+
+    // Calculate change based on first week vs last available week
+    final firstWeek = _weeklyBalances.first.balance;
+    final lastWeek = _weeklyBalances.last.balance;
+
+    if (firstWeek == 0) return '+0.0%';
+
+    final change = ((lastWeek - firstWeek) / firstWeek.abs()) * 100;
+    return '${change >= 0 ? '+' : ''}${change.toStringAsFixed(1)}%';
+  }
+
+  Color _getPercentageColor() {
+    if (_weeklyBalances.isEmpty) return AppColors.greyText;
+
+    final firstWeek = _weeklyBalances.first.balance;
+    final lastWeek = _weeklyBalances.last.balance;
+
+    return lastWeek >= firstWeek ? AppColors.success : Colors.red;
+  }
+
+  List<double> _getChartData() {
+    if (_weeklyBalances.isEmpty) {
+      return [0.2, 0.5, 0.4, 0.7, 0.6, 0.9, 0.8]; // Default placeholder
+    }
+
+    // Normalize balance values to 0-1 range for chart
+    final maxBalance = _weeklyBalances
+        .map((w) => w.balance.abs())
+        .reduce((a, b) => a > b ? a : b);
+
+    if (maxBalance == 0) {
+      return List.filled(_weeklyBalances.length, 0.5);
+    }
+
+    return _weeklyBalances
+        .map((w) => (w.balance.abs() / maxBalance).clamp(0.1, 1.0))
+        .toList();
+  }
+
+  List<String> _getLabels() {
+    if (_weeklyBalances.isEmpty) {
+      return ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+    }
+
+    return _weeklyBalances.map((w) => 'Week ${w.weekNumber}').toList();
+  }
 
   final Map<String, dynamic> _data = {
     'This month': {
@@ -395,7 +520,32 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
 
   @override
   Widget build(BuildContext context) {
-    final currentData = _data[_selectedFilter];
+    // Use real data if available, otherwise fallback to mock data
+    final bool useRealData =
+        (_selectedFilter == 'This month' || _selectedFilter == 'Last month') &&
+        !_isLoading &&
+        _weeklyBalances.isNotEmpty;
+
+    final currentData = useRealData ? null : _data[_selectedFilter];
+
+    final displayAmount = useRealData
+        ? _formatCurrency(_calculateTotalBalance())
+        : currentData['amount'];
+
+    final displayPct = useRealData
+        ? _calculatePercentageChange()
+        : currentData['pct'];
+
+    final displayPctColor = useRealData
+        ? _getPercentageColor()
+        : currentData['pctColor'];
+
+    final displayCompare = useRealData
+        ? (_selectedFilter == 'This month' ? 'vs last month' : 'vs prev month')
+        : currentData['compare'];
+
+    final chartData = useRealData ? _getChartData() : currentData['chart'];
+    final labels = useRealData ? _getLabels() : currentData['labels'];
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -422,7 +572,10 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
               Text("Total Balance", style: AppTypography.bodyLarge),
 
               PopupMenuButton<String>(
-                onSelected: (value) => setState(() => _selectedFilter = value),
+                onSelected: (value) {
+                  setState(() => _selectedFilter = value);
+                  _loadWeeklyBalances();
+                },
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -467,61 +620,69 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
           ),
           const SizedBox(height: 10),
 
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                currentData['amount'],
-                style: AppTypography.headline1.copyWith(fontSize: 28),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    currentData['pct'],
-                    style: AppTypography.labelLarge.copyWith(
-                      color: currentData['pctColor'],
-                    ),
+          _isLoading
+              ? const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(20.0),
+                    child: CircularProgressIndicator(),
                   ),
-                  Text(
-                    currentData['compare'],
-                    style: AppTypography.caption.copyWith(
-                      color: AppColors.greyText,
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      displayAmount,
+                      style: AppTypography.headline1.copyWith(fontSize: 28),
                     ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          displayPct,
+                          style: AppTypography.labelLarge.copyWith(
+                            color: displayPctColor,
+                          ),
+                        ),
+                        Text(
+                          displayCompare,
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.greyText,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
           const SizedBox(height: 20),
 
           SizedBox(
             height: 100,
             width: double.infinity,
-            child: CustomPaint(
-              painter: _DynamicLineChartPainter(
-                dataPoints: currentData['chart'],
-              ),
-            ),
+            child: _isLoading
+                ? Container()
+                : CustomPaint(
+                    painter: _DynamicLineChartPainter(dataPoints: chartData),
+                  ),
           ),
 
           const SizedBox(height: 10),
 
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: (currentData['labels'] as List<String>)
-                .map(
-                  (label) => Text(
-                    label,
-                    style: const TextStyle(
-                      color: AppColors.greyText,
-                      fontSize: 12,
+          if (!_isLoading)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: (labels as List<String>)
+                  .map(
+                    (label) => Text(
+                      label,
+                      style: const TextStyle(
+                        color: AppColors.greyText,
+                        fontSize: 12,
+                      ),
                     ),
-                  ),
-                )
-                .toList(),
-          ),
+                  )
+                  .toList(),
+            ),
         ],
       ),
     );

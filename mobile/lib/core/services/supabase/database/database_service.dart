@@ -111,4 +111,11 @@ class DatabaseService {
         .select(columns);
     return List<Map<String, dynamic>>.from(data);
   }
+
+  Future<dynamic> rpc(
+    String functionName, {
+    Map<String, dynamic>? params,
+  }) async {
+    return await supabase.rpc(functionName, params: params);
+  }
 }
