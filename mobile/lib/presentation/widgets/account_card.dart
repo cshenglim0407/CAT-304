@@ -9,6 +9,7 @@ class AccountCard extends StatelessWidget {
   final double initialBalance;
   final String description;
   final VoidCallback? onTap;
+  final VoidCallback? onEditTap; // <--- NEW CALLBACK
 
   const AccountCard({
     super.key,
@@ -18,6 +19,7 @@ class AccountCard extends StatelessWidget {
     required this.initialBalance,
     this.description = '',
     this.onTap,
+    this.onEditTap, // <--- Add to constructor
   });
 
   IconData _getTypeIcon() {
@@ -111,7 +113,15 @@ class AccountCard extends StatelessWidget {
                   ),
                 ),
                 
-                Icon(Icons.more_vert, color: subTextColor, size: 20),
+                // --- UPDATED: Clickable Three Dots ---
+                GestureDetector(
+                  onTap: onEditTap, // Trigger the callback
+                  behavior: HitTestBehavior.opaque, // Ensures the tap is caught
+                  child: Container(
+                    padding: const EdgeInsets.all(8), // Make hit area bigger
+                    child: Icon(Icons.more_vert, color: subTextColor, size: 20),
+                  ),
+                ),
               ],
             ),
 
@@ -145,7 +155,6 @@ class AccountCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.end, 
               children: [
-                // Current Balance (REMOVED LABEL)
                 Text(
                   "\$ ${currentBalance.toStringAsFixed(2)}",
                   style: AppTypography.headline2.copyWith(
@@ -156,7 +165,6 @@ class AccountCard extends StatelessWidget {
                   ),
                 ),
 
-                // Initial Balance
                 Padding(
                   padding: const EdgeInsets.only(bottom: 4), 
                   child: Text(

@@ -29,6 +29,7 @@ class _AccountPageState extends State<AccountPage> {
   }
 
   // --- MOCK DATA ---
+  // Using a Growable list so we can remove items
   final List<Map<String, dynamic>> _myAccounts = [
     {
       'id': '1',
@@ -132,9 +133,133 @@ class _AccountPageState extends State<AccountPage> {
     }
   }
 
+  // --- LOGIC: Confirm Dialog ---
+  void _confirmDelete(BuildContext context, Map<String, dynamic> account) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Delete Account?"),
+        content: Text("Are you sure you want to remove '${account['name']}'? This cannot be undone."),
+        actions: [
+          TextButton(
+            child: const Text("Cancel"), 
+            onPressed: () => Navigator.pop(ctx),
+          ),
+          TextButton(
+            child: const Text("Delete", style: TextStyle(color: Colors.red)),
+            onPressed: () {
+              Navigator.pop(ctx); // Close Dialog
+              _deleteAccount(account); // Perform Delete
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- UI: Edit Menu ---
+  void _showEditOptions(BuildContext context, Map<String, dynamic> account) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              
+              Text(
+                "Manage ${account['name']}",
+                style: AppTypography.headline3.copyWith(fontSize: 18),
+              ),
+              const SizedBox(height: 20),
+
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.edit, color: Colors.blue),
+                ),
+                title: const Text("Edit Account", style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text("Change name, balance, or type"),
+                onTap: () {
+                  Navigator.pop(context);
+                  // Edit logic here
+                },
+              ),
+              
+              const Divider(),
+
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.delete, color: Colors.red),
+                ),
+                title: const Text("Delete Account", style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text("Remove this account permanently"),
+                onTap: () {
+                  Navigator.pop(context); // Close sheet
+                  _confirmDelete(context, account); // Show Confirmation
+                },
+              ),
+              const SizedBox(height: 10),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // --- LOGIC: Delete Account ---
+  void _deleteAccount(Map<String, dynamic> account) {
+    // 1. Find the index of the account to delete
+    int indexToRemove = _myAccounts.indexOf(account);
+    if (indexToRemove == -1) return;
+
+    setState(() {
+      // 2. Remove the account and its transactions
+      _myAccounts.removeAt(indexToRemove);
+      _allTransactions.removeAt(indexToRemove);
+
+      // 3. Adjust the current card index safely
+      // If we deleted the last item, move index back by one.
+      // If the list is empty, index becomes 0.
+      if (_currentCardIndex >= _myAccounts.length) {
+        _currentCardIndex = _myAccounts.isNotEmpty ? _myAccounts.length - 1 : 0;
+      }
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("${account['name']} deleted")),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final currentTransactions = _allTransactions[_currentCardIndex];
+    // Safety check: if empty, show no transactions
+    final currentTransactions = _myAccounts.isNotEmpty 
+        ? _allTransactions[_currentCardIndex] 
+        : <Map<String, dynamic>>[];
 
     return Scaffold(
       backgroundColor: AppColors.getSurface(context),
@@ -165,7 +290,9 @@ class _AccountPageState extends State<AccountPage> {
                             ),
                           ),
                           GestureDetector(
-                            onTap: () {},
+                            onTap: () {
+                              // Add account logic
+                            },
                             child: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
@@ -185,58 +312,81 @@ class _AccountPageState extends State<AccountPage> {
                     const SizedBox(height: 20),
 
                     // --- SWIPEABLE CARDS ---
-                    SizedBox(
-                      height: 200,
-                      child: PageView.builder(
-                        controller: _pageController,
-                        itemCount: _myAccounts.length,
-                        onPageChanged: (index) {
-                          setState(() {
-                            _currentCardIndex = index;
-                          });
-                        },
-                        itemBuilder: (context, index) {
-                          final acc = _myAccounts[index];
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8.0,
-                            ),
-                            child: AccountCard(
-                              accountName: acc['name'],
-                              accountType: acc['type'],
-                              initialBalance: acc['initial'],
-                              currentBalance: acc['current'],
-                              description: acc['desc'],
-                              onTap: () {},
-                            ),
-                          );
-                        },
+                    if (_myAccounts.isEmpty)
+                      // EMPTY STATE
+                      Container(
+                        height: 220,
+                        margin: const EdgeInsets.symmetric(horizontal: 22),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: Colors.grey.withValues(alpha: 0.3), style: BorderStyle.solid),
+                        ),
+                        child: const Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.account_balance_wallet_outlined, size: 40, color: Colors.grey),
+                              SizedBox(height: 10),
+                              Text("No accounts found", style: TextStyle(color: Colors.grey)),
+                            ],
+                          ),
+                        ),
+                      )
+                    else
+                      // CARDS
+                      SizedBox(
+                        height: 200, 
+                        child: PageView.builder(
+                          controller: _pageController,
+                          itemCount: _myAccounts.length,
+                          onPageChanged: (index) {
+                            setState(() {
+                              _currentCardIndex = index;
+                            });
+                          },
+                          itemBuilder: (context, index) {
+                            final acc = _myAccounts[index];
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                              child: AccountCard(
+                                accountName: acc['name'],
+                                accountType: acc['type'],
+                                initialBalance: acc['initial'],
+                                currentBalance: acc['current'],
+                                description: acc['desc'],
+                                onTap: () {}, 
+                                onEditTap: () => _showEditOptions(context, acc), 
+                              ),
+                            );
+                          },
+                        ),
                       ),
-                    ),
 
                     const SizedBox(height: 10),
 
                     // --- Pagination Dots ---
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(_myAccounts.length, (index) {
-                        return Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: _currentCardIndex == index
-                                ? AppColors.primary
-                                : AppColors.greyLight,
-                          ),
-                        );
-                      }),
-                    ),
+                    if (_myAccounts.isNotEmpty)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(_myAccounts.length, (index) {
+                          return Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: _currentCardIndex == index
+                                  ? AppColors.primary
+                                  : AppColors.greyLight,
+                            ),
+                          );
+                        }),
+                      ),
 
                     const SizedBox(height: 30),
 
-                    // --- ADDED: Transactions Header ---
+                    // --- Transactions Header ---
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 22),
                       child: Text(
@@ -250,10 +400,10 @@ class _AccountPageState extends State<AccountPage> {
                     const SizedBox(height: 10),
 
                     // --- Transaction List ---
-                    if (currentTransactions.isEmpty)
+                    if (_myAccounts.isEmpty || currentTransactions.isEmpty)
                       const Padding(
                         padding: EdgeInsets.all(22),
-                        child: Center(child: Text("No transactions yet.")),
+                        child: Center(child: Text("No transactions available.")),
                       )
                     else
                       ListView.builder(
