@@ -1,11 +1,7 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:image/image.dart' as img;
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -15,6 +11,7 @@ import 'package:cashlytics/core/services/cache/cache_service.dart';
 import 'package:cashlytics/core/services/supabase/storage/storage_service.dart';
 import 'package:cashlytics/core/utils/context_extensions.dart';
 import 'package:cashlytics/core/utils/date_formatter.dart';
+import 'package:cashlytics/core/utils/image_cache_service.dart';
 
 import 'package:cashlytics/data/repositories/app_user_repository_impl.dart';
 import 'package:cashlytics/domain/usecases/get_current_app_user.dart';
@@ -52,39 +49,7 @@ class _ProfilePageState extends State<ProfilePage> {
   // State to toggle visibility of detailed info
   bool _showDetailedInfo = false;
 
-  // Cache key for compressed profile image
-  static const String _compressedImageCacheKey = 'compressed_profile_image';
-
   late final StreamSubscription<AuthState> _authStateSubscription;
-
-  /// Compresses an image to 200x200 with 70% quality and returns base64 encoded string
-  Future<String?> _compressAndEncodeImage(String filePath) async {
-    try {
-      // Read image file as bytes
-      final file = File(filePath);
-      final imageBytes = await file.readAsBytes();
-
-      // Decode image
-      var image = img.decodeImage(imageBytes);
-      if (image == null) {
-        debugPrint('Failed to decode image');
-        return null;
-      }
-
-      // Resize to 200x200
-      var resized = img.copyResize(image,
-          width: 200, height: 200, interpolation: img.Interpolation.linear);
-
-      // Encode as PNG with compression level 6 (equivalent to ~70% quality)
-      final compressed = img.encodePng(resized, level: 6);
-
-      // Convert to base64
-      return base64Encode(compressed);
-    } catch (e) {
-      debugPrint('Image compression error: $e');
-      return null;
-    }
-  }
 
   Future<void> _uploadProfilePhoto() async {
     try {
@@ -166,13 +131,7 @@ class _ProfilePageState extends State<ProfilePage> {
             currentUserProfile!['image_path'] = relativePath;
 
             // Compress and cache the image in background
-            _compressAndEncodeImage(filePath).then((compressedBase64) {
-              if (compressedBase64 != null && mounted) {
-                CacheService.save(_compressedImageCacheKey, compressedBase64);
-                debugPrint(
-                    'Compressed image cached (size: ${(compressedBase64.length / 1024).toStringAsFixed(2)} KB)');
-              }
-            }).catchError((e) {
+            ImageCacheService.compressAndCache(filePath).catchError((e) {
               debugPrint('Error caching compressed image: $e');
               // Continue even if caching fails
             });
@@ -374,16 +333,9 @@ class _ProfilePageState extends State<ProfilePage> {
     }
 
     // Check if we have a cached compressed image
-    final cachedCompressedImage =
-        CacheService.load<String>(_compressedImageCacheKey);
-    if (cachedCompressedImage != null && cachedCompressedImage.isNotEmpty) {
-      try {
-        final imageBytes = base64Decode(cachedCompressedImage);
-        return MemoryImage(imageBytes);
-      } catch (e) {
-        debugPrint('Error decoding cached compressed image: $e');
-        // Fall through to network image
-      }
+    final cachedImage = ImageCacheService.getCompressedImageFromCache();
+    if (cachedImage != null) {
+      return cachedImage;
     }
 
     // If it's a storage path (doesn't start with http), construct the public URL
