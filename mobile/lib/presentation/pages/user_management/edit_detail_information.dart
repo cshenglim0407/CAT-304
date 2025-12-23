@@ -163,7 +163,7 @@ class _EditDetailInformationPageState extends State<EditDetailInformationPage> {
 
                 const SizedBox(height: 30),
 
-                const SectionTitle(title: "Edit Detailed Info"),
+                const SectionTitle(title: "Edit AI Analysis Profile"),
                 const SizedBox(height: 8),
                 const SectionSubtitle(
                   subtitle:

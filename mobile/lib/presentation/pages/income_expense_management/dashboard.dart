@@ -442,6 +442,45 @@ class _AISuggestionsModalContentState
     }
   }
 
+  IconData _getIconData(String iconName) {
+    final iconMap = <String, IconData>{
+      'savings': Icons.savings,
+      'trending_up': Icons.trending_up,
+      'trending_down': Icons.trending_down,
+      'account_balance_wallet': Icons.account_balance_wallet,
+      'restaurant': Icons.restaurant,
+      'home': Icons.home,
+      'shopping_cart': Icons.shopping_cart,
+      'attach_money': Icons.attach_money,
+      'credit_card': Icons.credit_card,
+      'receipt': Icons.receipt,
+      'local_gas_station': Icons.local_gas_station,
+      'lightbulb_outline': Icons.lightbulb_outline,
+      'warning': Icons.warning,
+      'check_circle': Icons.check_circle,
+      'info': Icons.info,
+      'star': Icons.star,
+      'workspace_premium': Icons.workspace_premium,
+    };
+
+    return iconMap[iconName] ?? Icons.lightbulb_outline;
+  }
+
+  Color _getCategoryColor(String category) {
+    switch (category.toLowerCase()) {
+      case 'spending':
+        return Colors.orange;
+      case 'savings':
+        return Colors.green;
+      case 'budgeting':
+        return Colors.blue;
+      case 'income':
+        return AppColors.primary;
+      default:
+        return AppColors.primary;
+    }
+  }
+
   Color _getHealthColor() {
     if (_healthScore == null) return Colors.grey;
     if (_healthScore! >= 80) return AppColors.success;
@@ -516,6 +555,34 @@ class _AISuggestionsModalContentState
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.blueGrey.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.blueGrey.shade100),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(
+                          Icons.info_outline,
+                          color: AppColors.primary,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'For more accurate insights, fill in your details in Profile > Edit AI Analysis Profile.',
+                            style: AppTypography.bodySmall.copyWith(
+                              color: AppColors.getTextSecondary(context),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   // Health Score
                   Container(
                     padding: const EdgeInsets.all(20),
@@ -584,8 +651,12 @@ class _AISuggestionsModalContentState
                       (suggestion) => _SuggestionTile(
                         title: suggestion['title'] as String? ?? '',
                         body: suggestion['body'] as String? ?? '',
-                        icon: Icons.lightbulb_outline,
-                        color: AppColors.primary,
+                        icon: _getIconData(
+                          suggestion['icon'] as String? ?? 'lightbulb_outline',
+                        ),
+                        color: _getCategoryColor(
+                          suggestion['category'] as String? ?? 'general',
+                        ),
                       ),
                     )
                   else

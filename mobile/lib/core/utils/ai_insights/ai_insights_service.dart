@@ -195,32 +195,35 @@ class AiInsightsService {
       buffer.write(TransactionAnalyzer.getCategoryBreakdown(transactions));
     }
 
+    // Make prompt request
     buffer.writeln('---');
     buffer.writeln();
-    buffer.writeln(
-      'Based on this analysis, provide a JSON response with the following structure:',
-    );
+    buffer.writeln('Based on this analysis, provide a JSON response with:');
     buffer.writeln('{');
     buffer.writeln('  "healthScore": <integer 0-100>,');
     buffer.writeln(
-      '  "insights": "<brief paragraph about financial patterns and health>",',
+      '  "insights": "<2-3 sentence overview of financial health>",',
     );
     buffer.writeln('  "suggestions": [');
     buffer.writeln('    {');
-    buffer.writeln('      "title": "<suggestion title>",');
-    buffer.writeln('      "body": "<detailed explanation>",');
+    buffer.writeln('      "title": "<short title, max 6 words>",');
+    buffer.writeln('      "body": "<concise explanation, max 25 words>",');
+    buffer.writeln('      "category": "<spending|savings|budgeting|income>",');
     buffer.writeln(
-      '      "category": "<category like spending, savings, budgeting>"',
+      '      "icon": "<Material Icons name: savings, trending_up, account_balance_wallet, restaurant, home, shopping_cart, attach_money, etc>"',
     );
     buffer.writeln('    }');
     buffer.writeln('    ... (provide exactly 3 suggestions)');
     buffer.writeln('  ],');
     buffer.writeln(
-      '  "recommendations": ["<action 1>", "<action 2>", "<action 3>"]',
+      '  "recommendations": ["<max 10 words>", "<max 10 words>", "<max 10 words>"]',
     );
     buffer.writeln('}');
     buffer.writeln();
-    buffer.writeln('Return ONLY valid JSON, no markdown formatting.');
+    buffer.writeln('IMPORTANT:');
+    buffer.writeln('- Keep text concise and actionable');
+    buffer.writeln('- Use Material Icons names without "Icons." prefix');
+    buffer.writeln('- Return ONLY valid JSON, no markdown');
 
     return buffer.toString();
   }

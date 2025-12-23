@@ -59,7 +59,9 @@ class AiInsightResponse {
       return _parseJsonString(text);
     } catch (_) {
       // Try extracting JSON from markdown code blocks
-      final jsonMatch = RegExp(r'```(?:json)?\s*(\{[\s\S]*?\})\s*```').firstMatch(text);
+      final jsonMatch = RegExp(
+        r'```(?:json)?\s*(\{[\s\S]*?\})\s*```',
+      ).firstMatch(text);
       if (jsonMatch != null) {
         return _parseJsonString(jsonMatch.group(1)!);
       }
@@ -75,9 +77,7 @@ class AiInsightResponse {
   }
 
   static Map<String, dynamic> _parseJsonString(String jsonString) {
-    return Map<String, dynamic>.from(
-      _decodeJson(jsonString.trim()) as Map,
-    );
+    return Map<String, dynamic>.from(_decodeJson(jsonString.trim()) as Map);
   }
 
   static dynamic _decodeJson(String json) {
@@ -94,6 +94,7 @@ class AiInsightResponse {
         title: item['title'] as String? ?? '',
         body: item['body'] as String? ?? '',
         category: item['category'] as String? ?? 'general',
+        icon: item['icon'] as String? ?? 'lightbulb_outline',
       );
     }).toList();
   }
@@ -121,19 +122,17 @@ class SuggestionItem {
   final String title;
   final String body;
   final String category;
+  final String icon;
 
   const SuggestionItem({
     required this.title,
     required this.body,
     required this.category,
+    required this.icon,
   });
 
   Map<String, dynamic> toJson() {
-    return {
-      'title': title,
-      'body': body,
-      'category': category,
-    };
+    return {'title': title, 'body': body, 'category': category, 'icon': icon};
   }
 
   factory SuggestionItem.fromJson(Map<String, dynamic> json) {
@@ -141,6 +140,7 @@ class SuggestionItem {
       title: json['title'] as String? ?? '',
       body: json['body'] as String? ?? '',
       category: json['category'] as String? ?? 'general',
+      icon: json['icon'] as String? ?? 'lightbulb_outline',
     );
   }
 }
