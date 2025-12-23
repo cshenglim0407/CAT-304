@@ -978,7 +978,12 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
             child: _isLoading
                 ? Container()
                 : CustomPaint(
-                    painter: _DynamicLineChartPainter(dataPoints: chartData),
+                    painter: _DynamicLineChartPainter(
+                      dataPoints: chartData,
+                      weeklyBalances: _weeklyBalances.isNotEmpty
+                          ? _weeklyBalances
+                          : null,
+                    ),
                   ),
           ),
 
@@ -1425,8 +1430,9 @@ class _LegendItem extends StatelessWidget {
 
 class _DynamicLineChartPainter extends CustomPainter {
   final List<double> dataPoints;
+  final List<WeeklyBalance>? weeklyBalances;
 
-  _DynamicLineChartPainter({required this.dataPoints});
+  _DynamicLineChartPainter({required this.dataPoints, this.weeklyBalances});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -1469,6 +1475,52 @@ class _DynamicLineChartPainter extends CustomPainter {
     fillPath.lineTo(0, size.height);
     fillPath.close();
     canvas.drawPath(fillPath, fillPaint);
+
+    // Draw "current week" line if we have weekly balance data
+    if (weeklyBalances != null && weeklyBalances!.isNotEmpty) {
+      final sortedBalances = List<WeeklyBalance>.from(weeklyBalances!)
+        ..sort((a, b) => a.startDate.compareTo(b.startDate));
+
+      // Find the current week using isCurrentWeek flag
+      int? currentWeekIndex;
+      for (int i = 0; i < sortedBalances.length; i++) {
+        if (sortedBalances[i].isCurrentWeek) {
+          currentWeekIndex = i;
+          break;
+        }
+      }
+
+      if (currentWeekIndex != null) {
+        // Draw line at the center of the current week
+        final currentWeekX = currentWeekIndex * stepX;
+
+        // Draw dotted vertical line
+        final dottedPaint = Paint()
+          ..color = AppColors.greyText.withValues(alpha: 0.6)
+          ..strokeWidth = 1.5
+          ..style = PaintingStyle.stroke;
+
+        const dashHeight = 4.0;
+        const dashSpace = 4.0;
+        double startY = 0;
+
+        while (startY < size.height) {
+          canvas.drawLine(
+            Offset(currentWeekX, startY),
+            Offset(currentWeekX, startY + dashHeight),
+            dottedPaint,
+          );
+          startY += dashHeight + dashSpace;
+        }
+
+        // Draw a small circle at the top
+        final circlePaint = Paint()
+          ..color = AppColors.greyText
+          ..style = PaintingStyle.fill;
+
+        canvas.drawCircle(Offset(currentWeekX, 0), 3, circlePaint);
+      }
+    }
   }
 
   @override
