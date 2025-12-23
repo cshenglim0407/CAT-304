@@ -13,6 +13,8 @@ import 'package:cashlytics/domain/usecases/accounts/get_account_transactions.dar
 import 'package:cashlytics/domain/entities/account.dart';
 import 'package:cashlytics/domain/entities/account_transaction_view.dart';
 
+import 'package:cashlytics/core/utils/date_formatter.dart';
+import 'package:cashlytics/core/utils/income_expense_management/income_expense_helpers.dart';
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
 import 'package:cashlytics/presentation/widgets/index.dart';
@@ -473,8 +475,8 @@ class _AccountPageState extends State<AccountPage> {
                           final tx = _currentTransactions[index];
                           return _TransactionTile(
                             title: tx.title,
-                            subtitle: _formatDate(tx.date),
-                            amount: _formatCurrency(tx.amount, tx.isExpense),
+                            subtitle: DateFormatter.formatDate(tx.date),
+                            amount: IncomeExpenseHelpers.formatCurrency(tx.amount, tx.isExpense),
                             isExpense: tx.isExpense,
                             icon: tx.icon,
                           );
@@ -488,44 +490,6 @@ class _AccountPageState extends State<AccountPage> {
         ),
       ),
     );
-  }
-
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final yesterday = today.subtract(const Duration(days: 1));
-    final dateOnly = DateTime(date.year, date.month, date.day);
-
-    if (dateOnly == today) {
-      return 'Today';
-    } else if (dateOnly == yesterday) {
-      return 'Yesterday';
-    } else {
-      return '${date.day} ${_monthName(date.month)}';
-    }
-  }
-
-  String _monthName(int month) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return months[month - 1];
-  }
-
-  String _formatCurrency(double amount, bool isExpense) {
-    final sign = isExpense ? '- ' : '+ ';
-    return '$sign\$${amount.toStringAsFixed(2)}';
   }
 }
 
