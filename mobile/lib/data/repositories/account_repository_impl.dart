@@ -102,6 +102,7 @@ class AccountRepositoryImpl implements AccountRepository {
               matchColumn: 'expense_cat_id',
               matchValue: category,
             );
+            final categoryName = categoryData?['name'] as String?;
 
             views.add(
               AccountTransactionView(
@@ -110,8 +111,8 @@ class AccountRepositoryImpl implements AccountRepository {
                 date: createdAt,
                 amount: _parseAmount(expenseData['amount']),
                 isExpense: true,
-                category: category,
-                icon: getExpenseIcon(categoryData?["name"]),
+                category: categoryName ?? category ?? 'Expense',
+                icon: getExpenseIcon(categoryName),
               ),
             );
           }
@@ -139,6 +140,7 @@ class AccountRepositoryImpl implements AccountRepository {
                 date: createdAt,
                 amount: _parseAmount(transferData['amount']),
                 isExpense: true, // Deducting from this account
+                category: 'Transfer',
                 icon: Icons.arrow_upward,
               ),
             );
@@ -177,6 +179,7 @@ class AccountRepositoryImpl implements AccountRepository {
               date: createdAt,
               amount: _parseAmount(transfer['amount']),
               isExpense: false, // Adding to this account
+              category: 'Transfer',
               icon: Icons.arrow_downward,
             ),
           );

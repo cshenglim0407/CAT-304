@@ -2,10 +2,11 @@ import 'package:cashlytics/core/services/supabase/database/database_service.dart
 import 'package:cashlytics/data/models/ai_report_model.dart';
 import 'package:cashlytics/domain/entities/ai_report.dart';
 import 'package:cashlytics/domain/repositories/ai_report_repository.dart';
+import 'package:flutter/foundation.dart';
 
 class AiReportRepositoryImpl implements AiReportRepository {
   AiReportRepositoryImpl({DatabaseService? databaseService})
-      : _databaseService = databaseService ?? const DatabaseService();
+    : _databaseService = databaseService ?? const DatabaseService();
 
   final DatabaseService _databaseService;
   static const String _table = 'ai_report';
@@ -39,6 +40,99 @@ class AiReportRepositoryImpl implements AiReportRepository {
       }
 
       return AiReportModel.fromMap(updateData);
+    }
+  }
+
+  @override
+  Future<AiReport?> getLatestReport(String userId) async {
+    try {
+      final results = await _databaseService.fetchAll(
+        _table,
+        filters: {'user_id': userId},
+        orderBy: 'created_at',
+        ascending: false,
+        limit: 1,
+      );
+
+      if (results.isEmpty) {
+        return null;
+      }
+
+      return AiReportModel.fromMap(results.first);
+    } catch (e) {
+      debugPrint('Error fetching latest AI report: $e');
+      return null;
+    }
+  }
+
+  @override
+  Future<AiReport?> getReportByMonth(String userId, String month) async {
+    try {
+      final results = await _databaseService.fetchAll(
+        _table,
+        filters: {'user_id': userId, 'month': month},
+        limit: 1,
+      );
+
+      if (results.isEmpty) {
+        return null;
+      }
+
+      return AiReportModel.fromMap(results.first);
+    } catch (e) {
+      debugPrint('Error fetching AI report for month $month: $e');
+      return null;
+    }
+  }
+
+  @override
+  Future<void> deleteAiReport(String reportId) async {
+    try {
+      await _databaseService.deleteById(
+        _table,
+        matchColumn: 'report_id',
+        matchValue: reportId,
+      );
+    } catch (e) {
+      debugPrint('Error deleting AI report $reportId: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<AiReport>> getRecentReports(
+    String userId, {
+    int limit = 3,
+    String? excludeMonth,
+  }) async {
+    try {
+      // Fetch more than needed to safely filter out excluded month if provided
+      final fetchLimit = excludeMonth == null ? limit : (limit + 3);
+      final results = await _databaseService.fetchAll(
+        _table,
+        filters: {'user_id': userId},
+        orderBy: 'created_at',
+        ascending: false,
+        limit: fetchLimit,
+      );
+
+      if (results.isEmpty) {
+        return [];
+      }
+
+      // Map, filter excluded month, then take the requested limit
+      final mapped = results
+          .map((r) => AiReportModel.fromMap(r))
+          .where(
+            (report) => excludeMonth == null || report.month != excludeMonth,
+          )
+          .take(limit)
+          .toList();
+
+      return mapped;
+    } catch (e) {
+      debugPrint('Error fetching recent AI reports: $e');
+      return [];
     }
   }
 }

@@ -6,7 +6,7 @@ class AiReport {
     this.id,
     required this.userId,
     this.title,
-    this.description,
+    this.insights,
     this.body,
     this.month,
     this.healthScore,
@@ -16,7 +16,7 @@ class AiReport {
   final String? id;
   final String userId;
   final String? title;
-  final String? description;
+  final String? insights;
   final String? body;
   final String? month;
   final int? healthScore;
@@ -26,7 +26,7 @@ class AiReport {
     String? id,
     String? userId,
     String? title,
-    String? description,
+    String? insights,
     String? body,
     String? month,
     int? healthScore,
@@ -36,7 +36,7 @@ class AiReport {
       id: id ?? this.id,
       userId: userId ?? this.userId,
       title: title ?? this.title,
-      description: description ?? this.description,
+      insights: insights ?? this.insights,
       body: body ?? this.body,
       month: month ?? this.month,
       healthScore: healthScore ?? this.healthScore,
@@ -51,7 +51,7 @@ class AiReport {
         other.id == id &&
         other.userId == userId &&
         other.title == title &&
-        other.description == description &&
+          other.insights == insights &&
         other.body == body &&
         other.month == month &&
         other.healthScore == healthScore &&
@@ -63,7 +63,7 @@ class AiReport {
         id,
         userId,
         title,
-        description,
+        insights,
         body,
         month,
         healthScore,

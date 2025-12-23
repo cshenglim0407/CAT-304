@@ -2,4 +2,12 @@ import 'package:cashlytics/domain/entities/ai_report.dart';
 
 abstract class AiReportRepository {
   Future<AiReport> upsertAiReport(AiReport report);
+  Future<AiReport?> getLatestReport(String userId);
+  Future<AiReport?> getReportByMonth(String userId, String month);
+  Future<void> deleteAiReport(String reportId);
+  Future<List<AiReport>> getRecentReports(
+    String userId, {
+    int limit = 3,
+    String? excludeMonth,
+  });
 }
