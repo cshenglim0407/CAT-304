@@ -152,7 +152,6 @@ class _AccountPageState extends State<AccountPage> {
                 (isExpense ? '- \$' : '+ \$') + amount.toStringAsFixed(2);
 
             txList.add({
-              'transactionId': tx.transactionId,
               'type': isExpense ? 'expense' : 'income',
               'title': tx.title,
               'date': _formatDate(tx.date),
@@ -215,30 +214,53 @@ class _AccountPageState extends State<AccountPage> {
   }
 
   // --- LOGIC: DELETE ---
-  Future<void> _deleteTransaction(
-    Map<String, dynamic> tx,
-    int accountIndex,
-  ) async {
-    final String? transactionId = tx['transactionId']?.toString();
+  Future<void> _deleteTransaction(Map<String, dynamic> tx, int accountIndex) async {
+    String? transactionId = tx['transactionId']?.toString();
+    final String? accountId = _myAccounts[accountIndex]['id']?.toString();
 
     try {
-      // Delete from backend if transaction has an ID
-      if (transactionId != null && transactionId.isNotEmpty) {
-        await _deleteTransactionUseCase(transactionId);
+      // If transactionId is missing, try to resolve it from backend
+      if ((transactionId == null || transactionId.isEmpty) && accountId != null) {
+        final resolvedId = await _resolveTransactionIdFromBackend(tx, accountId);
+        if (resolvedId != null) {
+          transactionId = resolvedId;
+          tx['transactionId'] = resolvedId;
+        }
       }
 
-      if (!mounted) return;
+      if (transactionId != null && transactionId.isNotEmpty) {
+        // Persist delete in backend
+        await _deleteTransactionUseCase(transactionId);
 
-      setState(() {
-        _allTransactions[accountIndex].removeWhere((element) => element == tx);
-        double amount = _parseAmount(tx);
-
-        if (tx['isExpense'] == true) {
-          _myAccounts[accountIndex]['current'] += amount;
-        } else {
-          _myAccounts[accountIndex]['current'] -= amount;
+        // Reload account from DB to pick up trigger-updated balance
+        if (accountId != null && accountId.isNotEmpty) {
+          final userId = supabase.auth.currentUser?.id;
+          if (userId != null) {
+            final accounts = await _getAccounts(userId);
+            final updated = accounts.firstWhere(
+              (acc) => acc.id == accountId,
+              orElse: () => accounts.first,
+            );
+            if (!mounted) return;
+            setState(() {
+              _allTransactions[accountIndex].removeWhere((e) => e == tx);
+              _myAccounts[accountIndex]['current'] = updated.currentBalance;
+            });
+          }
         }
-      });
+      } else {
+        // Local-only: remove and adjust UI balance optimistically
+        if (!mounted) return;
+        setState(() {
+          _allTransactions[accountIndex].removeWhere((e) => e == tx);
+          final amount = _parseAmount(tx);
+          if (tx['isExpense'] == true) {
+            _myAccounts[accountIndex]['current'] += amount;
+          } else {
+            _myAccounts[accountIndex]['current'] -= amount;
+          }
+        });
+      }
 
       // Update caches to persist changes
       CacheService.save('accounts', _myAccounts);
@@ -246,16 +268,36 @@ class _AccountPageState extends State<AccountPage> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Transaction deleted and balance updated"),
-        ),
+        const SnackBar(content: Text("Transaction deleted and balance updated")),
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Delete failed: $e")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Delete failed: $e")),
+      );
     }
+  }
+
+  Future<String?> _resolveTransactionIdFromBackend(
+    Map<String, dynamic> tx,
+    String accountId,
+  ) async {
+    try {
+      final backend = await _getAccountTransactions(accountId);
+      final String title = (tx['title'] ?? '').toString();
+      final double amt = _parseAmount(tx).abs();
+      final String dateStr = (tx['date'] ?? '').toString();
+
+      for (final b in backend) {
+        final sameTitle = b.title == title;
+        final sameAmt = (b.amount.abs() - amt).abs() < 0.01;
+        final sameDay = _formatDate(b.date) == dateStr;
+        if (sameTitle && sameAmt && sameDay) {
+          return b.transactionId;
+        }
+      }
+    } catch (_) {}
+    return null;
   }
 
   // --- LOGIC: EDIT (FIXED ICON ISSUE HERE) ---
