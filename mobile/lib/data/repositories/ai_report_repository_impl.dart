@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 
 class AiReportRepositoryImpl implements AiReportRepository {
   AiReportRepositoryImpl({DatabaseService? databaseService})
-      : _databaseService = databaseService ?? const DatabaseService();
+    : _databaseService = databaseService ?? const DatabaseService();
 
   final DatabaseService _databaseService;
   static const String _table = 'ai_report';
@@ -96,6 +96,43 @@ class AiReportRepositoryImpl implements AiReportRepository {
     } catch (e) {
       debugPrint('Error deleting AI report $reportId: $e');
       rethrow;
+    }
+  }
+
+  @override
+  Future<List<AiReport>> getRecentReports(
+    String userId, {
+    int limit = 3,
+    String? excludeMonth,
+  }) async {
+    try {
+      // Fetch more than needed to safely filter out excluded month if provided
+      final fetchLimit = excludeMonth == null ? limit : (limit + 3);
+      final results = await _databaseService.fetchAll(
+        _table,
+        filters: {'user_id': userId},
+        orderBy: 'created_at',
+        ascending: false,
+        limit: fetchLimit,
+      );
+
+      if (results.isEmpty) {
+        return [];
+      }
+
+      // Map, filter excluded month, then take the requested limit
+      final mapped = results
+          .map((r) => AiReportModel.fromMap(r))
+          .where(
+            (report) => excludeMonth == null || report.month != excludeMonth,
+          )
+          .take(limit)
+          .toList();
+
+      return mapped;
+    } catch (e) {
+      debugPrint('Error fetching recent AI reports: $e');
+      return [];
     }
   }
 }

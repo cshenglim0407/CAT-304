@@ -10,6 +10,8 @@ import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_state_listener.dart';
 import 'package:cashlytics/core/services/cache/cache_service.dart';
 import 'package:cashlytics/core/utils/ai_insights/ai_insights_service.dart';
+import 'package:cashlytics/domain/entities/ai_report.dart';
+import 'package:cashlytics/data/repositories/ai_report_repository_impl.dart';
 
 import 'package:cashlytics/domain/repositories/dashboard_repository.dart';
 import 'package:cashlytics/domain/repositories/account_repository.dart';
@@ -373,6 +375,7 @@ class _AISuggestionsModalContentState
   String? _insights;
   List<dynamic> _suggestions = [];
   String? _errorMessage;
+  List<AiReport> _recentReports = [];
 
   @override
   void initState() {
@@ -400,6 +403,25 @@ class _AISuggestionsModalContentState
       if (report.body != null) {
         try {
           final json = _parseJsonFromBody(report.body!);
+          // Also load recent reports for trend display
+          try {
+            final auth = AuthService();
+            final user = auth.currentUser;
+            if (user != null) {
+              final now = DateTime.now();
+              final monthKey = '${now.month.toString().padLeft(2, '0')}-${now.year}';
+              final repo = AiReportRepositoryImpl();
+              final recent = await repo.getRecentReports(
+                user.id,
+                limit: 3,
+                excludeMonth: monthKey,
+              );
+              _recentReports = recent;
+            }
+          } catch (e) {
+            debugPrint('Error loading recent AI reports: $e');
+          }
+
           setState(() {
             _healthScore = report.healthScore;
             _insights = json['insights'] as String?;
@@ -669,6 +691,58 @@ class _AISuggestionsModalContentState
                       ],
                     ),
                   ),
+                  // Recent Trend
+                  if (_recentReports.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.getSurface(context),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.greyBorder),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.insights, color: AppColors.primary),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Recent Trend',
+                                style: AppTypography.labelLarge.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          ..._recentReports.map((r) {
+                            final month = r.month ?? 'Unknown';
+                            final score = r.healthScore;
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: Row(
+                                children: [
+                                  Text(
+                                    month,
+                                    style: AppTypography.bodySmall.copyWith(
+                                      color: AppColors.getTextSecondary(context),
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  Text(
+                                    score != null ? '$score' : '-',
+                                    style: AppTypography.bodySmall,
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
+                        ],
+                      ),
+                    ),
+                  ],
                   const Divider(height: 30),
                   // Suggestions
                   if (_suggestions.isNotEmpty)

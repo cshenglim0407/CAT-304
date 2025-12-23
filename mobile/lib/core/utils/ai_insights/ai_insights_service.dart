@@ -111,6 +111,21 @@ class AiInsightsService {
         debugPrint('[AiInsightsService] No detailed profile found: $e');
       }
 
+      // 5. Fetch recent reports for progress comparison (excluding current month)
+      List<AiReport> recentReports = [];
+      try {
+        recentReports = await _aiReportRepository.getRecentReports(
+          user.id,
+          limit: 3,
+          excludeMonth: monthKey,
+        );
+        debugPrint(
+          '[AiInsightsService] Found ${recentReports.length} previous report(s) for comparison',
+        );
+      } catch (e) {
+        debugPrint('[AiInsightsService] Failed to fetch recent reports: $e');
+      }
+
       // 5. Build Gemini prompt
       final prompt = _buildGeminiPrompt(
         user: user,
@@ -120,6 +135,7 @@ class AiInsightsService {
         transactions: allTransactions,
         detailed: detailed,
         period: monthKey,
+        previousReports: recentReports,
       );
 
       debugPrint(
@@ -167,6 +183,7 @@ class AiInsightsService {
     required List<AccountTransactionView> transactions,
     Detailed? detailed,
     required String period,
+    List<AiReport> previousReports = const [],
   }) {
     final buffer = StringBuffer();
 
@@ -202,6 +219,33 @@ class AiInsightsService {
         ),
       );
       buffer.write(TransactionAnalyzer.getCategoryBreakdown(transactions));
+    }
+
+    // Previous AI report summary for trend awareness
+    if (previousReports.isNotEmpty) {
+      buffer.writeln();
+      buffer.writeln('Previous AI Reports (for trend comparison):');
+      for (final r in previousReports) {
+        final score = r.healthScore ?? -1;
+        final month = r.month ?? 'unknown';
+        buffer.writeln('- Month: $month, HealthScore: ${score >= 0 ? score : 'n/a'}');
+        // Include concise insights summary if available
+        if ((r.insights ?? '').isNotEmpty) {
+          buffer.writeln('  Insights: ${r.insights}');
+        }
+        // Parse suggestion titles from stored body JSON
+        if ((r.body ?? '').isNotEmpty) {
+          try {
+            final parsed = AiInsightResponse.fromJson(r.body!);
+            if (parsed.suggestions.isNotEmpty) {
+              final titles = parsed.suggestions.map((s) => s.title).toList();
+              buffer.writeln('  Suggestion Titles: ${titles.join(', ')}');
+            }
+          } catch (_) {
+            // ignore parse errors for older records
+          }
+        }
+      }
     }
 
     // Make prompt request
