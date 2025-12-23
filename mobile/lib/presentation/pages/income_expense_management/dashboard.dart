@@ -537,7 +537,24 @@ class _AISuggestionsModalContentState
           ),
           const SizedBox(height: 20),
           if (_isLoading)
-            const Expanded(child: Center(child: CircularProgressIndicator()))
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text(
+                      'We\'re generating your AI Financial Insights. This might take a few seconds...',
+                      textAlign: TextAlign.center,
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: AppColors.getTextSecondary(context),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
           else if (_errorMessage != null)
             Expanded(
               child: Center(
