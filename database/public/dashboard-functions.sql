@@ -15,50 +15,51 @@ RETURNS TABLE (
     is_current_week BOOLEAN
 ) AS $$
 DECLARE
+    current_date_in_month DATE;
     first_day DATE;
     last_day DATE;
-    current_date_in_month DATE;
 BEGIN
-    -- Calculate first and last day of the month
     first_day := make_date(p_year, p_month, 1);
     last_day := (first_day + INTERVAL '1 month - 1 day')::DATE;
     current_date_in_month := make_date(p_year, p_month, p_current_day);
 
     RETURN QUERY
     WITH week_ranges AS (
-        -- Generate week ranges for the month (4 weeks, 7 days each)
-        SELECT 
-            generate_series AS week_num,
-            (first_day + ((generate_series - 1) * 7) * INTERVAL '1 day')::DATE AS week_start,
-            LEAST(
-                (first_day + ((generate_series - 1) * 7 + 6) * INTERVAL '1 day')::DATE,
-                last_day
-            ) AS week_end
-        FROM generate_series(1, 4) AS generate_series
+        SELECT DISTINCT
+            EXTRACT(WEEK FROM calendar_date)::INTEGER AS week_num,
+            MIN(calendar_date) AS week_start,
+            MAX(calendar_date) AS week_end
+        FROM (
+            SELECT (make_date(p_year, 1, 1) + (generate_series - 1) * INTERVAL '1 day')::DATE AS calendar_date
+            FROM generate_series(1, 366)
+            WHERE EXTRACT(YEAR FROM (make_date(p_year, 1, 1) + (generate_series - 1) * INTERVAL '1 day')::DATE) = p_year
+        ) AS year_dates
+        WHERE calendar_date BETWEEN first_day AND last_day
+        GROUP BY EXTRACT(WEEK FROM calendar_date)
     ),
     income_summary AS (
-        -- Calculate total income per week
         SELECT 
-            wr.week_num,
+            EXTRACT(WEEK FROM t.CREATED_AT::DATE)::INTEGER AS week_num,
             COALESCE(SUM(i.AMOUNT), 0) AS total_income
-        FROM week_ranges wr
-        LEFT JOIN TRANSACTION t ON t.CREATED_AT::DATE BETWEEN wr.week_start AND wr.week_end
+        FROM TRANSACTION t
         LEFT JOIN INCOME i ON i.TRANSACTION_ID = t.TRANSACTION_ID
         LEFT JOIN ACCOUNTS a ON t.ACCOUNT_ID = a.ACCOUNT_ID
-        WHERE a.USER_ID = p_user_id OR a.USER_ID IS NULL
-        GROUP BY wr.week_num
+        WHERE (a.USER_ID = p_user_id OR a.USER_ID IS NULL)
+            AND EXTRACT(YEAR FROM t.CREATED_AT::DATE) = p_year
+            AND EXTRACT(MONTH FROM t.CREATED_AT::DATE) = p_month
+        GROUP BY EXTRACT(WEEK FROM t.CREATED_AT::DATE)
     ),
     expense_summary AS (
-        -- Calculate total expenses per week
         SELECT 
-            wr.week_num,
+            EXTRACT(WEEK FROM t.CREATED_AT::DATE)::INTEGER AS week_num,
             COALESCE(SUM(e.AMOUNT), 0) AS total_expense
-        FROM week_ranges wr
-        LEFT JOIN TRANSACTION t ON t.CREATED_AT::DATE BETWEEN wr.week_start AND wr.week_end
+        FROM TRANSACTION t
         LEFT JOIN EXPENSES e ON e.TRANSACTION_ID = t.TRANSACTION_ID
         LEFT JOIN ACCOUNTS a ON t.ACCOUNT_ID = a.ACCOUNT_ID
-        WHERE a.USER_ID = p_user_id OR a.USER_ID IS NULL
-        GROUP BY wr.week_num
+        WHERE (a.USER_ID = p_user_id OR a.USER_ID IS NULL)
+            AND EXTRACT(YEAR FROM t.CREATED_AT::DATE) = p_year
+            AND EXTRACT(MONTH FROM t.CREATED_AT::DATE) = p_month
+        GROUP BY EXTRACT(WEEK FROM t.CREATED_AT::DATE)
     )
     SELECT 
         wr.week_num::INTEGER AS week_number,
@@ -71,8 +72,8 @@ BEGIN
     FROM week_ranges wr
     LEFT JOIN income_summary i ON i.week_num = wr.week_num
     LEFT JOIN expense_summary e ON e.week_num = wr.week_num
-    -- Only return weeks that have started
-    WHERE wr.week_start <= current_date_in_month
+    -- Exclude weeks that mostly belong to adjacent months
+    WHERE EXTRACT(MONTH FROM wr.week_start)::INTEGER = p_month
     ORDER BY wr.week_num;
 END;
 $$ LANGUAGE plpgsql;
