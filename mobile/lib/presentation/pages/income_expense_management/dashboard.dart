@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -8,6 +9,7 @@ import 'package:cashlytics/core/services/supabase/client.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_state_listener.dart';
 import 'package:cashlytics/core/services/cache/cache_service.dart';
+import 'package:cashlytics/core/utils/ai_insights/ai_insights_service.dart';
 
 import 'package:cashlytics/domain/repositories/dashboard_repository.dart';
 import 'package:cashlytics/domain/repositories/account_repository.dart';
@@ -261,165 +263,7 @@ class _DashboardPageState extends State<DashboardPage> {
       backgroundColor: AppColors.getSurface(context),
       isScrollControlled: true,
       builder: (context) {
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.7,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Column(
-            children: [
-              const SizedBox(height: 12),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.auto_awesome,
-                      color: AppColors.primary,
-                      size: 28,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      "AI Financial Insights",
-                      style: AppTypography.headline3.copyWith(
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // Health Score
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 20),
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        SizedBox(
-                          width: 60,
-                          height: 60,
-                          child: CircularProgressIndicator(
-                            value: 0.85,
-                            strokeWidth: 6,
-                            backgroundColor: Colors.grey.shade200,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              AppColors.primary,
-                            ),
-                          ),
-                        ),
-                        Text(
-                          "85",
-                          style: AppTypography.headline3.copyWith(
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(width: 20),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Excellent Health",
-                            style: AppTypography.bodyLarge.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            "You are in the top 15% of savers this month! Keep it up.",
-                            style: AppTypography.caption.copyWith(
-                              color: AppColors.greyText,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const Divider(height: 30),
-
-              // Suggestions
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  children: const [
-                    _SuggestionTile(
-                      title: "Unusual Spending Detected",
-                      body:
-                          "Your spending on 'Food & Dining' is 15% higher than your average for this week.",
-                      icon: Icons.warning_amber_rounded,
-                      color: Colors.orange,
-                    ),
-                    _SuggestionTile(
-                      title: "Savings Opportunity",
-                      body:
-                          "Based on your cash flow, you could safely move \$300 to your savings account today.",
-                      icon: Icons.savings_outlined,
-                      color: Colors.green,
-                    ),
-                    _SuggestionTile(
-                      title: "Subscription Alert",
-                      body:
-                          "You have a recurring payment for 'Streaming Service' coming up tomorrow.",
-                      icon: Icons.calendar_today_rounded,
-                      color: Colors.blue,
-                    ),
-                  ],
-                ),
-              ),
-
-              // Close Button
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    child: const Text("Close"),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
+        return _AISuggestionsModalContent();
       },
     );
   }
@@ -513,6 +357,274 @@ class _DashboardPageState extends State<DashboardPage> {
 }
 
 // --- Helper Widgets & Painters ---
+
+class _AISuggestionsModalContent extends StatefulWidget {
+  const _AISuggestionsModalContent();
+
+  @override
+  State<_AISuggestionsModalContent> createState() =>
+      _AISuggestionsModalContentState();
+}
+
+class _AISuggestionsModalContentState
+    extends State<_AISuggestionsModalContent> {
+  bool _isLoading = true;
+  int? _healthScore;
+  String? _insights;
+  List<dynamic> _suggestions = [];
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAIInsights();
+  }
+
+  Future<void> _loadAIInsights() async {
+    try {
+      if (!mounted) return;
+      setState(() => _isLoading = true);
+
+      // Import the service
+      final aiInsightsService = AiInsightsService();
+      final report = await aiInsightsService.generateInsights();
+
+      if (!mounted) return;
+
+      // Parse suggestions from the body (JSON string)
+      if (report.body != null) {
+        try {
+          final json = _parseJsonFromBody(report.body!);
+          setState(() {
+            _healthScore = report.healthScore;
+            _insights = json['insights'] as String?;
+            _suggestions = json['suggestions'] as List? ?? [];
+            _isLoading = false;
+          });
+        } catch (e) {
+          debugPrint('Error parsing AI response: $e');
+          _setError('Failed to parse AI insights');
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading AI insights: $e');
+      _setError('Failed to load insights');
+    }
+  }
+
+  void _setError(String message) {
+    if (mounted) {
+      setState(() {
+        _errorMessage = message;
+        _isLoading = false;
+      });
+    }
+  }
+
+  Map<String, dynamic> _parseJsonFromBody(String body) {
+    try {
+      // Try direct parse
+      return Map<String, dynamic>.from(jsonDecode(body));
+    } catch (_) {
+      // Try extracting from markdown
+      final jsonMatch = RegExp(
+        r'```(?:json)?\s*(\{[\s\S]*?\})\s*```',
+      ).firstMatch(body);
+      if (jsonMatch != null) {
+        return Map<String, dynamic>.from(jsonDecode(jsonMatch.group(1)!));
+      }
+      // Try extracting raw JSON
+      final objectMatch = RegExp(r'\{[\s\S]*\}').firstMatch(body);
+      if (objectMatch != null) {
+        return Map<String, dynamic>.from(jsonDecode(objectMatch.group(0)!));
+      }
+      throw Exception('Could not parse JSON from body');
+    }
+  }
+
+  Color _getHealthColor() {
+    if (_healthScore == null) return Colors.grey;
+    if (_healthScore! >= 80) return AppColors.success;
+    if (_healthScore! >= 60) return Colors.orange;
+    return Colors.red;
+  }
+
+  String _getHealthStatus() {
+    if (_healthScore == null) return 'Unknown';
+    if (_healthScore! >= 80) return 'Excellent';
+    if (_healthScore! >= 60) return 'Good';
+    return 'Needs Improvement';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.85,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        children: [
+          const SizedBox(height: 12),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              children: [
+                Icon(Icons.auto_awesome, color: AppColors.primary, size: 28),
+                const SizedBox(width: 12),
+                Text(
+                  "AI Financial Insights",
+                  style: AppTypography.headline3.copyWith(
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          if (_isLoading)
+            const Expanded(child: Center(child: CircularProgressIndicator()))
+          else if (_errorMessage != null)
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.error_outline, size: 48, color: Colors.red),
+                    const SizedBox(height: 16),
+                    Text(
+                      _errorMessage!,
+                      textAlign: TextAlign.center,
+                      style: AppTypography.bodyLarge,
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                children: [
+                  // Health Score
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: _getHealthColor().withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: _getHealthColor().withValues(alpha: 0.1),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            SizedBox(
+                              width: 60,
+                              height: 60,
+                              child: CircularProgressIndicator(
+                                value: (_healthScore ?? 0) / 100,
+                                strokeWidth: 6,
+                                backgroundColor: Colors.grey.shade200,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  _getHealthColor(),
+                                ),
+                              ),
+                            ),
+                            Text(
+                              _healthScore?.toString() ?? '?',
+                              style: AppTypography.headline3.copyWith(
+                                color: _getHealthColor(),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 20),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _getHealthStatus(),
+                                style: AppTypography.bodyLarge.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _insights ?? 'Analyzing your finances...',
+                                style: AppTypography.caption.copyWith(
+                                  color: AppColors.greyText,
+                                ),
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 30),
+                  // Suggestions
+                  if (_suggestions.isNotEmpty)
+                    ..._suggestions.whereType<Map<String, dynamic>>().map(
+                      (suggestion) => _SuggestionTile(
+                        title: suggestion['title'] as String? ?? '',
+                        body: suggestion['body'] as String? ?? '',
+                        icon: Icons.lightbulb_outline,
+                        color: AppColors.primary,
+                      ),
+                    )
+                  else
+                    _SuggestionTile(
+                      title: 'No Suggestions',
+                      body: 'Your finances are looking good!',
+                      icon: Icons.check_circle_outline,
+                      color: AppColors.success,
+                    ),
+                ],
+              ),
+            ),
+          // Close Button
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: const Text("Close"),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _SuggestionTile extends StatelessWidget {
   final String title;
@@ -1198,10 +1310,10 @@ class _CashFlowCardState extends State<_CashFlowCard> {
   }
 
   String _formatCurrency(double amount) {
-      if (amount >= 1000) {
-        return '\$${(amount / 1000).toStringAsFixed(1)}K';
-      }
-      return '\$${amount.toStringAsFixed(0)}';
+    if (amount >= 1000) {
+      return '\$${(amount / 1000).toStringAsFixed(1)}K';
+    }
+    return '\$${amount.toStringAsFixed(0)}';
   }
 
   List<double> _getIncomeData() {
@@ -1591,11 +1703,11 @@ class _ExpenseDistributionCardState extends State<_ExpenseDistributionCard> {
 
       for (final row in expenseResponse as List<dynamic>) {
         final map = row as Map<String, dynamic>;
-        
+
         // Check user match
         final transaction = map['transaction'] as Map<String, dynamic>?;
         if (transaction == null) continue;
-        
+
         final account = transaction['account'] as Map<String, dynamic>?;
         final accountUserId = account?['user_id'] as String?;
         if (accountUserId != user.id) continue;
@@ -1603,9 +1715,11 @@ class _ExpenseDistributionCardState extends State<_ExpenseDistributionCard> {
         // Check date range
         final createdAtStr = transaction['created_at'] as String?;
         if (createdAtStr == null) continue;
-        
+
         final createdAt = DateTime.tryParse(createdAtStr);
-        if (createdAt == null || createdAt.isBefore(start) || createdAt.isAfter(end)) {
+        if (createdAt == null ||
+            createdAt.isBefore(start) ||
+            createdAt.isAfter(end)) {
           continue;
         }
 
@@ -1614,11 +1728,12 @@ class _ExpenseDistributionCardState extends State<_ExpenseDistributionCard> {
         final amount = rawAmount is num
             ? rawAmount.toDouble()
             : double.tryParse(rawAmount?.toString() ?? '0') ?? 0;
-        
+
         if (amount <= 0) continue;
 
         // Get category name
-        final catName = (map['expense_category']?['name'] as String?) ?? 'Uncategorized';
+        final catName =
+            (map['expense_category']?['name'] as String?) ?? 'Uncategorized';
         totalsByCategory[catName] = (totalsByCategory[catName] ?? 0) + amount;
       }
 
@@ -1776,7 +1891,9 @@ class _ExpenseDistributionCardState extends State<_ExpenseDistributionCard> {
               child: Center(
                 child: Text(
                   'No expenses recorded in this range',
-                  style: AppTypography.caption.copyWith(color: AppColors.greyText),
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.greyText,
+                  ),
                 ),
               ),
             )
