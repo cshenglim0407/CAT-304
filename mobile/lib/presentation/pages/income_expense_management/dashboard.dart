@@ -587,6 +587,8 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
   bool _isLoading = true;
   List<WeeklyBalance> _weeklyBalances = [];
   List<QuarterlyBalance> _quarterlyBalances = [];
+  List<WeeklyBalance> _previousWeeklyBalances = [];
+  List<QuarterlyBalance> _previousQuarterlyBalances = [];
 
   late final DashboardRepository _dashboardRepository;
   late final GetMonthlyWeeklyBalances _getMonthlyWeeklyBalances;
@@ -624,41 +626,58 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
       // Determine what data to load based on selected filter
       switch (_selectedFilter) {
         case 'This month':
-          final balances = await _getMonthlyWeeklyBalances(user.id, now);
+          final currentBalances = await _getMonthlyWeeklyBalances(user.id, now);
+          final lastMonth = DateTime(now.year, now.month - 1, 1);
+          final previousBalances = await _getMonthlyWeeklyBalances(user.id, lastMonth);
           setState(() {
-            _weeklyBalances = balances;
+            _weeklyBalances = currentBalances;
+            _previousWeeklyBalances = previousBalances;
             _quarterlyBalances = [];
+            _previousQuarterlyBalances = [];
             _isLoading = false;
           });
           break;
 
         case 'Last month':
           final lastMonth = DateTime(now.year, now.month - 1, 1);
-          final balances = await _getMonthlyWeeklyBalances(user.id, lastMonth);
+          final currentBalances = await _getMonthlyWeeklyBalances(user.id, lastMonth);
+          final prevMonth = DateTime(now.year, now.month - 2, 1);
+          final previousBalances = await _getMonthlyWeeklyBalances(user.id, prevMonth);
           setState(() {
-            _weeklyBalances = balances;
+            _weeklyBalances = currentBalances;
+            _previousWeeklyBalances = previousBalances;
             _quarterlyBalances = [];
+            _previousQuarterlyBalances = [];
             _isLoading = false;
           });
           break;
 
         case 'This year':
-          final balances = await _getYearlyQuarterlyBalances(user.id, now.year);
+          final currentBalances = await _getYearlyQuarterlyBalances(user.id, now.year);
+          final previousBalances = await _getYearlyQuarterlyBalances(user.id, now.year - 1);
           setState(() {
-            _quarterlyBalances = balances;
+            _quarterlyBalances = currentBalances;
+            _previousQuarterlyBalances = previousBalances;
             _weeklyBalances = [];
+            _previousWeeklyBalances = [];
             _isLoading = false;
           });
           break;
 
         case 'Last year':
-          final balances = await _getYearlyQuarterlyBalances(
+          final currentBalances = await _getYearlyQuarterlyBalances(
             user.id,
             now.year - 1,
           );
+          final previousBalances = await _getYearlyQuarterlyBalances(
+            user.id,
+            now.year - 2,
+          );
           setState(() {
-            _quarterlyBalances = balances;
+            _quarterlyBalances = currentBalances;
+            _previousQuarterlyBalances = previousBalances;
             _weeklyBalances = [];
+            _previousWeeklyBalances = [];
             _isLoading = false;
           });
           break;
@@ -668,6 +687,8 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
             _isLoading = false;
             _weeklyBalances = [];
             _quarterlyBalances = [];
+            _previousWeeklyBalances = [];
+            _previousQuarterlyBalances = [];
           });
       }
     } catch (e) {
@@ -676,6 +697,8 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
         _isLoading = false;
         _weeklyBalances = [];
         _quarterlyBalances = [];
+        _previousWeeklyBalances = [];
+        _previousQuarterlyBalances = [];
       });
     }
   }
@@ -712,45 +735,45 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
   }
 
   String _calculatePercentageChange() {
-    List<double> balances;
+    double currentTotal = 0.0;
+    double previousTotal = 0.0;
 
     if (_weeklyBalances.isNotEmpty) {
-      balances = _weeklyBalances.map((w) => w.balance).toList();
+      currentTotal = _weeklyBalances.fold(0.0, (sum, week) => sum + week.balance);
+      previousTotal = _previousWeeklyBalances.fold(0.0, (sum, week) => sum + week.balance);
     } else if (_quarterlyBalances.isNotEmpty) {
-      balances = _quarterlyBalances.map((q) => q.balance).toList();
+      currentTotal = _quarterlyBalances.fold(0.0, (sum, quarter) => sum + quarter.balance);
+      previousTotal = _previousQuarterlyBalances.fold(0.0, (sum, quarter) => sum + quarter.balance);
     } else {
       return '+0.0%';
     }
 
-    if (balances.isEmpty) return '+0.0%';
+    if (previousTotal == 0) {
+      // If previous period had no balance, show current as 100% increase if positive
+      if (currentTotal > 0) return '+100.0%';
+      if (currentTotal < 0) return '-100.0%';
+      return '+0.0%';
+    }
 
-    // Calculate change based on first vs last available period
-    final first = balances.first;
-    final last = balances.last;
-
-    if (first == 0) return '+0.0%';
-
-    final change = ((last - first) / first.abs()) * 100;
+    final change = ((currentTotal - previousTotal) / previousTotal.abs()) * 100;
     return '${change >= 0 ? '+' : ''}${change.toStringAsFixed(1)}%';
   }
 
   Color _getPercentageColor() {
-    List<double> balances;
+    double currentTotal = 0.0;
+    double previousTotal = 0.0;
 
     if (_weeklyBalances.isNotEmpty) {
-      balances = _weeklyBalances.map((w) => w.balance).toList();
+      currentTotal = _weeklyBalances.fold(0.0, (sum, week) => sum + week.balance);
+      previousTotal = _previousWeeklyBalances.fold(0.0, (sum, week) => sum + week.balance);
     } else if (_quarterlyBalances.isNotEmpty) {
-      balances = _quarterlyBalances.map((q) => q.balance).toList();
+      currentTotal = _quarterlyBalances.fold(0.0, (sum, quarter) => sum + quarter.balance);
+      previousTotal = _previousQuarterlyBalances.fold(0.0, (sum, quarter) => sum + quarter.balance);
     } else {
       return AppColors.greyText;
     }
 
-    if (balances.isEmpty) return AppColors.greyText;
-
-    final first = balances.first;
-    final last = balances.last;
-
-    return last >= first ? AppColors.success : Colors.red;
+    return currentTotal >= previousTotal ? AppColors.success : Colors.red;
   }
 
   List<double> _getChartData() {
