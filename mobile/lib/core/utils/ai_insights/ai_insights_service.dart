@@ -141,7 +141,7 @@ class AiInsightsService {
       final report = AiReport(
         userId: user.id,
         title: 'Financial Insights - ${_getMonthName(now.month)} ${now.year}',
-        description: 'AI-generated financial health analysis',
+        insights: aiInsight.insights,
         body: responseText,
         month: monthKey,
         healthScore: aiInsight.healthScore,
