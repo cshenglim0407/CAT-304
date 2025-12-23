@@ -6,6 +6,9 @@ import 'package:cashlytics/domain/repositories/account_repository.dart';
 import 'package:cashlytics/data/repositories/account_repository_impl.dart';
 import 'package:cashlytics/domain/usecases/accounts/get_accounts.dart';
 import 'package:cashlytics/domain/usecases/accounts/get_account_transactions.dart';
+import 'package:cashlytics/domain/usecases/accounts/upsert_account.dart';
+import 'package:cashlytics/domain/usecases/accounts/delete_account.dart';
+import 'package:cashlytics/domain/entities/account.dart';
 import 'package:cashlytics/core/config/icons.dart';
 
 import 'package:cashlytics/presentation/themes/colors.dart';
@@ -36,6 +39,8 @@ class _AccountPageState extends State<AccountPage> {
   late final AccountRepository _accountRepository;
   late final GetAccounts _getAccounts;
   late final GetAccountTransactions _getAccountTransactions;
+  late final UpsertAccount _upsertAccount;
+  late final DeleteAccount _deleteAccountUseCase;
 
   // Data loaded from database
   List<Map<String, dynamic>> _myAccounts = [];
@@ -61,6 +66,8 @@ class _AccountPageState extends State<AccountPage> {
     _accountRepository = AccountRepositoryImpl();
     _getAccounts = GetAccounts(_accountRepository);
     _getAccountTransactions = GetAccountTransactions(_accountRepository);
+    _upsertAccount = UpsertAccount(_accountRepository);
+    _deleteAccountUseCase = DeleteAccount(_accountRepository);
     _loadData();
   }
 
@@ -635,24 +642,264 @@ class _AccountPageState extends State<AccountPage> {
     // Add Account Logic (retained from previous steps)
     // ...
   }
-  void _editAccount(BuildContext context, Map<String, dynamic> account) {}
+  void _editAccount(BuildContext context, Map<String, dynamic> account) async {
+    final nameController = TextEditingController(
+      text: account['name']?.toString() ?? '',
+    );
+    final descController = TextEditingController(
+      text: account['desc']?.toString() ?? '',
+    );
+    final initialController = TextEditingController(
+      text: (account['initial'] ?? 0).toString(),
+    );
+    final currentController = TextEditingController(
+      text: (account['current'] ?? 0).toString(),
+    );
+    // Enforce DB-allowed TYPE values (see accounts_type_options)
+    String type = (account['type']?.toString() ?? 'CASH').toUpperCase();
+
+    final types = <String>[
+      'CASH',
+      'BANK',
+      'E-WALLET',
+      'CREDIT CARD',
+      'INVESTMENT',
+      'LOAN',
+      'OTHER',
+    ];
+
+    await showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Edit Account'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: 'Name'),
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  initialValue: types.contains(type) ? type : types.first,
+                  items: types
+                      .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                      .toList(),
+                  onChanged: (v) => type = v ?? type,
+                  decoration: const InputDecoration(labelText: 'Type'),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: initialController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(
+                    labelText: 'Initial Balance',
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Current balance is derived from transactions; not editable
+                TextField(
+                  controller: currentController,
+                  readOnly: true,
+                  enabled: false,
+                  decoration: const InputDecoration(
+                    labelText: 'Current Balance (read-only)',
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: descController,
+                  decoration: const InputDecoration(labelText: 'Description'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final userId = supabase.auth.currentUser?.id;
+                if (userId == null) {
+                  Navigator.pop(ctx);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Not signed in')),
+                    );
+                  }
+                  return;
+                }
+
+                final updated = Account(
+                  id: account['id']?.toString(),
+                  userId: userId,
+                  name: nameController.text.trim(),
+                  type: type,
+                  initialBalance:
+                      double.tryParse(initialController.text.trim()) ?? 0,
+                  // Preserve current balance from existing account; not user-editable
+                  currentBalance: (account['current'] is num)
+                      ? (account['current'] as num).toDouble()
+                      : double.tryParse(account['current']?.toString() ?? '') ??
+                            0,
+                  description: descController.text.trim().isEmpty
+                      ? null
+                      : descController.text.trim(),
+                );
+
+                try {
+                  final saved = await _upsertAccount(updated);
+                  if (!mounted) return;
+                  setState(() {
+                    account['name'] = saved.name;
+                    account['type'] = saved.type;
+                    account['initial'] = saved.initialBalance;
+                    account['current'] = saved.currentBalance;
+                    account['desc'] = saved.description ?? '';
+                  });
+                  CacheService.save('accounts', _myAccounts);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Account updated')),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Update failed: $e')),
+                    );
+                  }
+                } finally {
+                  if (mounted) {
+                    final navigator = Navigator.of(context);
+                    if (navigator.canPop()) {
+                      navigator.pop();
+                    }
+                  }
+                }
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _showEditOptions(BuildContext context, Map<String, dynamic> account) {
     showModalBottomSheet(
       context: context,
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              title: Text("Edit Account"),
-              onTap: () => _editAccount(context, account),
-            ),
-            ListTile(title: Text("Delete Account"), onTap: () {}),
-          ],
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 6, bottom: 16),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.edit, color: Colors.blue),
+                title: const Text('Edit Account'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _editAccount(context, account);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete, color: Colors.red),
+                title: const Text('Delete Account'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _confirmDeleteAccount(context, account);
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  void _confirmDeleteAccount(
+    BuildContext context,
+    Map<String, dynamic> account,
+  ) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Account'),
+        content: const Text(
+          'This will remove the account and its transactions. Continue?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await _deleteAccount(context, account);
+            },
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deleteAccount(
+    BuildContext context,
+    Map<String, dynamic> account,
+  ) async {
+    final String? accountId = account['id']?.toString();
+    try {
+      if (accountId != null && accountId.isNotEmpty) {
+        await _deleteAccountUseCase(accountId);
+      }
+
+      final removeIndex = _myAccounts.indexOf(account);
+      if (removeIndex != -1) {
+        setState(() {
+          _myAccounts.removeAt(removeIndex);
+          if (removeIndex < _allTransactions.length) {
+            _allTransactions.removeAt(removeIndex);
+          }
+          if (_currentCardIndex >= _myAccounts.length) {
+            _currentCardIndex = _myAccounts.isEmpty
+                ? 0
+                : _myAccounts.length - 1;
+          }
+        });
+        CacheService.save('accounts', _myAccounts);
+        CacheService.save('transactions', _allTransactions);
+      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Account deleted')));
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Delete failed: $e')));
+    }
   }
 
   void _onNavBarTap(int index) {
