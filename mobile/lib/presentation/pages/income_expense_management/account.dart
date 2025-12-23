@@ -111,6 +111,13 @@ class _AccountPageState extends State<AccountPage> {
 
       final accounts = await _getAccounts(userId);
 
+      // Sort by createdAt, earliest first
+      accounts.sort(
+        (a, b) => (a.createdAt ?? DateTime(1970)).compareTo(
+          b.createdAt ?? DateTime(1970),
+        ),
+      );
+
       // Stop showing loading indicator, start showing accounts progressively
       setState(() => _isLoading = false);
 
@@ -764,6 +771,8 @@ class _AccountPageState extends State<AccountPage> {
                     account['desc'] = saved.description ?? '';
                   });
                   CacheService.save('accounts', _myAccounts);
+                  // Keep transactions cache consistent even if not changed
+                  CacheService.save('transactions', _allTransactions);
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Account updated')),
