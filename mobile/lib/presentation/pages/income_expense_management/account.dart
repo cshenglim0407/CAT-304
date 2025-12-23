@@ -1,4 +1,13 @@
 import 'package:flutter/material.dart';
+
+import 'package:cashlytics/core/services/supabase/client.dart';
+import 'package:cashlytics/core/services/cache/cache_service.dart';
+import 'package:cashlytics/domain/repositories/account_repository.dart';
+import 'package:cashlytics/data/repositories/account_repository_impl.dart';
+import 'package:cashlytics/domain/usecases/accounts/get_accounts.dart';
+import 'package:cashlytics/domain/usecases/accounts/get_account_transactions.dart';
+import 'package:cashlytics/core/config/icons.dart';
+
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
 import 'package:cashlytics/presentation/widgets/index.dart';
@@ -9,13 +18,6 @@ import 'package:cashlytics/presentation/pages/expense_entry_ocr/add_transfer.dar
 import 'package:cashlytics/presentation/pages/expense_entry_ocr/add_expense.dart';
 import 'package:cashlytics/presentation/pages/income_expense_management/transaction_history.dart';
 import 'package:cashlytics/presentation/pages/income_expense_management/edit_transaction.dart';
-
-import 'package:cashlytics/core/services/supabase/client.dart';
-import 'package:cashlytics/core/services/cache/cache_service.dart';
-import 'package:cashlytics/domain/repositories/account_repository.dart';
-import 'package:cashlytics/data/repositories/account_repository_impl.dart';
-import 'package:cashlytics/domain/usecases/accounts/get_accounts.dart';
-import 'package:cashlytics/domain/usecases/accounts/get_account_transactions.dart';
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -175,58 +177,9 @@ class _AccountPageState extends State<AccountPage> {
 
   IconData _getTransactionIcon(bool isExpense, String? category) {
     if (isExpense) {
-      return _getExpenseIcon(category ?? '');
+      return getExpenseIcon(category ?? '');
     } else {
-      return _getCategoryIcon(category ?? '');
-    }
-  }
-
-  // --- HELPERS ---
-  IconData _getCategoryIcon(String category) {
-    switch (category) {
-      case 'Salary':
-        return Icons.work_rounded;
-      case 'Allowance':
-        return Icons.volunteer_activism_rounded;
-      case 'Bonus':
-        return Icons.stars_rounded;
-      case 'Dividend':
-        return Icons.trending_up_rounded;
-      case 'Investment':
-        return Icons.account_balance_rounded;
-      case 'Rental':
-        return Icons.home_work_rounded;
-      case 'Refund':
-        return Icons.refresh_rounded;
-      case 'Sale':
-        return Icons.storefront_rounded;
-      default:
-        return Icons.attach_money_rounded;
-    }
-  }
-
-  IconData _getExpenseIcon(String category) {
-    switch (category) {
-      case 'FOOD':
-        return Icons.fastfood;
-      case 'TRANSPORT':
-        return Icons.directions_car;
-      case 'ENTERTAINMENT':
-        return Icons.movie;
-      case 'UTILITIES':
-        return Icons.lightbulb;
-      case 'HEALTHCARE':
-        return Icons.medical_services;
-      case 'SHOPPING':
-        return Icons.shopping_bag;
-      case 'TRAVEL':
-        return Icons.flight;
-      case 'EDUCATION':
-        return Icons.school;
-      case 'RENT':
-        return Icons.home;
-      default:
-        return Icons.money_off;
+      return getIncomeIcon(category ?? '');
     }
   }
 
@@ -285,9 +238,9 @@ class _AccountPageState extends State<AccountPage> {
         if (index != -1) {
           // --- FIX: Force Icon Refresh based on new Category ---
           if (result['type'] == 'expense' && result['category'] != null) {
-            result['icon'] = _getExpenseIcon(result['category']);
+            result['icon'] = getExpenseIcon(result['category']);
           } else if (result['type'] == 'income' && result['category'] != null) {
-            result['icon'] = _getCategoryIcon(result['category']);
+            result['icon'] = getIncomeIcon(result['category']);
           } else if (result['type'] == 'transfer') {
             result['icon'] = Icons.arrow_outward_rounded;
           }
@@ -384,9 +337,9 @@ class _AccountPageState extends State<AccountPage> {
       if (isTransfer) {
         icon = Icons.arrow_outward_rounded;
       } else if (isExpense) {
-        icon = _getExpenseIcon(result['category'] ?? '');
+        icon = getExpenseIcon(result['category'] ?? '');
       } else {
-        icon = _getCategoryIcon(result['category'] ?? '');
+        icon = getIncomeIcon(result['category'] ?? '');
       }
 
       final newTx = {
@@ -479,7 +432,7 @@ class _AccountPageState extends State<AccountPage> {
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
-                            _getExpenseIcon(cat),
+                            getExpenseIcon(cat),
                             color: AppColors.primary,
                             size: 22,
                           ),
