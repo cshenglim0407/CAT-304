@@ -149,12 +149,17 @@ class _DashboardPageState extends State<DashboardPage> {
       }
     } finally {
       if (_authService.currentUser == null) {
-        cachedAccounts = [];
-        await CacheService.remove(_accountsCacheKey);
-        if (mounted) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const LoginPage()),
-          );
+        // Only redirect if cache is also empty
+        if (cachedAccounts.isEmpty) {
+          cachedAccounts = [];
+          await CacheService.remove(_accountsCacheKey);
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => const LoginPage()),
+            );
+          }
+        } else {
+          debugPrint('User logged out but cached accounts available');
         }
       }
     }
@@ -228,12 +233,20 @@ class _DashboardPageState extends State<DashboardPage> {
       }
     } finally {
       if (_authService.currentUser == null) {
-        cachedBalances = null;
-        await CacheService.remove(_balancesCacheKey);
-        if (mounted) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const LoginPage()),
-          );
+        // Only redirect if cache is also empty
+        if (cachedBalances == null ||
+            (((cachedBalances!['monthly_weekly'] as List?)?.isEmpty ?? true) &&
+                ((cachedBalances!['yearly_quarterly'] as List?)?.isEmpty ??
+                    true))) {
+          cachedBalances = null;
+          await CacheService.remove(_balancesCacheKey);
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => const LoginPage()),
+            );
+          }
+        } else {
+          debugPrint('User logged out but cached balances available');
         }
       }
     }
@@ -580,9 +593,6 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
   late final GetYearlyQuarterlyBalances _getYearlyQuarterlyBalances;
   late final AuthService _authService;
 
-  bool _redirecting = false;
-  late final StreamSubscription<AuthState> _authStateSubscription;
-
   @override
   void initState() {
     super.initState();
@@ -593,25 +603,10 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
     );
     _authService = AuthService();
     _loadData();
-
-    _authStateSubscription = listenForSignedOutRedirect(
-      shouldRedirect: () => !_redirecting,
-      onRedirect: () {
-        if (!mounted) return;
-        setState(() => _redirecting = true);
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const LoginPage()),
-        );
-      },
-      onError: (error) {
-        debugPrint('Auth State Listener Error: $error');
-      },
-    );
   }
 
   @override
   void dispose() {
-    _authStateSubscription.cancel();
     super.dispose();
   }
 

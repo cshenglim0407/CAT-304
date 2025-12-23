@@ -292,12 +292,16 @@ class _ProfilePageState extends State<ProfilePage> {
       );
     } finally {
       if (_authService.currentUser == null) {
-        currentUserProfile = null;
-        await CacheService.remove(_userProfileCacheKey);
-        if (mounted) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const LoginPage()),
-          );
+        if (currentUserProfile == null || currentUserProfile!.isEmpty) {
+          currentUserProfile = null;
+          await CacheService.remove(_userProfileCacheKey);
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => const LoginPage()),
+            );
+          } else {
+            debugPrint('User logged out but cache available');
+          }
         }
       }
     }
