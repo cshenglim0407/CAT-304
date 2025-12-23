@@ -11,12 +11,16 @@ class TransactionAnalyzer {
       return 'No transactions in the period.';
     }
 
+    // Exclude transfers from income/expense math
+    final nonTransferTx =
+        transactions.where((t) => (t.category ?? '').toLowerCase() != 'transfer').toList();
+
     // Calculate totals
-    final income = transactions
+    final income = nonTransferTx
         .where((t) => !t.isExpense)
         .fold<double>(0, (sum, t) => sum + t.amount);
 
-    final expense = transactions
+    final expense = nonTransferTx
         .where((t) => t.isExpense)
         .fold<double>(0, (sum, t) => sum + t.amount);
 
@@ -51,9 +55,12 @@ class TransactionAnalyzer {
     // Limit to maxTransactions to avoid token overflow
     final displayed = sorted.take(maxTransactions).toList();
 
+    // Normalize transfers (merge paired in/out and label category)
+    final normalized = _mergeTransfers(displayed);
+
     // Group by category for better analysis
-    final categorized = <String, List<AccountTransactionView>>{};
-    for (final tx in displayed) {
+    final categorized = <String, List<_DisplayTx>>{};
+    for (final tx in normalized) {
       final category = tx.category ?? 'Uncategorized';
       (categorized[category] ??= []).add(tx);
     }
@@ -68,7 +75,7 @@ class TransactionAnalyzer {
       final txns = categorized[category]!;
       final categoryTotal = txns.fold<double>(
         0,
-        (sum, t) => sum + (t.isExpense ? -t.amount : t.amount),
+        (sum, t) => sum + t.signedAmount,
       );
 
       buffer.writeln('$category - Total: \$${categoryTotal.toStringAsFixed(2)}');
@@ -83,9 +90,11 @@ class TransactionAnalyzer {
           break;
         }
 
-        final sign = tx.isExpense ? '-' : '+';
+        final sign = tx.signedAmount >= 0 ? '+' : '-';
         final date = DateFormatter.formatDate(tx.date);
-        buffer.writeln('  $sign\$${tx.amount.toStringAsFixed(2)} - ${tx.title} ($date)');
+        buffer.writeln(
+          '  $sign\$${tx.absAmount.toStringAsFixed(2)} - ${tx.title} ($date)',
+        );
       }
       buffer.writeln();
     }
@@ -99,9 +108,11 @@ class TransactionAnalyzer {
       return 'No category data available.';
     }
 
+    // Exclude transfers from spending breakdown
     final categorized = <String, double>{};
     for (final tx in transactions) {
       final category = tx.category ?? 'Uncategorized';
+      if (category.toLowerCase() == 'transfer') continue;
       categorized[category] = (categorized[category] ?? 0) + (tx.isExpense ? tx.amount : 0);
     }
 
@@ -116,5 +127,106 @@ class TransactionAnalyzer {
     }
 
     return buffer.toString();
+  }
+
+  /// Merge paired transfers (outgoing + incoming) into a single descriptive row
+  static List<_DisplayTx> _mergeTransfers(List<AccountTransactionView> txns) {
+    final transfers = txns
+        .where((t) => (t.category ?? '').toLowerCase() == 'transfer')
+        .toList();
+    final nonTransfers = txns
+        .where((t) => (t.category ?? '').toLowerCase() != 'transfer')
+        .map(_DisplayTx.fromTx)
+        .toList();
+
+    final outgoing = <AccountTransactionView>[];
+    final incoming = <AccountTransactionView>[];
+    for (final t in transfers) {
+      if (t.isExpense) {
+        outgoing.add(t);
+      } else {
+        incoming.add(t);
+      }
+    }
+
+    final merged = <_DisplayTx>[];
+    final usedIncoming = <int>{};
+    final usedOutgoing = <int>{};
+
+    for (int outIdx = 0; outIdx < outgoing.length; outIdx++) {
+      final out = outgoing[outIdx];
+      final matchIndex = incoming.indexWhere((inn) {
+        final innIdx = incoming.indexOf(inn);
+        if (usedIncoming.contains(innIdx)) return false;
+        final sameAmount = (inn.amount - out.amount).abs() < 0.01;
+        final withinDay = inn.date.difference(out.date).inDays.abs() <= 1;
+        return sameAmount && withinDay;
+      });
+
+      if (matchIndex != -1) {
+        final inn = incoming[matchIndex];
+        usedIncoming.add(matchIndex);
+        usedOutgoing.add(outIdx);
+
+        final fromName = _extractName(inn.title, 'Transfer from ');
+        final toName = _extractName(out.title, 'Transfer to ');
+
+        merged.add(
+          _DisplayTx(
+            title: 'Transfer from $fromName to $toName',
+            date: inn.date.isAfter(out.date) ? inn.date : out.date,
+            signedAmount: 0,
+            category: 'Transfer',
+          ),
+        );
+      }
+    }
+
+    // Any leftover transfers that couldn't be paired
+    for (int i = 0; i < incoming.length; i++) {
+      if (usedIncoming.contains(i)) continue;
+      merged.add(_DisplayTx.fromTx(incoming[i]));
+    }
+    for (int i = 0; i < outgoing.length; i++) {
+      if (usedOutgoing.contains(i)) continue;
+      merged.add(_DisplayTx.fromTx(outgoing[i]));
+    }
+
+    return [...nonTransfers, ...merged]..sort((a, b) => b.date.compareTo(a.date));
+  }
+
+  static String _extractName(String title, String prefix) {
+    if (title.startsWith(prefix)) {
+      return title.substring(prefix.length).trim().isEmpty
+          ? 'Account'
+          : title.substring(prefix.length).trim();
+    }
+    return title;
+  }
+}
+
+class _DisplayTx {
+  _DisplayTx({
+    required this.title,
+    required this.date,
+    required this.signedAmount,
+    this.category,
+  });
+
+  final String title;
+  final DateTime date;
+  final double signedAmount;
+  final String? category;
+
+  double get absAmount => signedAmount.abs();
+
+  static _DisplayTx fromTx(AccountTransactionView tx) {
+    final amount = tx.isExpense ? -tx.amount : tx.amount;
+    return _DisplayTx(
+      title: tx.title,
+      date: tx.date,
+      signedAmount: amount,
+      category: tx.category,
+    );
   }
 }
