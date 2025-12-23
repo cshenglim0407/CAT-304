@@ -582,6 +582,16 @@ class _AISuggestionsModalContentState
     return 'Needs Improvement';
   }
 
+  bool _textOverflows(String text, TextStyle style, int maxLines, {double maxWidth = 300}) {
+    final textPainter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      maxLines: maxLines,
+      textDirection: TextDirection.ltr,
+    );
+    textPainter.layout(maxWidth: maxWidth);
+    return textPainter.didExceedMaxLines;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -803,7 +813,14 @@ class _AISuggestionsModalContentState
                                       : TextOverflow.ellipsis,
                                 ),
                               ),
-                              if ((_insights ?? '').isNotEmpty)
+                              if ((_insights ?? '').isNotEmpty &&
+                                  _textOverflows(
+                                    _insights ?? '',
+                                    AppTypography.bodyMedium.copyWith(
+                                      color: AppColors.greyText,
+                                    ),
+                                    3,
+                                  ))
                                 Padding(
                                   padding: const EdgeInsets.only(top: 6),
                                   child: GestureDetector(
@@ -967,6 +984,16 @@ class _SuggestionTile extends StatefulWidget {
 class _SuggestionTileState extends State<_SuggestionTile> {
   bool _expanded = false;
 
+  bool _textOverflows(String text, TextStyle style, int maxLines, {double maxWidth = 300}) {
+    final textPainter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      maxLines: maxLines,
+      textDirection: TextDirection.ltr,
+    );
+    textPainter.layout(maxWidth: maxWidth);
+    return textPainter.didExceedMaxLines;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -1015,7 +1042,15 @@ class _SuggestionTileState extends State<_SuggestionTile> {
                         _expanded ? TextOverflow.visible : TextOverflow.ellipsis,
                   ),
                 ),
-                if (widget.body.isNotEmpty && widget.body.length > 60)
+                if (widget.body.isNotEmpty &&
+                    _textOverflows(
+                      widget.body,
+                      AppTypography.bodyMedium.copyWith(
+                        color: AppColors.getTextSecondary(context),
+                        height: 1.45,
+                      ),
+                      2,
+                    ))
                   Padding(
                     padding: const EdgeInsets.only(top: 6),
                     child: GestureDetector(
