@@ -7,7 +7,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:cashlytics/core/services/supabase/client.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_state_listener.dart';
-import 'package:cashlytics/core/services/supabase/database/database_service.dart';
 import 'package:cashlytics/core/services/cache/cache_service.dart';
 
 import 'package:cashlytics/domain/repositories/dashboard_repository.dart';
@@ -127,7 +126,6 @@ class _DashboardPageState extends State<DashboardPage> {
       debugPrint('Error fetching accounts: $e');
       final cached = CacheService.load<List<dynamic>>(_accountsCacheKey);
       if (cached != null) {
-        final user = _authService.currentUser;
         cachedAccounts = cached
             .where((item) {
               // Filter out invalid accounts
@@ -1530,7 +1528,6 @@ class _ExpenseDistributionCardState extends State<_ExpenseDistributionCard> {
   bool _isLoading = true;
   double _totalExpense = 0;
   final List<_ExpenseSlice> _slices = [];
-  late final DatabaseService _databaseService;
   late final AuthService _authService;
   final List<Color> _palette = [
     AppColors.primary,
@@ -1545,7 +1542,6 @@ class _ExpenseDistributionCardState extends State<_ExpenseDistributionCard> {
   @override
   void initState() {
     super.initState();
-    _databaseService = const DatabaseService();
     _authService = AuthService();
     final now = DateTime.now();
     // Initialize with stripped times
