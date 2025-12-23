@@ -1,12 +1,14 @@
 import 'dart:async';
+import 'dart:math' as math;
 
-import 'package:cashlytics/core/services/supabase/auth/auth_state_listener.dart';
-import 'package:cashlytics/core/services/cache/cache_service.dart';
-import 'package:cashlytics/presentation/pages/user_management/login.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:cashlytics/core/services/supabase/client.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
+import 'package:cashlytics/core/services/supabase/auth/auth_state_listener.dart';
+import 'package:cashlytics/core/services/supabase/database/database_service.dart';
+import 'package:cashlytics/core/services/cache/cache_service.dart';
 
 import 'package:cashlytics/domain/repositories/dashboard_repository.dart';
 import 'package:cashlytics/domain/repositories/account_repository.dart';
@@ -22,6 +24,8 @@ import 'package:cashlytics/domain/entities/account.dart';
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
 import 'package:cashlytics/presentation/widgets/index.dart';
+
+import 'package:cashlytics/presentation/pages/user_management/login.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -1196,10 +1200,10 @@ class _CashFlowCardState extends State<_CashFlowCard> {
   }
 
   String _formatCurrency(double amount) {
-    if (amount >= 1000) {
-      return '\$${(amount / 1000).toStringAsFixed(1)}K';
-    }
-    return '\$${amount.toStringAsFixed(0)}';
+      if (amount >= 1000) {
+        return '\$${(amount / 1000).toStringAsFixed(1)}K';
+      }
+      return '\$${amount.toStringAsFixed(0)}';
   }
 
   List<double> _getIncomeData() {
@@ -1523,16 +1527,141 @@ class _ExpenseDistributionCardState extends State<_ExpenseDistributionCard> {
   }
 
   late DateTimeRange _selectedRange;
+  bool _isLoading = true;
+  double _totalExpense = 0;
+  final List<_ExpenseSlice> _slices = [];
+  late final DatabaseService _databaseService;
+  late final AuthService _authService;
+  final List<Color> _palette = [
+    AppColors.primary,
+    AppColors.primary.withValues(alpha: 0.85),
+    AppColors.primary.withValues(alpha: 0.7),
+    AppColors.primary.withValues(alpha: 0.55),
+    AppColors.primary.withValues(alpha: 0.4),
+    AppColors.primary.withValues(alpha: 0.25),
+    Colors.grey.shade400,
+  ];
 
   @override
   void initState() {
     super.initState();
+    _databaseService = const DatabaseService();
+    _authService = AuthService();
     final now = DateTime.now();
     // Initialize with stripped times
     _selectedRange = DateTimeRange(
       start: _stripTime(now.subtract(const Duration(days: 30))),
       end: _stripTime(now),
     );
+
+    _loadDistribution();
+  }
+
+  Future<void> _loadDistribution() async {
+    setState(() => _isLoading = true);
+    try {
+      final user = _authService.currentUser;
+      if (user == null) {
+        if (!mounted) return;
+        setState(() {
+          _slices.clear();
+          _totalExpense = 0;
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final start = _stripTime(_selectedRange.start);
+      final end = DateTime(
+        _selectedRange.end.year,
+        _selectedRange.end.month,
+        _selectedRange.end.day,
+        23,
+        59,
+        59,
+      );
+
+      // Fetch expenses with transaction and category details
+      final expenseResponse = await supabase
+          .from('expenses')
+          .select(
+            'amount, expense_cat_id, expense_category:expense_cat_id(name), transaction!expenses_transaction_id_fkey(created_at, account:account_id(user_id))',
+          );
+
+      debugPrint('[ExpenseDistribution] Raw response: $expenseResponse');
+
+      // Filter in Dart for date range and user_id due to potential RLS constraints
+      final Map<String, double> totalsByCategory = {};
+
+      for (final row in expenseResponse as List<dynamic>) {
+        final map = row as Map<String, dynamic>;
+        
+        // Check user match
+        final transaction = map['transaction'] as Map<String, dynamic>?;
+        if (transaction == null) continue;
+        
+        final account = transaction['account'] as Map<String, dynamic>?;
+        final accountUserId = account?['user_id'] as String?;
+        if (accountUserId != user.id) continue;
+
+        // Check date range
+        final createdAtStr = transaction['created_at'] as String?;
+        if (createdAtStr == null) continue;
+        
+        final createdAt = DateTime.tryParse(createdAtStr);
+        if (createdAt == null || createdAt.isBefore(start) || createdAt.isAfter(end)) {
+          continue;
+        }
+
+        // Parse amount
+        final rawAmount = map['amount'];
+        final amount = rawAmount is num
+            ? rawAmount.toDouble()
+            : double.tryParse(rawAmount?.toString() ?? '0') ?? 0;
+        
+        if (amount <= 0) continue;
+
+        // Get category name
+        final catName = (map['expense_category']?['name'] as String?) ?? 'Uncategorized';
+        totalsByCategory[catName] = (totalsByCategory[catName] ?? 0) + amount;
+      }
+
+      debugPrint('[ExpenseDistribution] Totals by category: $totalsByCategory');
+
+      final sorted = totalsByCategory.entries.toList()
+        ..sort((a, b) => b.value.compareTo(a.value));
+
+      final slices = <_ExpenseSlice>[];
+      for (int i = 0; i < sorted.length; i++) {
+        final color = i < _palette.length ? _palette[i] : _palette.last;
+        slices.add(
+          _ExpenseSlice(
+            label: sorted[i].key,
+            amount: sorted[i].value,
+            color: color,
+          ),
+        );
+      }
+
+      final total = slices.fold<double>(0, (sum, s) => sum + s.amount);
+
+      if (!mounted) return;
+      setState(() {
+        _slices
+          ..clear()
+          ..addAll(slices);
+        _totalExpense = total;
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Error loading expense distribution: $e');
+      if (!mounted) return;
+      setState(() {
+        _slices.clear();
+        _totalExpense = 0;
+        _isLoading = false;
+      });
+    }
   }
 
   String get _formattedRange {
@@ -1546,6 +1675,13 @@ class _ExpenseDistributionCardState extends State<_ExpenseDistributionCard> {
     }
 
     return "$start - $end";
+  }
+
+  String _formatCurrency(double value) {
+    if (value >= 1000) {
+      return '\$${(value / 1000).toStringAsFixed(1)}K';
+    }
+    return '\$${value.toStringAsFixed(0)}';
   }
 
   Future<void> _pickDateRange() async {
@@ -1576,6 +1712,7 @@ class _ExpenseDistributionCardState extends State<_ExpenseDistributionCard> {
       setState(() {
         _selectedRange = newRange;
       });
+      await _loadDistribution();
     }
   }
 
@@ -1632,74 +1769,76 @@ class _ExpenseDistributionCardState extends State<_ExpenseDistributionCard> {
             ],
           ),
           const SizedBox(height: 30),
-          Center(
-            child: SizedBox(
-              height: 180,
-              width: 180,
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: CustomPaint(painter: _DonutChartPainter()),
-                  ),
-                  Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          "Expense Breakdown",
-                          style: AppTypography.caption.copyWith(
-                            color: AppColors.greyText,
-                          ),
+          if (_isLoading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 40),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_totalExpense <= 0 || _slices.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 40),
+              child: Center(
+                child: Text(
+                  'No expenses recorded in this range',
+                  style: AppTypography.caption.copyWith(color: AppColors.greyText),
+                ),
+              ),
+            )
+          else ...[
+            Center(
+              child: SizedBox(
+                height: 180,
+                width: 180,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: CustomPaint(
+                        painter: _DonutChartPainter(
+                          slices: _slices,
+                          total: _totalExpense,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          "By department",
-                          style: AppTypography.labelLarge.copyWith(
-                            color: Colors.black87,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-                ],
+                    Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Total',
+                            style: AppTypography.caption.copyWith(
+                              color: AppColors.greyText,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _formatCurrency(_totalExpense),
+                            style: AppTypography.labelLarge.copyWith(
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 30),
-          const _LegendItem(
-            color: AppColors.primary,
-            label: "Operations",
-            pct: "35%",
-            amt: "(\$54,600)",
-          ),
-          const SizedBox(height: 12),
-          _LegendItem(
-            color: AppColors.primary.withValues(alpha: 0.8),
-            label: "Marketing",
-            pct: "25%",
-            amt: "(\$39,000)",
-          ),
-          const SizedBox(height: 12),
-          _LegendItem(
-            color: AppColors.primary.withValues(alpha: 0.6),
-            label: "Payroll",
-            pct: "20%",
-            amt: "(\$31,200)",
-          ),
-          const SizedBox(height: 12),
-          _LegendItem(
-            color: AppColors.primary.withValues(alpha: 0.4),
-            label: "IT & Tools",
-            pct: "12%",
-            amt: "(\$18,700)",
-          ),
-          const SizedBox(height: 12),
-          _LegendItem(
-            color: AppColors.primary.withValues(alpha: 0.2),
-            label: "Others",
-            pct: "8%",
-            amt: "(\$12,500)",
-          ),
+            const SizedBox(height: 30),
+            ..._slices.map((slice) {
+              final pct = _totalExpense == 0
+                  ? 0
+                  : (slice.amount / _totalExpense * 100);
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _LegendItem(
+                  color: slice.color,
+                  label: slice.label,
+                  pct: '${pct.toStringAsFixed(1)}%',
+                  amt: '(${_formatCurrency(slice.amount)})',
+                ),
+              );
+            }),
+          ],
         ],
       ),
     );
@@ -1746,6 +1885,18 @@ class _LegendItem extends StatelessWidget {
       ],
     );
   }
+}
+
+class _ExpenseSlice {
+  final String label;
+  final double amount;
+  final Color color;
+
+  const _ExpenseSlice({
+    required this.label,
+    required this.amount,
+    required this.color,
+  });
 }
 
 // --- CUSTOM PAINTERS ---
@@ -1901,51 +2052,54 @@ class _DynamicBarChartPainter extends CustomPainter {
 }
 
 class _DonutChartPainter extends CustomPainter {
+  final List<_ExpenseSlice> slices;
+  final double total;
+
+  _DonutChartPainter({required this.slices, required this.total});
+
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
-    final strokeWidth = 16.0;
+    const strokeWidth = 16.0;
 
     final rect = Rect.fromCircle(
       center: center,
       radius: radius - strokeWidth / 2,
     );
 
-    void drawSegment(double startAngle, double sweepAngle, Color color) {
+    // Draw neutral ring when there is no data
+    if (total <= 0 || slices.isEmpty) {
+      final bgPaint = Paint()
+        ..color = AppColors.greyBorder
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth;
+      canvas.drawArc(rect, 0, math.pi * 2, false, bgPaint);
+      return;
+    }
+
+    double startAngle = -math.pi / 2;
+    for (final slice in slices) {
+      if (slice.amount <= 0) continue;
+      final sweep = (slice.amount / total) * math.pi * 2;
+      if (sweep <= 0) {
+        startAngle += sweep;
+        continue;
+      }
       final paint = Paint()
-        ..color = color
+        ..color = slice.color
         ..style = PaintingStyle.stroke
         ..strokeWidth = strokeWidth
         ..strokeCap = StrokeCap.butt;
 
-      final gap = 0.05;
-      canvas.drawArc(rect, startAngle + gap, sweepAngle - gap, false, paint);
+      // Small gap between slices for readability
+      const gap = 0.02;
+      final adjustedSweep = sweep > gap ? sweep - gap : sweep;
+      canvas.drawArc(rect, startAngle + (gap / 2), adjustedSweep, false, paint);
+      startAngle += sweep;
     }
-
-    const fullCircle = 3.14159 * 2;
-    double start = -3.14159 / 2;
-
-    double sweep1 = 0.35 * fullCircle;
-    drawSegment(start, sweep1, AppColors.primary);
-    start += sweep1;
-
-    double sweep2 = 0.25 * fullCircle;
-    drawSegment(start, sweep2, AppColors.primary.withValues(alpha: 0.8));
-    start += sweep2;
-
-    double sweep3 = 0.20 * fullCircle;
-    drawSegment(start, sweep3, AppColors.primary.withValues(alpha: 0.6));
-    start += sweep3;
-
-    double sweep4 = 0.12 * fullCircle;
-    drawSegment(start, sweep4, AppColors.primary.withValues(alpha: 0.4));
-    start += sweep4;
-
-    double sweep5 = 0.08 * fullCircle;
-    drawSegment(start, sweep5, AppColors.primary.withValues(alpha: 0.2));
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _DonutChartPainter oldDelegate) => true;
 }
