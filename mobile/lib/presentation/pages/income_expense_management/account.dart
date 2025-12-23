@@ -9,6 +9,9 @@ import 'package:cashlytics/domain/usecases/accounts/get_account_transactions.dar
 import 'package:cashlytics/domain/usecases/accounts/upsert_account.dart';
 import 'package:cashlytics/domain/usecases/accounts/delete_account.dart';
 import 'package:cashlytics/domain/entities/account.dart';
+import 'package:cashlytics/domain/repositories/transaction_repository.dart';
+import 'package:cashlytics/data/repositories/transaction_repository_impl.dart';
+import 'package:cashlytics/domain/usecases/transactions/delete_transaction.dart';
 import 'package:cashlytics/core/config/icons.dart';
 
 import 'package:cashlytics/presentation/themes/colors.dart';
@@ -41,6 +44,8 @@ class _AccountPageState extends State<AccountPage> {
   late final GetAccountTransactions _getAccountTransactions;
   late final UpsertAccount _upsertAccount;
   late final DeleteAccount _deleteAccountUseCase;
+  late final TransactionRepository _transactionRepository;
+  late final DeleteTransaction _deleteTransactionUseCase;
 
   // Data loaded from database
   List<Map<String, dynamic>> _myAccounts = [];
@@ -68,6 +73,8 @@ class _AccountPageState extends State<AccountPage> {
     _getAccountTransactions = GetAccountTransactions(_accountRepository);
     _upsertAccount = UpsertAccount(_accountRepository);
     _deleteAccountUseCase = DeleteAccount(_accountRepository);
+    _transactionRepository = TransactionRepositoryImpl();
+    _deleteTransactionUseCase = DeleteTransaction(_transactionRepository);
     _loadData();
   }
 
@@ -145,6 +152,7 @@ class _AccountPageState extends State<AccountPage> {
                 (isExpense ? '- \$' : '+ \$') + amount.toStringAsFixed(2);
 
             txList.add({
+              'transactionId': tx.transactionId,
               'type': isExpense ? 'expense' : 'income',
               'title': tx.title,
               'date': _formatDate(tx.date),
@@ -207,20 +215,47 @@ class _AccountPageState extends State<AccountPage> {
   }
 
   // --- LOGIC: DELETE ---
-  void _deleteTransaction(Map<String, dynamic> tx, int accountIndex) {
-    setState(() {
-      _allTransactions[accountIndex].removeWhere((element) => element == tx);
-      double amount = _parseAmount(tx);
+  Future<void> _deleteTransaction(
+    Map<String, dynamic> tx,
+    int accountIndex,
+  ) async {
+    final String? transactionId = tx['transactionId']?.toString();
 
-      if (tx['isExpense'] == true) {
-        _myAccounts[accountIndex]['current'] += amount;
-      } else {
-        _myAccounts[accountIndex]['current'] -= amount;
+    try {
+      // Delete from backend if transaction has an ID
+      if (transactionId != null && transactionId.isNotEmpty) {
+        await _deleteTransactionUseCase(transactionId);
       }
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Transaction deleted and balance updated")),
-    );
+
+      if (!mounted) return;
+
+      setState(() {
+        _allTransactions[accountIndex].removeWhere((element) => element == tx);
+        double amount = _parseAmount(tx);
+
+        if (tx['isExpense'] == true) {
+          _myAccounts[accountIndex]['current'] += amount;
+        } else {
+          _myAccounts[accountIndex]['current'] -= amount;
+        }
+      });
+
+      // Update caches to persist changes
+      CacheService.save('accounts', _myAccounts);
+      CacheService.save('transactions', _allTransactions);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Transaction deleted and balance updated"),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Delete failed: $e")));
+    }
   }
 
   // --- LOGIC: EDIT (FIXED ICON ISSUE HERE) ---
