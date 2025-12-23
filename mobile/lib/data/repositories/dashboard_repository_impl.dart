@@ -33,8 +33,6 @@ class DashboardRepositoryImpl implements DashboardRepository {
       },
     );
 
-    print("getMonthlyWeeklyBalances RPC Response: ${response.toString()}");
-
     if (response == null || response is! List) {
       throw Exception('Failed to fetch weekly balances');
     }

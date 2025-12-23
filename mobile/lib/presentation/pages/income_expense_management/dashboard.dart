@@ -628,7 +628,10 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
         case 'This month':
           final currentBalances = await _getMonthlyWeeklyBalances(user.id, now);
           final lastMonth = DateTime(now.year, now.month - 1, 1);
-          final previousBalances = await _getMonthlyWeeklyBalances(user.id, lastMonth);
+          final previousBalances = await _getMonthlyWeeklyBalances(
+            user.id,
+            lastMonth,
+          );
           setState(() {
             _weeklyBalances = currentBalances;
             _previousWeeklyBalances = previousBalances;
@@ -640,9 +643,15 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
 
         case 'Last month':
           final lastMonth = DateTime(now.year, now.month - 1, 1);
-          final currentBalances = await _getMonthlyWeeklyBalances(user.id, lastMonth);
+          final currentBalances = await _getMonthlyWeeklyBalances(
+            user.id,
+            lastMonth,
+          );
           final prevMonth = DateTime(now.year, now.month - 2, 1);
-          final previousBalances = await _getMonthlyWeeklyBalances(user.id, prevMonth);
+          final previousBalances = await _getMonthlyWeeklyBalances(
+            user.id,
+            prevMonth,
+          );
           setState(() {
             _weeklyBalances = currentBalances;
             _previousWeeklyBalances = previousBalances;
@@ -653,8 +662,14 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
           break;
 
         case 'This year':
-          final currentBalances = await _getYearlyQuarterlyBalances(user.id, now.year);
-          final previousBalances = await _getYearlyQuarterlyBalances(user.id, now.year - 1);
+          final currentBalances = await _getYearlyQuarterlyBalances(
+            user.id,
+            now.year,
+          );
+          final previousBalances = await _getYearlyQuarterlyBalances(
+            user.id,
+            now.year - 1,
+          );
           setState(() {
             _quarterlyBalances = currentBalances;
             _previousQuarterlyBalances = previousBalances;
@@ -739,11 +754,23 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
     double previousTotal = 0.0;
 
     if (_weeklyBalances.isNotEmpty) {
-      currentTotal = _weeklyBalances.fold(0.0, (sum, week) => sum + week.balance);
-      previousTotal = _previousWeeklyBalances.fold(0.0, (sum, week) => sum + week.balance);
+      currentTotal = _weeklyBalances.fold(
+        0.0,
+        (sum, week) => sum + week.balance,
+      );
+      previousTotal = _previousWeeklyBalances.fold(
+        0.0,
+        (sum, week) => sum + week.balance,
+      );
     } else if (_quarterlyBalances.isNotEmpty) {
-      currentTotal = _quarterlyBalances.fold(0.0, (sum, quarter) => sum + quarter.balance);
-      previousTotal = _previousQuarterlyBalances.fold(0.0, (sum, quarter) => sum + quarter.balance);
+      currentTotal = _quarterlyBalances.fold(
+        0.0,
+        (sum, quarter) => sum + quarter.balance,
+      );
+      previousTotal = _previousQuarterlyBalances.fold(
+        0.0,
+        (sum, quarter) => sum + quarter.balance,
+      );
     } else {
       return '+0.0%';
     }
@@ -764,11 +791,23 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
     double previousTotal = 0.0;
 
     if (_weeklyBalances.isNotEmpty) {
-      currentTotal = _weeklyBalances.fold(0.0, (sum, week) => sum + week.balance);
-      previousTotal = _previousWeeklyBalances.fold(0.0, (sum, week) => sum + week.balance);
+      currentTotal = _weeklyBalances.fold(
+        0.0,
+        (sum, week) => sum + week.balance,
+      );
+      previousTotal = _previousWeeklyBalances.fold(
+        0.0,
+        (sum, week) => sum + week.balance,
+      );
     } else if (_quarterlyBalances.isNotEmpty) {
-      currentTotal = _quarterlyBalances.fold(0.0, (sum, quarter) => sum + quarter.balance);
-      previousTotal = _previousQuarterlyBalances.fold(0.0, (sum, quarter) => sum + quarter.balance);
+      currentTotal = _quarterlyBalances.fold(
+        0.0,
+        (sum, quarter) => sum + quarter.balance,
+      );
+      previousTotal = _previousQuarterlyBalances.fold(
+        0.0,
+        (sum, quarter) => sum + quarter.balance,
+      );
     } else {
       return AppColors.greyText;
     }
@@ -865,7 +904,10 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
         !_isLoading &&
         (_weeklyBalances.isNotEmpty || _quarterlyBalances.isNotEmpty);
 
-    final currentData = useRealData ? null : _data[_selectedFilter];
+    // Fallback to default placeholder data if the selected filter has no mock entry yet
+    final currentData = useRealData
+        ? null
+        : (_data[_selectedFilter] ?? _data['This month']);
 
     final displayAmount = useRealData
         ? _formatCurrency(_calculateTotalBalance())
@@ -1042,6 +1084,219 @@ class _CashFlowCard extends StatefulWidget {
 
 class _CashFlowCardState extends State<_CashFlowCard> {
   String _selectedFilter = 'This month';
+  bool _isLoading = true;
+  List<WeeklyBalance> _weeklyBalances = [];
+  List<QuarterlyBalance> _quarterlyBalances = [];
+
+  late final DashboardRepository _dashboardRepository;
+  late final GetMonthlyWeeklyBalances _getMonthlyWeeklyBalances;
+  late final GetYearlyQuarterlyBalances _getYearlyQuarterlyBalances;
+  late final AuthService _authService;
+
+  @override
+  void initState() {
+    super.initState();
+    _dashboardRepository = DashboardRepositoryImpl();
+    _getMonthlyWeeklyBalances = GetMonthlyWeeklyBalances(_dashboardRepository);
+    _getYearlyQuarterlyBalances = GetYearlyQuarterlyBalances(
+      _dashboardRepository,
+    );
+    _authService = AuthService();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    if (!mounted) return;
+    setState(() => _isLoading = true);
+
+    try {
+      final user = _authService.currentUser;
+      if (user == null) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _weeklyBalances = [];
+            _quarterlyBalances = [];
+          });
+        }
+        return;
+      }
+
+      final now = DateTime.now();
+
+      // Load data based on selected filter
+      switch (_selectedFilter) {
+        case 'This month':
+          final balances = await _getMonthlyWeeklyBalances(user.id, now);
+          if (mounted) {
+            setState(() {
+              _weeklyBalances = balances;
+              _quarterlyBalances = [];
+              _isLoading = false;
+            });
+          }
+          break;
+
+        case 'Last month':
+          final lastMonth = DateTime(now.year, now.month - 1, 1);
+          final balances = await _getMonthlyWeeklyBalances(user.id, lastMonth);
+          if (mounted) {
+            setState(() {
+              _weeklyBalances = balances;
+              _quarterlyBalances = [];
+              _isLoading = false;
+            });
+          }
+          break;
+
+        case 'This year':
+          final balances = await _getYearlyQuarterlyBalances(user.id, now.year);
+          if (mounted) {
+            setState(() {
+              _quarterlyBalances = balances;
+              _weeklyBalances = [];
+              _isLoading = false;
+            });
+          }
+          break;
+
+        case 'Last year':
+          final balances = await _getYearlyQuarterlyBalances(
+            user.id,
+            now.year - 1,
+          );
+          if (mounted) {
+            setState(() {
+              _quarterlyBalances = balances;
+              _weeklyBalances = [];
+              _isLoading = false;
+            });
+          }
+          break;
+
+        default:
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+              _weeklyBalances = [];
+              _quarterlyBalances = [];
+            });
+          }
+      }
+    } catch (e) {
+      debugPrint('Error loading cash flow data: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _weeklyBalances = [];
+          _quarterlyBalances = [];
+        });
+      }
+    }
+  }
+
+  String _formatCurrency(double amount) {
+    if (amount >= 1000) {
+      return '\$${(amount / 1000).toStringAsFixed(1)}K';
+    }
+    return '\$${amount.toStringAsFixed(0)}';
+  }
+
+  List<double> _getIncomeData() {
+    List<double> incomes;
+
+    if (_weeklyBalances.isNotEmpty) {
+      // Sort by start_date
+      final sortedBalances = List<WeeklyBalance>.from(_weeklyBalances)
+        ..sort((a, b) => a.startDate.compareTo(b.startDate));
+      incomes = sortedBalances.map((w) => w.totalIncome).toList();
+    } else if (_quarterlyBalances.isNotEmpty) {
+      incomes = _quarterlyBalances.map((q) => q.totalIncome).toList();
+    } else {
+      return [0.6, 0.4, 0.8, 0.45]; // Default placeholder
+    }
+
+    // Normalize to 0-1 range
+    final maxValue = _getMaxValue();
+    if (maxValue <= 0) return List.filled(incomes.length, 0.0);
+
+    return incomes.map((v) => (v / maxValue).clamp(0.0, 1.0)).toList();
+  }
+
+  List<double> _getExpenseData() {
+    List<double> expenses;
+
+    if (_weeklyBalances.isNotEmpty) {
+      // Sort by start_date
+      final sortedBalances = List<WeeklyBalance>.from(_weeklyBalances)
+        ..sort((a, b) => a.startDate.compareTo(b.startDate));
+      expenses = sortedBalances.map((w) => w.totalExpense).toList();
+    } else if (_quarterlyBalances.isNotEmpty) {
+      expenses = _quarterlyBalances.map((q) => q.totalExpense).toList();
+    } else {
+      return [0.35, 0.38, 0.65, 0.48]; // Default placeholder
+    }
+
+    // Normalize to 0-1 range
+    final maxValue = _getMaxValue();
+    if (maxValue <= 0) return List.filled(expenses.length, 0.0);
+
+    return expenses.map((v) => (v / maxValue).clamp(0.0, 1.0)).toList();
+  }
+
+  double _getMaxValue() {
+    List<double> allValues = [];
+
+    if (_weeklyBalances.isNotEmpty) {
+      final sortedBalances = List<WeeklyBalance>.from(_weeklyBalances)
+        ..sort((a, b) => a.startDate.compareTo(b.startDate));
+      for (var week in sortedBalances) {
+        allValues.add(week.totalIncome);
+        allValues.add(week.totalExpense);
+      }
+    } else if (_quarterlyBalances.isNotEmpty) {
+      for (var quarter in _quarterlyBalances) {
+        allValues.add(quarter.totalIncome);
+        allValues.add(quarter.totalExpense);
+      }
+    }
+
+    if (allValues.isEmpty) return 8000.0;
+    final maxValue = allValues.reduce((a, b) => a > b ? a : b);
+    if (maxValue <= 0) return 8000.0;
+    return maxValue;
+  }
+
+  List<String> _getYAxisLabels() {
+    final maxValue = _getMaxValue();
+    final step = maxValue / 4;
+
+    return [
+      _formatCurrency(maxValue),
+      _formatCurrency(maxValue - step),
+      _formatCurrency(maxValue - step * 2),
+      _formatCurrency(maxValue - step * 3),
+      '\$0',
+    ];
+  }
+
+  List<String> _getLabels() {
+    if (_weeklyBalances.isNotEmpty) {
+      final sortedBalances = List<WeeklyBalance>.from(_weeklyBalances)
+        ..sort((a, b) => a.startDate.compareTo(b.startDate));
+
+      return sortedBalances.map((w) {
+        if (w.weekNumber == 1 && sortedBalances.any((b) => b.weekNumber > 10)) {
+          final nextYear = (w.startDate.year + 1) % 100;
+          return "Wk 1'$nextYear";
+        }
+        return 'Wk ${w.weekNumber}';
+      }).toList();
+    } else if (_quarterlyBalances.isNotEmpty) {
+      return _quarterlyBalances.map((q) => 'Q${q.quarterNumber}').toList();
+    }
+    return ['Week 1', 'Week 2', 'Week 3', 'Week 4']; // Default placeholder
+  }
 
   final Map<String, dynamic> _data = {
     'This month': {
@@ -1058,8 +1313,24 @@ class _CashFlowCardState extends State<_CashFlowCard> {
 
   @override
   Widget build(BuildContext context) {
-    final currentData = _data[_selectedFilter];
-    final List<String> labels = currentData['labels'];
+    // Use real data if available
+    final bool useRealData =
+        !_isLoading &&
+        (_weeklyBalances.isNotEmpty || _quarterlyBalances.isNotEmpty);
+
+    final currentData = useRealData
+        ? null
+        : (_data[_selectedFilter] ?? _data['This month']);
+    final incomeData = useRealData
+        ? _getIncomeData()
+        : currentData!['incomeData'];
+    final expenseData = useRealData
+        ? _getExpenseData()
+        : currentData!['expenseData'];
+    final labels = useRealData ? _getLabels() : currentData!['labels'];
+    final yAxisLabels = useRealData
+        ? _getYAxisLabels()
+        : ['\$8,000', '\$6,000', '\$4,000', '\$2,000', '\$0'];
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -1086,7 +1357,10 @@ class _CashFlowCardState extends State<_CashFlowCard> {
               Text("Cash Flow", style: AppTypography.bodyLarge),
 
               PopupMenuButton<String>(
-                onSelected: (value) => setState(() => _selectedFilter = value),
+                onSelected: (value) {
+                  setState(() => _selectedFilter = value);
+                  _loadData();
+                },
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -1117,90 +1391,115 @@ class _CashFlowCardState extends State<_CashFlowCard> {
                     value: 'Last month',
                     child: Text('Last month'),
                   ),
+                  const PopupMenuItem(
+                    value: 'This year',
+                    child: Text('This year'),
+                  ),
+                  const PopupMenuItem(
+                    value: 'Last year',
+                    child: Text('Last year'),
+                  ),
                 ],
               ),
             ],
           ),
           const SizedBox(height: 20),
 
-          SizedBox(
-            height: 150,
-            width: double.infinity,
-            child: Row(
-              children: [
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "\$8,000",
-                      style: AppTypography.caption.copyWith(
-                        fontSize: 10,
-                        color: AppColors.greyText,
+          _isLoading
+              ? const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(50.0),
+                    child: CircularProgressIndicator(),
+                  ),
+                )
+              : SizedBox(
+                  height: 150,
+                  width: double.infinity,
+                  child: Row(
+                    children: [
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: yAxisLabels
+                            .map(
+                              (label) => Text(
+                                label,
+                                style: AppTypography.caption.copyWith(
+                                  fontSize: 10,
+                                  color: AppColors.greyText,
+                                ),
+                              ),
+                            )
+                            .toList(),
                       ),
-                    ),
-                    Text(
-                      "\$6,000",
-                      style: AppTypography.caption.copyWith(
-                        fontSize: 10,
-                        color: AppColors.greyText,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: CustomPaint(
+                          size: Size.infinite,
+                          painter: _DynamicBarChartPainter(
+                            incomeData: incomeData,
+                            expenseData: expenseData,
+                          ),
+                        ),
                       ),
-                    ),
-                    Text(
-                      "\$4,000",
-                      style: AppTypography.caption.copyWith(
-                        fontSize: 10,
-                        color: AppColors.greyText,
-                      ),
-                    ),
-                    Text(
-                      "\$2,000",
-                      style: AppTypography.caption.copyWith(
-                        fontSize: 10,
-                        color: AppColors.greyText,
-                      ),
-                    ),
-                    Text(
-                      "\$0",
-                      style: AppTypography.caption.copyWith(
-                        fontSize: 10,
-                        color: AppColors.greyText,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: CustomPaint(
-                    size: Size.infinite,
-                    painter: _DynamicBarChartPainter(
-                      incomeData: currentData['incomeData'],
-                      expenseData: currentData['expenseData'],
-                    ),
+                    ],
                   ),
                 ),
-              ],
-            ),
-          ),
 
           const SizedBox(height: 10),
 
-          Padding(
-            padding: const EdgeInsets.only(left: 45.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: labels
-                  .map(
-                    (label) => Text(
-                      label,
-                      style: const TextStyle(
-                        color: AppColors.greyText,
-                        fontSize: 12,
+          if (!_isLoading)
+            Padding(
+              padding: const EdgeInsets.only(left: 45.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: (labels as List<String>)
+                    .map(
+                      (label) => Text(
+                        label,
+                        style: const TextStyle(
+                          color: AppColors.greyText,
+                          fontSize: 12,
+                        ),
                       ),
-                    ),
-                  )
-                  .toList(),
+                    )
+                    .toList(),
+              ),
             ),
+
+          const SizedBox(height: 20),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 6),
+              const Text(
+                "Income",
+                style: TextStyle(color: AppColors.greyText, fontSize: 12),
+              ),
+              const SizedBox(width: 20),
+              Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 6),
+              const Text(
+                "Expenses",
+                style: TextStyle(color: AppColors.greyText, fontSize: 12),
+              ),
+            ],
           ),
         ],
       ),
