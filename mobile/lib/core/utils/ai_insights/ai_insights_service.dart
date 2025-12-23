@@ -62,6 +62,15 @@ class AiInsightsService {
           debugPrint('[AiInsightsService] Using cached report for $monthKey');
           return existing;
         }
+      } else {
+        final existingForMonth =
+            await _aiReportRepository.getReportByMonth(user.id, monthKey);
+        if (existingForMonth?.id != null) {
+          debugPrint(
+            '[AiInsightsService] Deleting existing report ${existingForMonth!.id} for $monthKey before regeneration',
+          );
+          await _aiReportRepository.deleteAiReport(existingForMonth.id!);
+        }
       }
 
       // 1. Fetch user accounts

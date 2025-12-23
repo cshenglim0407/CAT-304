@@ -380,14 +380,19 @@ class _AISuggestionsModalContentState
     _loadAIInsights();
   }
 
-  Future<void> _loadAIInsights() async {
+  Future<void> _loadAIInsights({bool forceRefresh = false}) async {
     try {
       if (!mounted) return;
-      setState(() => _isLoading = true);
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
 
       // Import the service
       final aiInsightsService = AiInsightsService();
-      final report = await aiInsightsService.generateInsights();
+      final report = await aiInsightsService.generateInsights(
+        forceRefresh: forceRefresh,
+      );
 
       if (!mounted) return;
 
@@ -672,23 +677,38 @@ class _AISuggestionsModalContentState
           // Close Button
           Padding(
             padding: const EdgeInsets.all(24),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
+                  onPressed: _isLoading
+                      ? null
+                      : () => _loadAIInsights(forceRefresh: true),
+                  child: const Text('Generate Report Again'),
                 ),
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: const Text("Close"),
-              ),
+                const SizedBox(height: 12),
+                OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.getTextPrimary(context),
+                    side: BorderSide(color: AppColors.greyBorder),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Close'),
+                ),
+              ],
             ),
           ),
         ],

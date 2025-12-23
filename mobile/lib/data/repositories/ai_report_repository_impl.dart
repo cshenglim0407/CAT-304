@@ -84,4 +84,18 @@ class AiReportRepositoryImpl implements AiReportRepository {
       return null;
     }
   }
+
+  @override
+  Future<void> deleteAiReport(String reportId) async {
+    try {
+      await _databaseService.deleteById(
+        _table,
+        matchColumn: 'report_id',
+        matchValue: reportId,
+      );
+    } catch (e) {
+      debugPrint('Error deleting AI report $reportId: $e');
+      rethrow;
+    }
+  }
 }
