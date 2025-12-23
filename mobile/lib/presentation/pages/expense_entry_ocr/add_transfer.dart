@@ -91,7 +91,7 @@ class _AddTransferPageState extends State<AddTransferPage> {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 // UPDATED: Uses Primary Color tint
-                color: primaryColor.withOpacity(0.1), 
+                color: primaryColor.withValues(alpha: 0.1), 
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Column(
@@ -114,7 +114,7 @@ class _AddTransferPageState extends State<AddTransferPage> {
                       border: InputBorder.none,
                       hintText: r"$0.00",
                       hintStyle: AppTypography.headline1.copyWith(
-                        color: AppColors.greyText.withOpacity(0.3),
+                        color: AppColors.greyText.withValues(alpha: 0.3),
                         fontSize: 40,
                       ),
                     ),
@@ -132,7 +132,7 @@ class _AddTransferPageState extends State<AddTransferPage> {
               decoration: BoxDecoration(
                 color: fieldColor,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.red.withOpacity(0.3)), 
+                border: Border.all(color: Colors.red.withValues(alpha: 0.3)), 
               ),
               child: Row(
                 children: [
@@ -166,7 +166,7 @@ class _AddTransferPageState extends State<AddTransferPage> {
               decoration: BoxDecoration(
                 color: fieldColor,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.success.withOpacity(0.3)), 
+                border: Border.all(color: AppColors.success.withValues(alpha: 0.3)), 
               ),
               child: _validToAccounts.isEmpty 
               ? Padding(

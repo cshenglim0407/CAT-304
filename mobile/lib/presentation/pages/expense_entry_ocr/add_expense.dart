@@ -146,7 +146,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: primaryColor.withOpacity(0.1), 
+                color: primaryColor.withValues(alpha: 0.1), 
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Column(
@@ -309,7 +309,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(

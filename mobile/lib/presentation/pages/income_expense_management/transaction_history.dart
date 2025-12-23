@@ -5,8 +5,8 @@ import 'package:cashlytics/presentation/themes/typography.dart';
 class TransactionHistoryPage extends StatefulWidget {
   final String accountName;
   final List<Map<String, dynamic>> transactions;
-  final Function(Map<String, dynamic>) onDelete; 
-  final Function(Map<String, dynamic>) onEdit; 
+  final Function(Map<String, dynamic>) onDelete;
+  final Function(Map<String, dynamic>) onEdit;
 
   const TransactionHistoryPage({
     super.key,
@@ -28,7 +28,9 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
       appBar: AppBar(
         title: Text(
           "${widget.accountName} History",
-          style: AppTypography.headline3.copyWith(color: AppColors.getTextPrimary(context)),
+          style: AppTypography.headline3.copyWith(
+            color: AppColors.getTextPrimary(context),
+          ),
         ),
         backgroundColor: AppColors.getSurface(context),
         foregroundColor: AppColors.getTextPrimary(context),
@@ -39,14 +41,16 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
           ? Center(
               child: Text(
                 "No history available",
-                style: AppTypography.bodySmall.copyWith(color: AppColors.greyText),
+                style: AppTypography.bodySmall.copyWith(
+                  color: AppColors.greyText,
+                ),
               ),
             )
           : ListView.separated(
               padding: const EdgeInsets.all(20),
               itemCount: widget.transactions.length,
               // UPDATED: Use SizedBox instead of Divider to remove lines
-              separatorBuilder: (_, __) => const SizedBox(height: 16),
+              separatorBuilder: (_, _) => const SizedBox(height: 16),
               itemBuilder: (context, index) {
                 final tx = widget.transactions[index];
                 final isExpense = tx['isExpense'] ?? false;
@@ -54,33 +58,37 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
 
                 return ListTile(
                   // Removes default internal padding so it aligns with your custom design
-                  contentPadding: EdgeInsets.zero, 
+                  contentPadding: EdgeInsets.zero,
                   leading: CircleAvatar(
                     radius: 24,
-                    backgroundColor: isExpense 
-                        ? Colors.black.withOpacity(0.05) 
-                        : AppColors.success.withOpacity(0.1),
+                    backgroundColor: isExpense
+                        ? Colors.black.withValues(alpha: 0.05)
+                        : AppColors.success.withValues(alpha: 0.1),
                     child: Icon(
-                      tx['icon'], 
+                      tx['icon'],
                       color: isExpense ? Colors.black : AppColors.success,
-                      size: 20
+                      size: 20,
                     ),
                   ),
                   title: Row(
                     children: [
                       Text(
-                        tx['title'], 
-                        style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.bold)
+                        tx['title'],
+                        style: AppTypography.labelLarge.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       if (isRecurrent) ...[
                         const SizedBox(width: 6),
                         Icon(Icons.repeat, size: 14, color: AppColors.greyText),
-                      ]
+                      ],
                     ],
                   ),
                   subtitle: Text(
-                    tx['date'], 
-                    style: AppTypography.bodySmall.copyWith(color: AppColors.greyText)
+                    tx['date'],
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.greyText,
+                    ),
                   ),
                   trailing: Text(
                     tx['amount'],
@@ -100,15 +108,21 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               margin: const EdgeInsets.only(top: 10, bottom: 20),
-              width: 40, height: 4, 
-              decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
             ListTile(
               leading: const Icon(Icons.edit, color: Colors.blue),

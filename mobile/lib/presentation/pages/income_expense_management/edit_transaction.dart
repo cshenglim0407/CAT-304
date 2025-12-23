@@ -189,7 +189,7 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
         const SizedBox(height: 20),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          activeColor: color,
+          activeThumbColor: color,
           title: const Text("Recurring Income"),
           value: _isRecurrent,
           onChanged: (val) => setState(() => _isRecurrent = val),
@@ -265,7 +265,7 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(

@@ -96,7 +96,7 @@ class _AddIncomePageState extends State<AddIncomePage> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: primaryColor.withOpacity(0.1),
+                color: primaryColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Column(
@@ -111,7 +111,7 @@ class _AddIncomePageState extends State<AddIncomePage> {
                       border: InputBorder.none,
                       // --- FIXED: Placeholder set to 0.00 ---
                       hintText: r"$0.00", 
-                      hintStyle: TextStyle(color: primaryColor.withOpacity(0.5)),
+                      hintStyle: TextStyle(color: primaryColor.withValues(alpha: 0.5)),
                     ),
                   ),
                 ],
@@ -158,12 +158,12 @@ class _AddIncomePageState extends State<AddIncomePage> {
                 color: fieldColor,
                 borderRadius: BorderRadius.circular(12),
                 border: _isRecurrent 
-                    ? Border.all(color: primaryColor.withOpacity(0.5), width: 1.5)
+                    ? Border.all(color: primaryColor.withValues(alpha: 0.5), width: 1.5)
                     : null,
               ),
               child: SwitchListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                activeColor: primaryColor,
+                activeThumbColor: primaryColor,
                 title: Text(
                   "Repeat Monthly?",
                   style: AppTypography.bodySmall.copyWith(
