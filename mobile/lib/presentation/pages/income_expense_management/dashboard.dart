@@ -757,7 +757,10 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
     List<double> balances;
 
     if (_weeklyBalances.isNotEmpty) {
-      balances = _weeklyBalances.map((w) => w.balance).toList();
+      // Sort by start_date to ensure chronological order
+      final sortedBalances = List<WeeklyBalance>.from(_weeklyBalances)
+        ..sort((a, b) => a.startDate.compareTo(b.startDate));
+      balances = sortedBalances.map((w) => w.balance).toList();
     } else if (_quarterlyBalances.isNotEmpty) {
       balances = _quarterlyBalances.map((q) => q.balance).toList();
     } else {
@@ -778,11 +781,23 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
 
   List<String> _getLabels() {
     if (_weeklyBalances.isNotEmpty) {
-      return _weeklyBalances.map((w) => 'Week ${w.weekNumber}').toList();
+      // Sort by start_date to ensure chronological order
+      final sortedBalances = List<WeeklyBalance>.from(_weeklyBalances)
+        ..sort((a, b) => a.startDate.compareTo(b.startDate));
+
+      return sortedBalances.map((w) {
+        // Add year suffix for Week 1 when it appears with higher week numbers
+        if (w.weekNumber == 1 && sortedBalances.any((b) => b.weekNumber > 10)) {
+          // Extract last 2 digits of year from start_date
+          final nextYear = (w.startDate.year + 1) % 100;
+          return "Week 1'$nextYear";
+        }
+        return 'Week ${w.weekNumber}';
+      }).toList();
     } else if (_quarterlyBalances.isNotEmpty) {
       return _quarterlyBalances.map((q) => 'Q${q.quarterNumber}').toList();
     }
-    return ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+    return ['Week 1', 'Week 2', 'Week 3', 'Week 4']; // Default placeholder
   }
 
   final Map<String, dynamic> _data = {

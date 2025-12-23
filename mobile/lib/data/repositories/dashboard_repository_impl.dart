@@ -33,6 +33,8 @@ class DashboardRepositoryImpl implements DashboardRepository {
       },
     );
 
+    print("getMonthlyWeeklyBalances RPC Response: ${response.toString()}");
+
     if (response == null || response is! List) {
       throw Exception('Failed to fetch weekly balances');
     }
@@ -104,13 +106,17 @@ class DashboardRepositoryImpl implements DashboardRepository {
     }
 
     final quarterlyBalances = (response)
-        .map((item) => QuarterlyBalanceModel.fromMap(item as Map<String, dynamic>))
+        .map(
+          (item) => QuarterlyBalanceModel.fromMap(item as Map<String, dynamic>),
+        )
         .toList();
 
     // If we're in the current year and haven't completed all 4 quarters yet,
     // fill remaining quarters with empty data
     if (isCurrentYear && quarterlyBalances.length < 4) {
-      final existingQuarters = quarterlyBalances.map((q) => q.quarterNumber).toSet();
+      final existingQuarters = quarterlyBalances
+          .map((q) => q.quarterNumber)
+          .toSet();
 
       for (int quarter = 1; quarter <= 4; quarter++) {
         if (!existingQuarters.contains(quarter)) {
@@ -137,7 +143,9 @@ class DashboardRepositoryImpl implements DashboardRepository {
       }
 
       // Sort by quarter number
-      quarterlyBalances.sort((a, b) => a.quarterNumber.compareTo(b.quarterNumber));
+      quarterlyBalances.sort(
+        (a, b) => a.quarterNumber.compareTo(b.quarterNumber),
+      );
     }
 
     return quarterlyBalances;
