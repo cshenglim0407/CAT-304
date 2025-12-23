@@ -553,6 +553,7 @@ class _AISuggestionsModalContentState
                   "AI Financial Insights",
                   style: AppTypography.headline3.copyWith(
                     color: Colors.black87,
+                    fontSize: 22,
                   ),
                 ),
               ],
@@ -683,7 +684,7 @@ class _AISuggestionsModalContentState
                                 curve: Curves.easeInOut,
                                 child: Text(
                                   _insights ?? 'Analyzing your finances...',
-                                  style: AppTypography.caption.copyWith(
+                                  style: AppTypography.bodyMedium.copyWith(
                                     color: AppColors.greyText,
                                   ),
                                   maxLines: _insightsExpanded ? null : 3,
@@ -749,14 +750,16 @@ class _AISuggestionsModalContentState
                                 children: [
                                   Text(
                                     month,
-                                    style: AppTypography.bodySmall.copyWith(
+                                    style: AppTypography.bodyMedium.copyWith(
                                       color: AppColors.getTextSecondary(context),
                                     ),
                                   ),
                                   const Spacer(),
                                   Text(
                                     score != null ? '$score' : '-',
-                                    style: AppTypography.bodySmall,
+                                    style: AppTypography.bodyMedium.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -834,7 +837,7 @@ class _AISuggestionsModalContentState
   }
 }
 
-class _SuggestionTile extends StatelessWidget {
+class _SuggestionTile extends StatefulWidget {
   final String title;
   final String body;
   final IconData icon;
@@ -846,6 +849,13 @@ class _SuggestionTile extends StatelessWidget {
     required this.icon,
     required this.color,
   });
+
+  @override
+  State<_SuggestionTile> createState() => _SuggestionTileState();
+}
+
+class _SuggestionTileState extends State<_SuggestionTile> {
+  bool _expanded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -863,10 +873,10 @@ class _SuggestionTile extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
+              color: widget.color.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: color, size: 20),
+            child: Icon(widget.icon, color: widget.color, size: 20),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -874,20 +884,41 @@ class _SuggestionTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  widget.title,
                   style: AppTypography.labelLarge.copyWith(
                     fontWeight: FontWeight.bold,
                     color: AppColors.getTextPrimary(context),
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  body,
-                  style: AppTypography.bodySmall.copyWith(
-                    color: AppColors.getTextSecondary(context),
-                    height: 1.4,
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeInOut,
+                  child: Text(
+                    widget.body,
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: AppColors.getTextSecondary(context),
+                      height: 1.45,
+                    ),
+                    maxLines: _expanded ? null : 2,
+                    overflow:
+                        _expanded ? TextOverflow.visible : TextOverflow.ellipsis,
                   ),
                 ),
+                if (widget.body.isNotEmpty && widget.body.length > 60)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: GestureDetector(
+                      onTap: () => setState(() => _expanded = !_expanded),
+                      child: Text(
+                        _expanded ? 'Show less' : 'Show more',
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
