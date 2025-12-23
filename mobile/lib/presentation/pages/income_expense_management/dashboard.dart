@@ -376,6 +376,7 @@ class _AISuggestionsModalContentState
   List<dynamic> _suggestions = [];
   String? _errorMessage;
   List<AiReport> _recentReports = [];
+  bool _insightsExpanded = false;
 
   @override
   void initState() {
@@ -677,14 +678,36 @@ class _AISuggestionsModalContentState
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              Text(
-                                _insights ?? 'Analyzing your finances...',
-                                style: AppTypography.caption.copyWith(
-                                  color: AppColors.greyText,
+                              AnimatedSize(
+                                duration: const Duration(milliseconds: 200),
+                                curve: Curves.easeInOut,
+                                child: Text(
+                                  _insights ?? 'Analyzing your finances...',
+                                  style: AppTypography.caption.copyWith(
+                                    color: AppColors.greyText,
+                                  ),
+                                  maxLines: _insightsExpanded ? null : 3,
+                                  overflow: _insightsExpanded
+                                      ? TextOverflow.visible
+                                      : TextOverflow.ellipsis,
                                 ),
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
                               ),
+                              if ((_insights ?? '').isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 6),
+                                  child: GestureDetector(
+                                    onTap: () => setState(() {
+                                      _insightsExpanded = !_insightsExpanded;
+                                    }),
+                                    child: Text(
+                                      _insightsExpanded ? 'Show less' : 'Show more',
+                                      style: AppTypography.caption.copyWith(
+                                        color: AppColors.primary,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
                             ],
                           ),
                         ),
