@@ -4,7 +4,7 @@ import 'package:cashlytics/presentation/themes/typography.dart';
 
 class AddTransferPage extends StatefulWidget {
   final String fromAccountName;
-  final List<String> availableAccounts; // We need this list to populate the dropdown
+  final List<String> availableAccounts; 
 
   const AddTransferPage({
     super.key,
@@ -19,10 +19,7 @@ class AddTransferPage extends StatefulWidget {
 class _AddTransferPageState extends State<AddTransferPage> {
   final TextEditingController _amountController = TextEditingController();
   
-  // This will store the target account
   String? _selectedToAccount;
-  
-  // We need a list that EXCLUDES the current 'from' account
   late List<String> _validToAccounts;
 
   @override
@@ -52,7 +49,6 @@ class _AddTransferPageState extends State<AddTransferPage> {
     final double amount = double.tryParse(amountText) ?? 0.0;
     if (amount <= 0) return;
 
-    // Return data to the previous page
     final transferData = {
       'amount': amount,
       'fromAccount': widget.fromAccountName,
@@ -66,6 +62,9 @@ class _AddTransferPageState extends State<AddTransferPage> {
 
   @override
   Widget build(BuildContext context) {
+    // 1. Capture the Primary Color
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     final backgroundColor = AppColors.white;
     final fieldColor = AppColors.greyLight;
     final primaryTextColor = AppColors.getTextPrimary(context);
@@ -91,27 +90,29 @@ class _AddTransferPageState extends State<AddTransferPage> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.1), // Blue tint for Transfer usually indicates neutral/movement
+                // UPDATED: Uses Primary Color tint
+                color: primaryColor.withOpacity(0.1), 
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Column(
                 children: [
                   Text(
                     "Amount to Transfer",
-                    style: AppTypography.bodySmall.copyWith(color: Colors.blue, fontWeight: FontWeight.bold),
+                    // UPDATED: Uses Primary Color
+                    style: AppTypography.bodySmall.copyWith(color: primaryColor, fontWeight: FontWeight.bold),
                   ),
                   TextField(
                     controller: _amountController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     textAlign: TextAlign.center,
                     style: AppTypography.headline1.copyWith(
-                      color: Colors.blue, // Blue text
+                      color: primaryColor, // UPDATED: Uses Primary Color
                       fontSize: 40,
                     ),
-                    cursorColor: Colors.blue,
+                    cursorColor: primaryColor, // UPDATED: Uses Primary Color
                     decoration: InputDecoration(
                       border: InputBorder.none,
-                      hintText: "\$0",
+                      hintText: r"$0.00",
                       hintStyle: AppTypography.headline1.copyWith(
                         color: AppColors.greyText.withOpacity(0.3),
                         fontSize: 40,
@@ -131,7 +132,7 @@ class _AddTransferPageState extends State<AddTransferPage> {
               decoration: BoxDecoration(
                 color: fieldColor,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.red.withOpacity(0.3)), // Slight red border to indicate "Out"
+                border: Border.all(color: Colors.red.withOpacity(0.3)), 
               ),
               child: Row(
                 children: [
@@ -165,7 +166,7 @@ class _AddTransferPageState extends State<AddTransferPage> {
               decoration: BoxDecoration(
                 color: fieldColor,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.success.withOpacity(0.3)), // Slight green border to indicate "In"
+                border: Border.all(color: AppColors.success.withOpacity(0.3)), 
               ),
               child: _validToAccounts.isEmpty 
               ? Padding(
@@ -203,7 +204,7 @@ class _AddTransferPageState extends State<AddTransferPage> {
               height: 55,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue, // Transfer is usually Blue
+                  backgroundColor: primaryColor, // UPDATED: Uses Primary Color
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   elevation: 0,
                 ),

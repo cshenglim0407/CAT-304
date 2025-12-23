@@ -335,7 +335,7 @@ class _ProfilePageState extends State<ProfilePage> {
       final themePref = currentUserProfile!['theme_pref'] ?? 'system';
       _themePref = themePref.isNotEmpty
           ? themePref[0].toUpperCase() +
-                (themePref.length > 1 ? themePref.substring(1) : '')
+              (themePref.length > 1 ? themePref.substring(1) : '')
           : 'System';
     });
   }
@@ -427,11 +427,8 @@ class _ProfilePageState extends State<ProfilePage> {
           padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
           child: Column(
             children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: AppBackButton(onPressed: () => Navigator.pop(context)),
-              ),
-              const SizedBox(height: 16),
+              // --- Removed AppBackButton here ---
+              const SizedBox(height: 16), // Kept some top spacing
 
               // --- Profile Header ---
               Center(

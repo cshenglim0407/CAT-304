@@ -96,31 +96,22 @@ class _AddIncomePageState extends State<AddIncomePage> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: primaryColor.withOpacity(0.1), 
+                color: primaryColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Column(
                 children: [
-                  Text(
-                    "Enter Amount",
-                    style: AppTypography.bodySmall.copyWith(color: primaryColor, fontWeight: FontWeight.bold),
-                  ),
+                  Text("Amount", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
                   TextField(
                     controller: _amountController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     textAlign: TextAlign.center,
-                    style: AppTypography.headline1.copyWith(
-                      color: primaryColor,
-                      fontSize: 40,
-                    ),
-                    cursorColor: primaryColor,
+                    style: TextStyle(color: primaryColor, fontSize: 40, fontWeight: FontWeight.bold),
                     decoration: InputDecoration(
                       border: InputBorder.none,
-                      hintText: "\$0",
-                      hintStyle: AppTypography.headline1.copyWith(
-                        color: AppColors.greyText.withOpacity(0.3),
-                        fontSize: 40,
-                      ),
+                      // --- FIXED: Placeholder set to 0.00 ---
+                      hintText: r"$0.00", 
+                      hintStyle: TextStyle(color: primaryColor.withOpacity(0.5)),
                     ),
                   ),
                 ],
