@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cashlytics/core/services/supabase/auth/auth_state_listener.dart';
+import 'package:cashlytics/core/services/cache/cache_service.dart';
 import 'package:cashlytics/presentation/pages/user_management/login.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -8,11 +9,15 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
 
 import 'package:cashlytics/domain/repositories/dashboard_repository.dart';
+import 'package:cashlytics/domain/repositories/account_repository.dart';
 import 'package:cashlytics/data/repositories/dashboard_repository_impl.dart';
+import 'package:cashlytics/data/repositories/account_repository_impl.dart';
 import 'package:cashlytics/domain/usecases/dashboard/get_monthly_weekly_balances.dart';
 import 'package:cashlytics/domain/usecases/dashboard/get_yearly_quarterly_balances.dart';
+import 'package:cashlytics/domain/usecases/accounts/get_accounts.dart';
 import 'package:cashlytics/domain/entities/weekly_balance.dart';
 import 'package:cashlytics/domain/entities/quarterly_balance.dart';
+import 'package:cashlytics/domain/entities/account.dart';
 
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
@@ -28,6 +33,21 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   int _selectedIndex = 0; // Home is always 0
 
+  // Cache keys
+  final String _accountsCacheKey = 'dashboard_accounts_cache';
+  final String _balancesCacheKey = 'dashboard_balances_cache';
+
+  // Cached data
+  List<Account> cachedAccounts = [];
+  Map<String, dynamic>? cachedBalances;
+
+  late final AuthService _authService;
+  late final GetAccounts _getAccounts;
+  late final AccountRepository _accountRepository;
+
+  bool _redirecting = false;
+  late final StreamSubscription<AuthState> _authStateSubscription;
+
   void _onNavBarTap(int index) {
     setState(() {
       _selectedIndex = index;
@@ -39,6 +59,183 @@ class _DashboardPageState extends State<DashboardPage> {
     } else if (index == 2) {
       // Index 2 is now PROFILE
       Navigator.pushReplacementNamed(context, '/profile');
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _authService = AuthService();
+    _accountRepository = AccountRepositoryImpl();
+    _getAccounts = GetAccounts(_accountRepository);
+    _fetchAndCacheAccounts();
+    _fetchAndCacheBalances();
+
+    _authStateSubscription = listenForSignedOutRedirect(
+      shouldRedirect: () => !_redirecting,
+      onRedirect: () {
+        if (!mounted) return;
+        setState(() => _redirecting = true);
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+        );
+      },
+      onError: (error) {
+        debugPrint('Auth State Listener Error: $error');
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _authStateSubscription.cancel();
+    super.dispose();
+  }
+
+  Future<void> _fetchAndCacheAccounts() async {
+    try {
+      final user = _authService.currentUser;
+      if (user == null) {
+        throw Exception('User not authenticated');
+      }
+
+      final accounts = await _getAccounts(user.id);
+      if (accounts.isNotEmpty) {
+        cachedAccounts = accounts;
+        final accountsData = accounts
+            .map(
+              (acc) => {
+                'account_id': acc.id,
+                'user_id': acc.userId,
+                'name': acc.name,
+                'type': acc.type,
+                'initial_balance': acc.initialBalance,
+                'current_balance': acc.currentBalance,
+                'description': acc.description,
+                'created_at': acc.createdAt?.toIso8601String(),
+                'updated_at': acc.updatedAt?.toIso8601String(),
+              },
+            )
+            .toList();
+        await CacheService.save(_accountsCacheKey, accountsData);
+      }
+    } catch (e) {
+      debugPrint('Error fetching accounts: $e');
+      final cached = CacheService.load<List<dynamic>>(_accountsCacheKey);
+      if (cached != null) {
+        final user = _authService.currentUser;
+        cachedAccounts = cached
+            .where((item) {
+              // Filter out invalid accounts
+              final userId = item['user_id'];
+              return userId != null && userId.toString().isNotEmpty;
+            })
+            .map(
+              (item) => Account(
+                id: item['account_id'],
+                userId: item['user_id'], // Safe because we filtered above
+                name: item['name'],
+                type: item['type'],
+                initialBalance: item['initial_balance'] ?? 0,
+                currentBalance: item['current_balance'] ?? 0,
+                description: item['description'],
+              ),
+            )
+            .toList();
+
+        if (cachedAccounts.isEmpty) {
+          debugPrint('No valid cached accounts found');
+        }
+      }
+    } finally {
+      if (_authService.currentUser == null) {
+        cachedAccounts = [];
+        await CacheService.remove(_accountsCacheKey);
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const LoginPage()),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _fetchAndCacheBalances() async {
+    try {
+      final user = _authService.currentUser;
+      if (user == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Fetch monthly/weekly and yearly/quarterly balances
+      final now = DateTime.now();
+      final dashboardRepository = DashboardRepositoryImpl();
+      final getMonthlyWeeklyBalances = GetMonthlyWeeklyBalances(
+        dashboardRepository,
+      );
+      final getYearlyQuarterlyBalances = GetYearlyQuarterlyBalances(
+        dashboardRepository,
+      );
+
+      final monthlyWeekly = await getMonthlyWeeklyBalances(user.id, now);
+      final yearlyQuarterly = await getYearlyQuarterlyBalances(
+        user.id,
+        now.year,
+      );
+
+      if (monthlyWeekly.isNotEmpty || yearlyQuarterly.isNotEmpty) {
+        cachedBalances = {
+          'monthly_weekly': monthlyWeekly
+              .map(
+                (b) => {
+                  'week_number': b.weekNumber,
+                  'balance': b.balance,
+                  'start_date': b.startDate.toIso8601String(),
+                  'end_date': b.endDate.toIso8601String(),
+                  'total_income': b.totalIncome,
+                  'total_expense': b.totalExpense,
+                  'is_current_week': b.isCurrentWeek,
+                },
+              )
+              .toList(),
+          'yearly_quarterly': yearlyQuarterly
+              .map(
+                (b) => {
+                  'quarter_number': b.quarterNumber,
+                  'balance': b.balance,
+                  'start_date': b.startDate.toIso8601String(),
+                  'end_date': b.endDate.toIso8601String(),
+                  'total_income': b.totalIncome,
+                  'total_expense': b.totalExpense,
+                  'is_current_quarter': b.isCurrentQuarter,
+                },
+              )
+              .toList(),
+        };
+        await CacheService.save(_balancesCacheKey, cachedBalances!);
+      }
+    } catch (e) {
+      debugPrint('Error fetching balances: $e');
+      final cached = CacheService.load<Map<String, dynamic>>(_balancesCacheKey);
+      if (cached != null) {
+        // Validate cache has required data
+        if (((cached['monthly_weekly'] as List?)?.isNotEmpty ?? false) ||
+            ((cached['yearly_quarterly'] as List?)?.isNotEmpty ?? false)) {
+          cachedBalances = cached;
+        } else {
+          debugPrint('Cached balances are empty');
+        }
+      }
+    } finally {
+      if (_authService.currentUser == null) {
+        cachedBalances = null;
+        await CacheService.remove(_balancesCacheKey);
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const LoginPage()),
+          );
+        }
+      }
     }
   }
 
@@ -391,7 +588,9 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
     super.initState();
     _dashboardRepository = DashboardRepositoryImpl();
     _getMonthlyWeeklyBalances = GetMonthlyWeeklyBalances(_dashboardRepository);
-    _getYearlyQuarterlyBalances = GetYearlyQuarterlyBalances(_dashboardRepository);
+    _getYearlyQuarterlyBalances = GetYearlyQuarterlyBalances(
+      _dashboardRepository,
+    );
     _authService = AuthService();
     _loadData();
 
@@ -458,7 +657,10 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
           break;
 
         case 'Last year':
-          final balances = await _getYearlyQuarterlyBalances(user.id, now.year - 1);
+          final balances = await _getYearlyQuarterlyBalances(
+            user.id,
+            now.year - 1,
+          );
           setState(() {
             _quarterlyBalances = balances;
             _weeklyBalances = [];
@@ -506,14 +708,17 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
     if (_weeklyBalances.isNotEmpty) {
       return _weeklyBalances.fold(0.0, (sum, week) => sum + week.balance);
     } else if (_quarterlyBalances.isNotEmpty) {
-      return _quarterlyBalances.fold(0.0, (sum, quarter) => sum + quarter.balance);
+      return _quarterlyBalances.fold(
+        0.0,
+        (sum, quarter) => sum + quarter.balance,
+      );
     }
     return 0.0;
   }
 
   String _calculatePercentageChange() {
     List<double> balances;
-    
+
     if (_weeklyBalances.isNotEmpty) {
       balances = _weeklyBalances.map((w) => w.balance).toList();
     } else if (_quarterlyBalances.isNotEmpty) {
@@ -536,7 +741,7 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
 
   Color _getPercentageColor() {
     List<double> balances;
-    
+
     if (_weeklyBalances.isNotEmpty) {
       balances = _weeklyBalances.map((w) => w.balance).toList();
     } else if (_quarterlyBalances.isNotEmpty) {
@@ -555,7 +760,7 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
 
   List<double> _getChartData() {
     List<double> balances;
-    
+
     if (_weeklyBalances.isNotEmpty) {
       balances = _weeklyBalances.map((w) => w.balance).toList();
     } else if (_quarterlyBalances.isNotEmpty) {
@@ -573,9 +778,7 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
       return List.filled(balances.length, 0.5);
     }
 
-    return balances
-        .map((b) => (b.abs() / maxBalance).clamp(0.1, 1.0))
-        .toList();
+    return balances.map((b) => (b.abs() / maxBalance).clamp(0.1, 1.0)).toList();
   }
 
   List<String> _getLabels() {
@@ -625,7 +828,8 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
   @override
   Widget build(BuildContext context) {
     // Use real data if available for any filter
-    final bool useRealData = !_isLoading &&
+    final bool useRealData =
+        !_isLoading &&
         (_weeklyBalances.isNotEmpty || _quarterlyBalances.isNotEmpty);
 
     final currentData = useRealData ? null : _data[_selectedFilter];
