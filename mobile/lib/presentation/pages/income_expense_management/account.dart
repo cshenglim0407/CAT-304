@@ -83,6 +83,10 @@ class _AccountPageState extends State<AccountPage> {
       }
 
       final accounts = await _getAccounts(user.id);
+      
+      // Sort by createdAt, earliest first
+      accounts.sort((a, b) => (a.createdAt ?? DateTime(1970)).compareTo(b.createdAt ?? DateTime(1970)));
+      
       setState(() {
         _myAccounts = accounts;
         _isLoadingAccounts = false;
