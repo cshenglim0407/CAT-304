@@ -10,6 +10,13 @@ import 'package:cashlytics/presentation/pages/expense_entry_ocr/add_expense.dart
 import 'package:cashlytics/presentation/pages/income_expense_management/transaction_history.dart';
 import 'package:cashlytics/presentation/pages/income_expense_management/edit_transaction.dart';
 
+import 'package:cashlytics/core/services/supabase/client.dart';
+import 'package:cashlytics/core/services/cache/cache_service.dart';
+import 'package:cashlytics/domain/repositories/account_repository.dart';
+import 'package:cashlytics/data/repositories/account_repository_impl.dart';
+import 'package:cashlytics/domain/usecases/accounts/get_accounts.dart';
+import 'package:cashlytics/domain/usecases/accounts/get_account_transactions.dart';
+
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
 
@@ -21,6 +28,16 @@ class _AccountPageState extends State<AccountPage> {
   int _selectedIndex = 1;
   int _currentCardIndex = 0;
   late PageController _pageController;
+  bool _isLoading = true;
+
+  // Repository and use cases
+  late final AccountRepository _accountRepository;
+  late final GetAccounts _getAccounts;
+  late final GetAccountTransactions _getAccountTransactions;
+
+  // Data loaded from database
+  List<Map<String, dynamic>> _myAccounts = [];
+  List<List<Map<String, dynamic>>> _allTransactions = [];
 
   final List<String> _expenseCategories = [
     'FOOD',
@@ -39,6 +56,10 @@ class _AccountPageState extends State<AccountPage> {
   void initState() {
     super.initState();
     _pageController = PageController(viewportFraction: 0.85);
+    _accountRepository = AccountRepositoryImpl();
+    _getAccounts = GetAccounts(_accountRepository);
+    _getAccountTransactions = GetAccountTransactions(_accountRepository);
+    _loadData();
   }
 
   @override
@@ -47,108 +68,118 @@ class _AccountPageState extends State<AccountPage> {
     super.dispose();
   }
 
-  // --- MOCK DATA ---
-  final List<Map<String, dynamic>> _myAccounts = [
-    {
-      'id': '1',
-      'name': 'Maybank Savings',
-      'type': 'BANK',
-      'initial': 1000.00,
-      'current': 3450.50,
-      'desc': 'Primary salary account',
-    },
-    {
-      'id': '2',
-      'name': 'Touch n Go',
-      'type': 'E-WALLET',
-      'initial': 50.00,
-      'current': 12.40,
-      'desc': 'For tolls and parking',
-    },
-    {
-      'id': '3',
-      'name': 'Emergency Cash',
-      'type': 'CASH',
-      'initial': 500.00,
-      'current': 450.00,
-      'desc': 'Stashed in safe',
-    },
-  ];
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
 
-  final List<List<Map<String, dynamic>>> _allTransactions = [
-    [
-      {
-        'type': 'income',
-        'title': 'Salary',
-        'date': '01 Mar',
-        'amount': '+ \$3,500.00',
-        'rawAmount': 3500.0,
-        'isExpense': false,
-        'icon': Icons.work_rounded,
-        'isRecurrent': true,
-        'category': 'Salary',
-      },
-      {
-        'type': 'transfer',
-        'title': 'Transfer to TNG',
-        'toAccount': 'Touch n Go',
-        'date': '02 Mar',
-        'amount': '- \$50.00',
-        'rawAmount': 50.0,
-        'isExpense': true,
-        'icon': Icons.arrow_outward_rounded,
-        'isRecurrent': false,
-      },
-      {
-        'type': 'expense',
-        'title': 'Netflix Sub',
-        'date': '28 Feb',
-        'amount': '- \$12.00',
-        'rawAmount': 12.0,
-        'isExpense': true,
-        'icon': Icons.movie,
-        'isRecurrent': true,
-        'category': 'ENTERTAINMENT',
-      },
-    ],
-    [
-      {
-        'type': 'expense',
-        'title': 'Toll Payment',
-        'date': '05 Mar',
-        'amount': '- \$4.50',
-        'rawAmount': 4.5,
-        'isExpense': true,
-        'icon': Icons.directions_car,
-        'isRecurrent': false,
-        'category': 'TRANSPORT',
-      },
-      {
-        'type': 'income',
-        'title': 'Reload from Bank',
-        'date': '02 Mar',
-        'amount': '+ \$50.00',
-        'rawAmount': 50.0,
-        'isExpense': false,
-        'icon': Icons.add_card,
-        'isRecurrent': false,
-        'category': 'Refund',
-      },
-    ],
-    [
-      {
-        'type': 'expense',
-        'title': 'Lunch',
-        'date': 'Today',
-        'amount': '- \$15.00',
-        'rawAmount': 15.0,
-        'isExpense': true,
-        'icon': Icons.fastfood,
-        'isRecurrent': false,
-        'category': 'FOOD',
-      },
-    ],
-  ];
+    try {
+      // Try loading from cache first
+      final cachedAccounts = CacheService.load<List>('accounts');
+      final cachedTransactions = CacheService.load<List>('transactions');
+
+      if (cachedAccounts != null && cachedTransactions != null) {
+        setState(() {
+          _myAccounts = List<Map<String, dynamic>>.from(
+            cachedAccounts.map((e) => Map<String, dynamic>.from(e)),
+          );
+          _allTransactions = List<List<Map<String, dynamic>>>.from(
+            cachedTransactions.map(
+              (list) => List<Map<String, dynamic>>.from(
+                list.map((e) => Map<String, dynamic>.from(e)),
+              ),
+            ),
+          );
+          _isLoading = false;
+        });
+        return;
+      }
+
+      // If cache is empty, load from database progressively
+      final userId = supabase.auth.currentUser?.id;
+      if (userId == null) {
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      final accounts = await _getAccounts(userId);
+
+      // Stop showing loading indicator, start showing accounts progressively
+      setState(() => _isLoading = false);
+
+      // Load each account and its transactions one by one
+      for (final account in accounts) {
+        final accountMap = {
+          'id': account.id,
+          'name': account.name,
+          'type': account.type,
+          'initial': account.initialBalance,
+          'current': account.currentBalance,
+          'desc': account.description ?? '',
+        };
+
+        final txList = <Map<String, dynamic>>[];
+
+        // Load transactions for this account
+        if (account.id != null) {
+          final transactions = await _getAccountTransactions(account.id!);
+
+          for (final tx in transactions) {
+            final isExpense = tx.isExpense;
+            final amount = tx.amount.abs();
+            final displayAmount =
+                (isExpense ? '- \$' : '+ \$') + amount.toStringAsFixed(2);
+
+            txList.add({
+              'type': isExpense ? 'expense' : 'income',
+              'title': tx.title,
+              'date': _formatDate(tx.date),
+              'amount': displayAmount,
+              'rawAmount': amount,
+              'isExpense': isExpense,
+              'icon': tx.icon ?? _getTransactionIcon(isExpense, tx.category),
+              'isRecurrent': false,
+              'category': tx.category,
+            });
+          }
+        }
+
+        // Add this account and its transactions immediately to UI
+        setState(() {
+          _myAccounts.add(accountMap);
+          _allTransactions.add(txList);
+        });
+      }
+
+      // Save everything to cache for next time
+      CacheService.save('accounts', _myAccounts);
+      CacheService.save('transactions', _allTransactions);
+    } catch (e) {
+      debugPrint('Error loading data: $e');
+      setState(() => _isLoading = false);
+    }
+  }
+
+  String _formatDate(DateTime? dateTime) {
+    if (dateTime == null) return 'Unknown';
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final txDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
+
+    if (txDate == today) {
+      return 'Today';
+    } else if (txDate == today.subtract(const Duration(days: 1))) {
+      return 'Yesterday';
+    } else {
+      return '\${dateTime.day}/\${dateTime.month}';
+    }
+  }
+
+  IconData _getTransactionIcon(bool isExpense, String? category) {
+    if (isExpense) {
+      return _getExpenseIcon(category ?? '');
+    } else {
+      return _getCategoryIcon(category ?? '');
+    }
+  }
 
   // --- HELPERS ---
   IconData _getCategoryIcon(String category) {
@@ -682,7 +713,8 @@ class _AccountPageState extends State<AccountPage> {
 
   @override
   Widget build(BuildContext context) {
-    final fullTransactions = _myAccounts.isNotEmpty
+    final fullTransactions =
+        _myAccounts.isNotEmpty && _currentCardIndex < _allTransactions.length
         ? _allTransactions[_currentCardIndex]
         : <Map<String, dynamic>>[];
     final displayTransactions = fullTransactions.take(5).toList();
@@ -693,176 +725,190 @@ class _AccountPageState extends State<AccountPage> {
         currentIndex: _selectedIndex,
         onTap: _onNavBarTap,
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.only(top: 20, bottom: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 22),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SafeArea(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.only(top: 20, bottom: 20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            "My Accounts",
-                            style: AppTypography.headline2.copyWith(
-                              color: AppColors.getTextPrimary(context),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 22),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  "My Accounts",
+                                  style: AppTypography.headline2.copyWith(
+                                    color: AppColors.getTextPrimary(context),
+                                  ),
+                                ),
+                                GestureDetector(
+                                  onTap: () => _addAccount(context),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withValues(
+                                        alpha: 0.1,
+                                      ),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.add,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          GestureDetector(
-                            onTap: () => _addAccount(context),
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
+                          const SizedBox(height: 20),
+                          if (_myAccounts.isEmpty)
+                            Container(
+                              height: 220,
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 22,
+                              ),
                               decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.add,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    if (_myAccounts.isEmpty)
-                      Container(
-                        height: 220,
-                        margin: const EdgeInsets.symmetric(horizontal: 22),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(
-                            color: Colors.grey.withValues(alpha: 0.3),
-                          ),
-                        ),
-                        child: const Center(
-                          child: Text(
-                            "No accounts found",
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        ),
-                      )
-                    else
-                      SizedBox(
-                        height: 220,
-                        child: PageView.builder(
-                          controller: _pageController,
-                          itemCount: _myAccounts.length,
-                          onPageChanged: (index) {
-                            setState(() {
-                              _currentCardIndex = index;
-                            });
-                          },
-                          itemBuilder: (context, index) {
-                            final acc = _myAccounts[index];
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8.0,
-                              ),
-                              child: AccountCard(
-                                accountName: acc['name'],
-                                accountType: acc['type'],
-                                initialBalance: acc['initial'],
-                                currentBalance: acc['current'],
-                                description: acc['desc'],
-                                onTap: () =>
-                                    _showTransactionOptions(context, acc),
-                                onEditTap: () => _showEditOptions(context, acc),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    const SizedBox(height: 10),
-                    if (_myAccounts.isNotEmpty)
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(_myAccounts.length, (index) {
-                          return Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 4),
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: _currentCardIndex == index
-                                  ? AppColors.primary
-                                  : AppColors.greyLight,
-                            ),
-                          );
-                        }),
-                      ),
-                    const SizedBox(height: 30),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 22),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            "Recent Transactions",
-                            style: AppTypography.headline2.copyWith(
-                              color: AppColors.getTextPrimary(context),
-                            ),
-                          ),
-                          if (fullTransactions.length > 5)
-                            GestureDetector(
-                              onTap: _navigateToHistory,
-                              child: Text(
-                                "View All",
-                                style: TextStyle(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.bold,
+                                color: Colors.grey.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(
+                                  color: Colors.grey.withValues(alpha: 0.3),
                                 ),
                               ),
+                              child: const Center(
+                                child: Text(
+                                  "No accounts found",
+                                  style: TextStyle(color: Colors.grey),
+                                ),
+                              ),
+                            )
+                          else
+                            SizedBox(
+                              height: 220,
+                              child: PageView.builder(
+                                controller: _pageController,
+                                itemCount: _myAccounts.length,
+                                onPageChanged: (index) {
+                                  setState(() {
+                                    _currentCardIndex = index;
+                                  });
+                                },
+                                itemBuilder: (context, index) {
+                                  final acc = _myAccounts[index];
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8.0,
+                                    ),
+                                    child: AccountCard(
+                                      accountName: acc['name'],
+                                      accountType: acc['type'],
+                                      initialBalance: acc['initial'],
+                                      currentBalance: acc['current'],
+                                      description: acc['desc'],
+                                      onTap: () =>
+                                          _showTransactionOptions(context, acc),
+                                      onEditTap: () =>
+                                          _showEditOptions(context, acc),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          const SizedBox(height: 10),
+                          if (_myAccounts.isNotEmpty)
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(_myAccounts.length, (
+                                index,
+                              ) {
+                                return Container(
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                  ),
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: _currentCardIndex == index
+                                        ? AppColors.primary
+                                        : AppColors.greyLight,
+                                  ),
+                                );
+                              }),
+                            ),
+                          const SizedBox(height: 30),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 22),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  "Recent Transactions",
+                                  style: AppTypography.headline2.copyWith(
+                                    color: AppColors.getTextPrimary(context),
+                                  ),
+                                ),
+                                if (fullTransactions.length > 5)
+                                  GestureDetector(
+                                    onTap: _navigateToHistory,
+                                    child: Text(
+                                      "View All",
+                                      style: TextStyle(
+                                        color: AppColors.primary,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          if (_myAccounts.isEmpty ||
+                              displayTransactions.isEmpty)
+                            const Padding(
+                              padding: EdgeInsets.all(22),
+                              child: Center(
+                                child: Text("No transactions available."),
+                              ),
+                            )
+                          else
+                            ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 22,
+                              ),
+                              itemCount: displayTransactions.length,
+                              itemBuilder: (context, index) {
+                                final tx = displayTransactions[index];
+                                // HITTEST BEHAVIOR OPAQUE is key for clickable whitespace
+                                return GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  onTap: () => _showTransactionActionSheet(tx),
+                                  child: _TransactionTile(
+                                    title: tx['title'],
+                                    subtitle: tx['date'],
+                                    amount: tx['amount'],
+                                    icon: tx['icon'] ?? Icons.error,
+                                    isExpense: tx['isExpense'] ?? false,
+                                    isRecurrent: tx['isRecurrent'] ?? false,
+                                  ),
+                                );
+                              },
                             ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    if (_myAccounts.isEmpty || displayTransactions.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.all(22),
-                        child: Center(
-                          child: Text("No transactions available."),
-                        ),
-                      )
-                    else
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        padding: const EdgeInsets.symmetric(horizontal: 22),
-                        itemCount: displayTransactions.length,
-                        itemBuilder: (context, index) {
-                          final tx = displayTransactions[index];
-                          // HITTEST BEHAVIOR OPAQUE is key for clickable whitespace
-                          return GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onTap: () => _showTransactionActionSheet(tx),
-                            child: _TransactionTile(
-                              title: tx['title'],
-                              subtitle: tx['date'],
-                              amount: tx['amount'],
-                              icon: tx['icon'] ?? Icons.error,
-                              isExpense: tx['isExpense'] ?? false,
-                              isRecurrent: tx['isRecurrent'] ?? false,
-                            ),
-                          );
-                        },
-                      ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
-      ),
     );
   }
 }
