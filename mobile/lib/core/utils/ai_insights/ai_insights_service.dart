@@ -225,7 +225,20 @@ class AiInsightsService {
     if (previousReports.isNotEmpty) {
       buffer.writeln();
       buffer.writeln('Previous AI Reports (for trend comparison):');
-      for (final r in previousReports) {
+      final sortedPrev = List<AiReport>.from(previousReports)
+        ..sort((a, b) {
+          final am = a.month ?? '';
+          final bm = b.month ?? '';
+          final as = am.split('-');
+          final bs = bm.split('-');
+          final ay = as.length == 2 ? int.tryParse(as[1]) ?? -1 : -1;
+          final by = bs.length == 2 ? int.tryParse(bs[1]) ?? -1 : -1;
+          final amo = as.length == 2 ? int.tryParse(as[0]) ?? -1 : -1;
+          final bmo = bs.length == 2 ? int.tryParse(bs[0]) ?? -1 : -1;
+          if (by != ay) return by.compareTo(ay);
+          return bmo.compareTo(amo);
+        });
+      for (final r in sortedPrev) {
         final score = r.healthScore ?? -1;
         final month = r.month ?? 'unknown';
         buffer.writeln('- Month: $month, HealthScore: ${score >= 0 ? score : 'n/a'}');

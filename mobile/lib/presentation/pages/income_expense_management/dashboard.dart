@@ -377,6 +377,8 @@ class _AISuggestionsModalContentState
   String? _errorMessage;
   List<AiReport> _recentReports = [];
   bool _insightsExpanded = false;
+  int _viewingIndex = 0; // 0 = current month, 1..N = previous months
+  AiReport? _currentReport;
 
   @override
   void initState() {
@@ -417,17 +419,19 @@ class _AISuggestionsModalContentState
                 limit: 3,
                 excludeMonth: monthKey,
               );
-              _recentReports = recent;
+              _recentReports = _sortReportsDesc(recent);
             }
           } catch (e) {
             debugPrint('Error loading recent AI reports: $e');
           }
 
           setState(() {
+            _currentReport = report;
             _healthScore = report.healthScore;
             _insights = json['insights'] as String?;
             _suggestions = json['suggestions'] as List? ?? [];
             _isLoading = false;
+            _viewingIndex = 0;
           });
         } catch (e) {
           debugPrint('Error parsing AI response: $e');
@@ -438,6 +442,44 @@ class _AISuggestionsModalContentState
       debugPrint('Error loading AI insights: $e');
       _setError('Failed to load insights');
     }
+  }
+
+  void _setViewingIndex(int index) {
+    final total = 1 + _recentReports.length;
+    if (total == 0) return;
+    final clamped = index.clamp(0, total - 1);
+    if (clamped == _viewingIndex) return;
+
+    AiReport? target;
+    if (clamped == 0) {
+      target = _currentReport;
+    } else {
+      target = _recentReports[clamped - 1];
+    }
+
+    if (target == null) return;
+
+    // Parse JSON from body, fallback to insights if parsing fails
+    Map<String, dynamic>? json;
+    if ((target.body ?? '').isNotEmpty) {
+      try {
+        json = _parseJsonFromBody(target.body!);
+      } catch (e) {
+        debugPrint('Failed to parse JSON body: $e, using fallback insights');
+        json = null;
+      }
+    }
+
+    setState(() {
+      _viewingIndex = clamped;
+      _healthScore = target!.healthScore;
+      _insights = json != null
+          ? json['insights'] as String?
+          : (target.insights ?? _insights);
+      _suggestions = json != null
+          ? (json['suggestions'] as List? ?? [])
+          : _suggestions;
+    });
   }
 
   void _setError(String message) {
@@ -468,6 +510,23 @@ class _AISuggestionsModalContentState
       }
       throw Exception('Could not parse JSON from body');
     }
+  }
+
+  List<AiReport> _sortReportsDesc(List<AiReport> reports) {
+    final sorted = List<AiReport>.from(reports);
+    sorted.sort((a, b) {
+      final am = a.month ?? '';
+      final bm = b.month ?? '';
+      final as = am.split('-');
+      final bs = bm.split('-');
+      final ay = as.length == 2 ? int.tryParse(as[1]) ?? -1 : -1;
+      final by = bs.length == 2 ? int.tryParse(bs[1]) ?? -1 : -1;
+      final amo = as.length == 2 ? int.tryParse(as[0]) ?? -1 : -1;
+      final bmo = bs.length == 2 ? int.tryParse(bs[0]) ?? -1 : -1;
+      if (by != ay) return by.compareTo(ay);
+      return bmo.compareTo(amo);
+    });
+    return sorted;
   }
 
   IconData _getIconData(String iconName) {
@@ -556,6 +615,29 @@ class _AISuggestionsModalContentState
                     fontSize: 22,
                   ),
                 ),
+                const Spacer(),
+                // Chevron navigation between current and previous months
+                Builder(builder: (context) {
+                  final total = 1 + _recentReports.length;
+                  return Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.chevron_left),
+                        color: AppColors.getTextPrimary(context),
+                        onPressed: _viewingIndex > 0
+                            ? () => _setViewingIndex(_viewingIndex - 1)
+                            : null,
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.chevron_right),
+                        color: AppColors.getTextPrimary(context),
+                        onPressed: _viewingIndex < (total - 1)
+                            ? () => _setViewingIndex(_viewingIndex + 1)
+                            : null,
+                      ),
+                    ],
+                  );
+                }),
               ],
             ),
           ),
@@ -672,6 +754,34 @@ class _AISuggestionsModalContentState
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              // Show the month for the currently viewed report
+                              Builder(builder: (context) {
+                                AiReport? target;
+                                if (_viewingIndex == 0) {
+                                  target = _currentReport;
+                                } else if (_recentReports.isNotEmpty &&
+                                    _viewingIndex - 1 < _recentReports.length) {
+                                  target = _recentReports[_viewingIndex - 1];
+                                }
+                                final month = target?.month ?? '';
+                                final isCurrent = _viewingIndex == 0;
+                                return month.isNotEmpty
+                                    ? Padding(
+                                        padding:
+                                            const EdgeInsets.only(bottom: 4),
+                                        child: Text(
+                                          isCurrent ? 'Month: $month (Current)' : 'Month: $month',
+                                          style: AppTypography.bodySmall
+                                              .copyWith(
+                                            color:
+                                                AppColors.getTextSecondary(
+                                              context,
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                    : const SizedBox.shrink();
+                              }),
                               Text(
                                 _getHealthStatus(),
                                 style: AppTypography.bodyLarge.copyWith(
