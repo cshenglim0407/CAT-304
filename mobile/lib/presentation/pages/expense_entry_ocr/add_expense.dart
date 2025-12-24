@@ -98,7 +98,9 @@ class _AddExpensePageState extends State<AddExpensePage> {
     }
     setState(() {
       _totalPrice = tempTotal;
-      _totalPriceController.text = tempTotal == 0 ? "" : "\$${tempTotal.toStringAsFixed(2)}";
+      _totalPriceController.text = tempTotal == 0
+          ? ""
+          : "\$${tempTotal.toStringAsFixed(2)}";
     });
   }
 
@@ -209,54 +211,10 @@ class _AddExpensePageState extends State<AddExpensePage> {
               children: [
                 Expanded(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: primaryColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
                     ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: _selectedCategory ?? widget.category,
-                        isExpanded: true,
-                        icon: Icon(Icons.arrow_drop_down, color: primaryColor),
-                        dropdownColor: AppColors.white,
-                        items: widget.availableCategories
-                            .map(
-                              (cat) => DropdownMenuItem(
-                                value: cat,
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      getExpenseIcon(cat),
-                                      color: primaryColor,
-                                      size: 18,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Flexible(
-                                      child: Text(
-                                        cat,
-                                        style: AppTypography.bodySmall.copyWith(
-                                          color: primaryColor,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 12,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (val) => setState(() => _selectedCategory = val!),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                     decoration: BoxDecoration(
                       color: primaryColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
@@ -295,7 +253,59 @@ class _AddExpensePageState extends State<AddExpensePage> {
                               ),
                             )
                             .toList(),
-                        onChanged: (val) => setState(() => _selectedAccount = val!),
+                        onChanged: (val) =>
+                            setState(() => _selectedAccount = val!),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: primaryColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _selectedCategory ?? widget.category,
+                        isExpanded: true,
+                        icon: Icon(Icons.arrow_drop_down, color: primaryColor),
+                        dropdownColor: AppColors.white,
+                        items: widget.availableCategories
+                            .map(
+                              (cat) => DropdownMenuItem(
+                                value: cat,
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      getExpenseIcon(cat),
+                                      color: primaryColor,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Flexible(
+                                      child: Text(
+                                        cat,
+                                        style: AppTypography.bodySmall.copyWith(
+                                          color: primaryColor,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (val) =>
+                            setState(() => _selectedCategory = val!),
                       ),
                     ),
                   ),
@@ -379,7 +389,9 @@ class _AddExpensePageState extends State<AddExpensePage> {
                     child: TextField(
                       controller: _totalPriceController,
                       onChanged: (value) {
-                        final cleanValue = value.replaceAll(r'$', '').replaceAll(',', '');
+                        final cleanValue = value
+                            .replaceAll(r'$', '')
+                            .replaceAll(',', '');
                         setState(() {
                           _totalPrice = double.tryParse(cleanValue) ?? 0.0;
                         });
