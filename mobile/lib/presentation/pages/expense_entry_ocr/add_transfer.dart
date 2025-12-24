@@ -89,7 +89,107 @@ class _AddTransferPageState extends State<AddTransferPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- 1. Amount Input ---
+            // --- 1. From Account (Read Only) ---
+            FormLabel(label: "From", useGreyStyle: true),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              decoration: BoxDecoration(
+                color: fieldColor,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.output_rounded, color: Colors.red),
+                  const SizedBox(width: 12),
+                  Text(
+                    widget.fromAccountName,
+                    style: AppTypography.bodySmall.copyWith(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: primaryTextColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // Arrow Visual
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Icon(
+                  Icons.arrow_downward_rounded,
+                  color: AppColors.greyText,
+                ),
+              ),
+            ),
+
+            // --- 2. To Account (Dropdown) ---
+            FormLabel(label: "To", useGreyStyle: true),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              decoration: BoxDecoration(
+                color: fieldColor,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.success.withValues(alpha: 0.3),
+                ),
+              ),
+              child: _validToAccounts.isEmpty
+                  ? Row(
+                      children: [
+                        Icon(Icons.input_rounded, color: AppColors.success),
+                        const SizedBox(width: 12),
+                        Text(
+                          "No other accounts available",
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ],
+                    )
+                  : DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _selectedToAccount,
+                        isExpanded: true,
+                        icon: const Icon(
+                          Icons.arrow_drop_down,
+                          color: AppColors.success,
+                        ),
+                        dropdownColor: AppColors.white,
+                        items: _validToAccounts.map((accountName) {
+                          return DropdownMenuItem(
+                            value: accountName,
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.input_rounded,
+                                  color: AppColors.success,
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  accountName,
+                                  style: AppTypography.bodySmall.copyWith(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: primaryTextColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (val) =>
+                            setState(() => _selectedToAccount = val!),
+                      ),
+                    ),
+            ),
+
+            const SizedBox(height: 20),            
+            Divider(color: AppColors.greyText.withValues(alpha: 0.3)),
+            const SizedBox(height: 20),
+
+            // --- 3. Amount Input ---
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -148,105 +248,6 @@ class _AddTransferPageState extends State<AddTransferPage> {
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 30),
-
-            // --- 2. From Account (Read Only) ---
-            FormLabel(label: "From", useGreyStyle: true),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              decoration: BoxDecoration(
-                color: fieldColor,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.output_rounded, color: Colors.red),
-                  const SizedBox(width: 12),
-                  Text(
-                    widget.fromAccountName,
-                    style: AppTypography.bodySmall.copyWith(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: primaryTextColor,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Arrow Visual
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                child: Icon(
-                  Icons.arrow_downward_rounded,
-                  color: AppColors.greyText,
-                ),
-              ),
-            ),
-
-            // --- 3. To Account (Dropdown) ---
-            FormLabel(label: "To", useGreyStyle: true),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              decoration: BoxDecoration(
-                color: fieldColor,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: AppColors.success.withValues(alpha: 0.3),
-                ),
-              ),
-              child: _validToAccounts.isEmpty
-                  ? Row(
-                      children: [
-                        Icon(Icons.input_rounded, color: AppColors.success),
-                        const SizedBox(width: 12),
-                        Text(
-                          "No other accounts available",
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      ],
-                    )
-                  : DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: _selectedToAccount,
-                        isExpanded: true,
-                        icon: const Icon(
-                          Icons.arrow_drop_down,
-                          color: AppColors.success,
-                        ),
-                        dropdownColor: AppColors.white,
-                        items: _validToAccounts.map((accountName) {
-                          return DropdownMenuItem(
-                            value: accountName,
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.input_rounded,
-                                  color: AppColors.success,
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  accountName,
-                                  style: AppTypography.bodySmall.copyWith(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: primaryTextColor,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: (val) =>
-                            setState(() => _selectedToAccount = val!),
-                      ),
-                    ),
             ),
 
             const SizedBox(height: 40),

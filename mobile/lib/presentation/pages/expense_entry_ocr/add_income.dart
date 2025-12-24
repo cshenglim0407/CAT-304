@@ -119,52 +119,108 @@ class _AddIncomePageState extends State<AddIncomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- 1. Account Dropdown (Read-Only) ---
-            const FormLabel(label: "Account", useGreyStyle: true),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              decoration: BoxDecoration(
-                color: fieldColor,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: _selectedAccount ?? widget.accountName,
-                  isExpanded: true,
-                  icon: Icon(Icons.arrow_drop_down, color: primaryColor),
-                  dropdownColor: AppColors.white,
-                  // can select all accounts
-                  items: widget.availableAccounts
-                      .map(
-                        (acc) => DropdownMenuItem(
-                          value: acc,
-                          child: Row(
-                            children: [
-                              Icon(
-                                _getAccountIcon(acc),
-                                color: primaryColor,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                acc,
-                                style: AppTypography.bodySmall.copyWith(
-                                  color: primaryTextColor,
+            // --- 1. Header Badges ---
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: primaryColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _selectedCategory,
+                        isExpanded: true,
+                        icon: Icon(Icons.arrow_drop_down, color: primaryColor),
+                        dropdownColor: AppColors.white,
+                        items: _categories
+                            .map(
+                              (cat) => DropdownMenuItem(
+                                value: cat,
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      getExpenseIcon(cat),
+                                      color: primaryColor,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Flexible(
+                                      child: Text(
+                                        cat,
+                                        style: AppTypography.bodySmall.copyWith(
+                                          color: primaryColor,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (val) => setState(() => _selectedAccount = val!),
+                            )
+                            .toList(),
+                        onChanged: (val) => setState(() => _selectedCategory = val!),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: primaryColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _selectedAccount ?? widget.accountName,
+                        isExpanded: true,
+                        icon: Icon(Icons.arrow_drop_down, color: primaryColor),
+                        dropdownColor: AppColors.white,
+                        items: widget.availableAccounts
+                            .map(
+                              (acc) => DropdownMenuItem(
+                                value: acc,
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      getAccountTypeIcon(acc),
+                                      color: primaryColor,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Flexible(
+                                      child: Text(
+                                        acc,
+                                        style: AppTypography.bodySmall.copyWith(
+                                          color: primaryColor,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (val) => setState(() => _selectedAccount = val!),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 24),
 
             // --- 2. Transaction Name Input ---
-            const FormLabel(label: "Transaction Name", useGreyStyle: true),
+            const FormLabel(label: "Name", useGreyStyle: true),
             TextField(
               controller: _transactionNameController,
               decoration: CustomInputDecoration.simple(
@@ -236,48 +292,7 @@ class _AddIncomePageState extends State<AddIncomePage> {
             ),
             const SizedBox(height: 30),
 
-            // --- 4. Category Dropdown ---
-            const FormLabel(label: "Category", useGreyStyle: true),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              decoration: BoxDecoration(
-                color: fieldColor,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: _selectedCategory,
-                  isExpanded: true,
-                  icon: Icon(Icons.arrow_drop_down, color: primaryColor),
-                  dropdownColor: AppColors.white,
-                  items: _categories.map((cat) {
-                    return DropdownMenuItem(
-                      value: cat,
-                      child: Row(
-                        children: [
-                          Icon(
-                            getIncomeIcon(cat),
-                            color: primaryColor,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            cat,
-                            style: AppTypography.bodySmall.copyWith(
-                              color: primaryTextColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (val) => setState(() => _selectedCategory = val!),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // --- 5. Recurrent Switch (New Feature) ---
+            // --- 4. Recurrent Switch (New Feature) ---
             Container(
               decoration: BoxDecoration(
                 color: fieldColor,
