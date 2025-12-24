@@ -5,10 +5,7 @@ import 'package:cashlytics/presentation/themes/typography.dart';
 class AddIncomePage extends StatefulWidget {
   final String accountName;
 
-  const AddIncomePage({
-    super.key,
-    required this.accountName,
-  });
+  const AddIncomePage({super.key, required this.accountName});
 
   @override
   State<AddIncomePage> createState() => _AddIncomePageState();
@@ -16,14 +13,21 @@ class AddIncomePage extends StatefulWidget {
 
 class _AddIncomePageState extends State<AddIncomePage> {
   final TextEditingController _amountController = TextEditingController();
-  
+
   // 1. New variable for the Recurrent feature
   bool _isRecurrent = false;
-  
+
   String _selectedCategory = 'Salary';
   final List<String> _categories = [
-    'Salary', 'Allowance', 'Bonus', 'Dividend',
-    'Investment', 'Rental', 'Refund', 'Sale', 'Others'
+    'Salary',
+    'Allowance',
+    'Bonus',
+    'Dividend',
+    'Investment',
+    'Rental',
+    'Refund',
+    'Sale',
+    'Other',
   ];
 
   @override
@@ -34,15 +38,24 @@ class _AddIncomePageState extends State<AddIncomePage> {
 
   IconData _getCategoryIcon(String category) {
     switch (category) {
-      case 'Salary': return Icons.work_rounded;
-      case 'Allowance': return Icons.volunteer_activism_rounded;
-      case 'Bonus': return Icons.stars_rounded;
-      case 'Dividend': return Icons.trending_up_rounded;
-      case 'Investment': return Icons.account_balance_rounded;
-      case 'Rental': return Icons.home_work_rounded;
-      case 'Refund': return Icons.refresh_rounded;
-      case 'Sale': return Icons.storefront_rounded;
-      default: return Icons.attach_money_rounded;
+      case 'Salary':
+        return Icons.work_rounded;
+      case 'Allowance':
+        return Icons.volunteer_activism_rounded;
+      case 'Bonus':
+        return Icons.stars_rounded;
+      case 'Dividend':
+        return Icons.trending_up_rounded;
+      case 'Investment':
+        return Icons.account_balance_rounded;
+      case 'Rental':
+        return Icons.home_work_rounded;
+      case 'Refund':
+        return Icons.refresh_rounded;
+      case 'Sale':
+        return Icons.storefront_rounded;
+      default:
+        return Icons.attach_money_rounded;
     }
   }
 
@@ -58,7 +71,7 @@ class _AddIncomePageState extends State<AddIncomePage> {
       'amount': amount,
       'category': _selectedCategory,
       'isRecurrent': _isRecurrent, // The new boolean flag
-      'date': DateTime.now(),      // defaulting to now
+      'date': DateTime.now(), // defaulting to now
       'accountName': widget.accountName,
     };
 
@@ -69,7 +82,7 @@ class _AddIncomePageState extends State<AddIncomePage> {
   Widget build(BuildContext context) {
     // Capture the Primary Color
     final primaryColor = Theme.of(context).colorScheme.primary;
-    
+
     final primaryTextColor = AppColors.getTextPrimary(context);
     final secondaryTextColor = AppColors.greyText;
     final backgroundColor = AppColors.white;
@@ -101,17 +114,31 @@ class _AddIncomePageState extends State<AddIncomePage> {
               ),
               child: Column(
                 children: [
-                  Text("Amount", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
+                  Text(
+                    "Amount",
+                    style: TextStyle(
+                      color: primaryColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   TextField(
                     controller: _amountController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: primaryColor, fontSize: 40, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: primaryColor,
+                      fontSize: 40,
+                      fontWeight: FontWeight.bold,
+                    ),
                     decoration: InputDecoration(
                       border: InputBorder.none,
                       // --- FIXED: Placeholder set to 0.00 ---
-                      hintText: r"$0.00", 
-                      hintStyle: TextStyle(color: primaryColor.withValues(alpha: 0.5)),
+                      hintText: r"$0.00",
+                      hintStyle: TextStyle(
+                        color: primaryColor.withValues(alpha: 0.5),
+                      ),
                     ),
                   ),
                 ],
@@ -120,7 +147,12 @@ class _AddIncomePageState extends State<AddIncomePage> {
             const SizedBox(height: 30),
 
             // --- 2. Category Dropdown ---
-            Text("Category", style: AppTypography.labelLarge.copyWith(color: secondaryTextColor)),
+            Text(
+              "Category",
+              style: AppTypography.labelLarge.copyWith(
+                color: secondaryTextColor,
+              ),
+            ),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -139,9 +171,18 @@ class _AddIncomePageState extends State<AddIncomePage> {
                       value: cat,
                       child: Row(
                         children: [
-                          Icon(_getCategoryIcon(cat), color: primaryColor, size: 20),
+                          Icon(
+                            _getCategoryIcon(cat),
+                            color: primaryColor,
+                            size: 20,
+                          ),
                           const SizedBox(width: 12),
-                          Text(cat, style: AppTypography.bodySmall.copyWith(color: primaryTextColor)),
+                          Text(
+                            cat,
+                            style: AppTypography.bodySmall.copyWith(
+                              color: primaryTextColor,
+                            ),
+                          ),
                         ],
                       ),
                     );
@@ -157,25 +198,31 @@ class _AddIncomePageState extends State<AddIncomePage> {
               decoration: BoxDecoration(
                 color: fieldColor,
                 borderRadius: BorderRadius.circular(12),
-                border: _isRecurrent 
-                    ? Border.all(color: primaryColor.withValues(alpha: 0.5), width: 1.5)
+                border: _isRecurrent
+                    ? Border.all(
+                        color: primaryColor.withValues(alpha: 0.5),
+                        width: 1.5,
+                      )
                     : null,
               ),
               child: SwitchListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
                 activeThumbColor: primaryColor,
                 title: Text(
                   "Repeat Monthly?",
                   style: AppTypography.bodySmall.copyWith(
-                    fontWeight: FontWeight.w600, 
-                    color: primaryTextColor
+                    fontWeight: FontWeight.w600,
+                    color: primaryTextColor,
                   ),
                 ),
                 subtitle: Text(
                   "Automatically record this income every month",
                   style: AppTypography.bodySmall.copyWith(
-                    fontSize: 12, 
-                    color: secondaryTextColor
+                    fontSize: 12,
+                    color: secondaryTextColor,
                   ),
                 ),
                 value: _isRecurrent,
@@ -186,7 +233,7 @@ class _AddIncomePageState extends State<AddIncomePage> {
                 },
               ),
             ),
-            
+
             const SizedBox(height: 40),
 
             // --- Save Button ---
@@ -195,8 +242,10 @@ class _AddIncomePageState extends State<AddIncomePage> {
               height: 55,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor, 
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  backgroundColor: primaryColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                   elevation: 0,
                 ),
                 onPressed: _saveIncome,
