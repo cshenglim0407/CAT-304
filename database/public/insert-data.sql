@@ -230,6 +230,7 @@ VALUES
     (SELECT USER_ID FROM APP_USERS WHERE EMAIL = 'janedoe@example.com')),
 ('DIPLOMA', 'UNEMPLOYED', 'DIVORCED', 1, 2000.00,
     (SELECT USER_ID FROM APP_USERS WHERE EMAIL = 'bobsmith@example.com'));
+
 INSERT INTO AI_REPORT (TITLE, INSIGHTS, BODY, MONTH, HEALTH_SCORE, USER_ID)
 VALUES
 ('September 2024 Financial Health Report', 'An overview of your financial health for September 2024.',

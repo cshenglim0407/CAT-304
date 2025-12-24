@@ -214,14 +214,21 @@ class _AccountPageState extends State<AccountPage> {
   }
 
   // --- LOGIC: DELETE ---
-  Future<void> _deleteTransaction(Map<String, dynamic> tx, int accountIndex) async {
+  Future<void> _deleteTransaction(
+    Map<String, dynamic> tx,
+    int accountIndex,
+  ) async {
     String? transactionId = tx['transactionId']?.toString();
     final String? accountId = _myAccounts[accountIndex]['id']?.toString();
 
     try {
       // If transactionId is missing, try to resolve it from backend
-      if ((transactionId == null || transactionId.isEmpty) && accountId != null) {
-        final resolvedId = await _resolveTransactionIdFromBackend(tx, accountId);
+      if ((transactionId == null || transactionId.isEmpty) &&
+          accountId != null) {
+        final resolvedId = await _resolveTransactionIdFromBackend(
+          tx,
+          accountId,
+        );
         if (resolvedId != null) {
           transactionId = resolvedId;
           tx['transactionId'] = resolvedId;
@@ -268,13 +275,15 @@ class _AccountPageState extends State<AccountPage> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Transaction deleted and balance updated")),
+        const SnackBar(
+          content: Text("Transaction deleted and balance updated"),
+        ),
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Delete failed: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Delete failed: $e")));
     }
   }
 
@@ -472,12 +481,15 @@ class _AccountPageState extends State<AccountPage> {
         final String senderName = _myAccounts[_currentCardIndex]['name'];
 
         // Find the index of the receiver account in your list
-        final int targetIndex = _myAccounts.indexWhere((acc) => acc['name'] == targetName);
+        final int targetIndex = _myAccounts.indexWhere(
+          (acc) => acc['name'] == targetName,
+        );
 
         if (targetIndex != -1 && targetIndex < _allTransactions.length) {
           // Create the "Incoming" version of the transaction
-          final String displayAmountReceiver = '+ \$' + rawAmount.toStringAsFixed(2);
-          
+          final String displayAmountReceiver =
+              '+ \$' + rawAmount.toStringAsFixed(2);
+
           final newTxReceiver = {
             'type': 'transfer',
             'title': "From $senderName", // FIX: Display "From [Sender Name]"
@@ -485,10 +497,11 @@ class _AccountPageState extends State<AccountPage> {
             'amount': displayAmountReceiver,
             'rawAmount': rawAmount,
             'isExpense': false, // It's income for the receiver
-            'icon': Icons.arrow_downward_rounded, // Icon pointing down for received money
+            'icon': Icons
+                .arrow_downward_rounded, // Icon pointing down for received money
             'isRecurrent': false,
             'category': 'Transfer',
-            'toAccount': null, 
+            'toAccount': null,
           };
 
           // Add to Receiver
@@ -765,196 +778,213 @@ class _AccountPageState extends State<AccountPage> {
   }
 
   void _addAccount(BuildContext context) {
-      final nameController = TextEditingController();
-      final balanceController = TextEditingController();
-      final descController = TextEditingController();
-      String selectedType = 'CASH';
+    final nameController = TextEditingController();
+    final balanceController = TextEditingController();
+    final descController = TextEditingController();
+    String selectedType = 'CASH';
 
-      final List<String> accountTypes = [
-        'CASH',
-        'BANK',
-        'E-WALLET',
-        'CREDIT CARD',
-        'INVESTMENT',
-        'LOAN',
-        'OTHER',
-      ];
+    final List<String> accountTypes = [
+      'CASH',
+      'BANK',
+      'E-WALLET',
+      'CREDIT CARD',
+      'INVESTMENT',
+      'LOAN',
+      'OTHER',
+    ];
 
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-        ),
-        backgroundColor: Colors.white,
-        builder: (ctx) {
-          return StatefulBuilder(
-            builder: (context, setSheetState) {
-              return Padding(
-                padding: EdgeInsets.only(
-                  top: 24,
-                  left: 24,
-                  right: 24,
-                  bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-                ),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // --- Handle Bar ---
-                      Center(
-                        child: Container(
-                          width: 40,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[300],
-                            borderRadius: BorderRadius.circular(2),
-                          ),
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+      ),
+      backgroundColor: Colors.white,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                top: 24,
+                left: 24,
+                right: 24,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // --- Handle Bar ---
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(2),
                         ),
                       ),
-                      const SizedBox(height: 24),
-                      
-                      // --- Title ---
-                      Text(
-                        "Add New Account",
-                        style: AppTypography.headline3,
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 24),
+                    ),
+                    const SizedBox(height: 24),
 
-                      // --- Name Input ---
-                      TextField(
-                        controller: nameController,
-                        autofocus: true,
-                        decoration: InputDecoration(
-                          labelText: 'Account Name',
-                          // --- CHANGE HERE: Label color ---
-                          labelStyle: const TextStyle(color: Colors.grey),
-                          hintText: 'e.g. Main Bank',
-                          hintStyle: TextStyle(color: Colors.grey.shade400),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    // --- Title ---
+                    Text(
+                      "Add New Account",
+                      style: AppTypography.headline3,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+
+                    // --- Name Input ---
+                    TextField(
+                      controller: nameController,
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        labelText: 'Account Name',
+                        // --- CHANGE HERE: Label color ---
+                        labelStyle: const TextStyle(color: Colors.grey),
+                        hintText: 'e.g. Main Bank',
+                        hintStyle: TextStyle(color: Colors.grey.shade400),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
                         ),
                       ),
-                      const SizedBox(height: 16),
+                    ),
+                    const SizedBox(height: 16),
 
-                      // --- Type Selector ---
-                      DropdownButtonFormField<String>(
-                        value: selectedType,
-                        decoration: InputDecoration(
-                          labelText: 'Type',
-                          // Keeping 'Type' consistent with the others, 
-                          // though you didn't explicitly ask for it, it looks better matching:
-                          labelStyle: const TextStyle(color: Colors.grey),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    // --- Type Selector ---
+                    DropdownButtonFormField<String>(
+                      value: selectedType,
+                      decoration: InputDecoration(
+                        labelText: 'Type',
+                        // Keeping 'Type' consistent with the others,
+                        // though you didn't explicitly ask for it, it looks better matching:
+                        labelStyle: const TextStyle(color: Colors.grey),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        items: accountTypes.map((type) {
-                          return DropdownMenuItem(
-                            value: type,
-                            child: Text(type),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                      ),
+                      items: accountTypes.map((type) {
+                        return DropdownMenuItem(value: type, child: Text(type));
+                      }).toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setSheetState(() => selectedType = value);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // --- Balance Input ---
+                    TextField(
+                      controller: balanceController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: 'Initial Balance',
+                        // --- CHANGE HERE: Label color ---
+                        labelStyle: const TextStyle(color: Colors.grey),
+                        hintText: '0.00',
+                        hintStyle: TextStyle(color: Colors.grey.shade400),
+                        prefixText: '\$ ',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // --- Description Input ---
+                    TextField(
+                      controller: descController,
+                      decoration: InputDecoration(
+                        labelText: 'Description (Optional)',
+                        // --- CHANGE HERE: Label color ---
+                        labelStyle: const TextStyle(color: Colors.grey),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+
+                    // --- Create Button ---
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      onPressed: () async {
+                        if (nameController.text.trim().isEmpty) return;
+
+                        final userId = supabase.auth.currentUser?.id;
+                        if (userId == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('You must be logged in'),
+                            ),
                           );
-                        }).toList(),
-                        onChanged: (value) {
-                          if (value != null) {
-                            setSheetState(() => selectedType = value);
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 16),
+                          return;
+                        }
 
-                      // --- Balance Input ---
-                      TextField(
-                        controller: balanceController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        decoration: InputDecoration(
-                          labelText: 'Initial Balance',
-                          // --- CHANGE HERE: Label color ---
-                          labelStyle: const TextStyle(color: Colors.grey),
-                          hintText: '0.00',
-                          hintStyle: TextStyle(color: Colors.grey.shade400),
-                          prefixText: '\$ ',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
+                        try {
+                          final newAccount = Account(
+                            id: null,
+                            userId: userId,
+                            name: nameController.text.trim(),
+                            type: selectedType,
+                            initialBalance:
+                                double.tryParse(balanceController.text) ?? 0.0,
+                            currentBalance:
+                                double.tryParse(balanceController.text) ?? 0.0,
+                            description: descController.text.trim(),
+                            createdAt: DateTime.now(),
+                            updatedAt: DateTime.now(),
+                          );
 
-                      // --- Description Input ---
-                      TextField(
-                        controller: descController,
-                        decoration: InputDecoration(
-                          labelText: 'Description (Optional)',
-                          // --- CHANGE HERE: Label color ---
-                          labelStyle: const TextStyle(color: Colors.grey),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                        ),
-                      ),
-                      const SizedBox(height: 32),
+                          final savedAccount = await _upsertAccount(newAccount);
 
-                      // --- Create Button ---
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 0,
-                        ),
-                        onPressed: () async {
-                          if (nameController.text.trim().isEmpty) return;
+                          if (!mounted) return;
+                          Navigator.pop(ctx);
 
-                          final userId = supabase.auth.currentUser?.id;
-                          if (userId == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('You must be logged in')),
-                            );
-                            return;
-                          }
+                          setState(() {
+                            _myAccounts.add({
+                              'id': savedAccount.id,
+                              'name': savedAccount.name,
+                              'type': savedAccount.type,
+                              'initial': savedAccount.initialBalance,
+                              'current': savedAccount.currentBalance,
+                              'desc': savedAccount.description ?? '',
+                            });
+                            _allTransactions.add([]);
+                            _currentCardIndex = _myAccounts.length - 1;
 
-                          try {
-                            final newAccount = Account(
-                              id: null,
-                              userId: userId,
-                              name: nameController.text.trim(),
-                              type: selectedType,
-                              initialBalance: double.tryParse(balanceController.text) ?? 0.0,
-                              currentBalance: double.tryParse(balanceController.text) ?? 0.0,
-                              description: descController.text.trim(),
-                              createdAt: DateTime.now(),
-                              updatedAt: DateTime.now(),
-                            );
-
-                            final savedAccount = await _upsertAccount(newAccount);
-
-                            if (!mounted) return;
-                            Navigator.pop(ctx);
-
-                            setState(() {
-                              _myAccounts.add({
-                                'id': savedAccount.id,
-                                'name': savedAccount.name,
-                                'type': savedAccount.type,
-                                'initial': savedAccount.initialBalance,
-                                'current': savedAccount.currentBalance,
-                                'desc': savedAccount.description ?? '',
-                              });
-                              _allTransactions.add([]);
-                              _currentCardIndex = _myAccounts.length - 1;
-                              
-                              Future.delayed(const Duration(milliseconds: 100), () {
+                            Future.delayed(
+                              const Duration(milliseconds: 100),
+                              () {
                                 if (_pageController.hasClients) {
                                   _pageController.animateToPage(
                                     _currentCardIndex,
@@ -962,36 +992,45 @@ class _AccountPageState extends State<AccountPage> {
                                     curve: Curves.easeOut,
                                   );
                                 }
-                              });
-                            });
-
-                            CacheService.save('accounts', _myAccounts);
-                            CacheService.save('transactions', _allTransactions);
-
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Account created successfully')),
+                              },
                             );
-                          } catch (e) {
-                            Navigator.pop(ctx);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Error creating account: $e')),
-                            );
-                          }
-                        },
-                        child: const Text(
-                          'Create Account',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          });
+
+                          CacheService.save('accounts', _myAccounts);
+                          CacheService.save('transactions', _allTransactions);
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Account created successfully'),
+                            ),
+                          );
+                        } catch (e) {
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Error creating account: $e'),
+                            ),
+                          );
+                        }
+                      },
+                      child: const Text(
+                        'Create Account',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              );
-            },
-          );
-        },
-      );
-    }
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _editAccount(BuildContext context, Map<String, dynamic> account) {
     final nameController = TextEditingController(
       text: account['name']?.toString() ?? '',
@@ -1094,7 +1133,9 @@ class _AccountPageState extends State<AccountPage> {
                         ),
                       ),
                       items: types
-                          .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                          .map(
+                            (t) => DropdownMenuItem(value: t, child: Text(t)),
+                          )
                           .toList(),
                       onChanged: (v) {
                         if (v != null) {
@@ -1195,14 +1236,15 @@ class _AccountPageState extends State<AccountPage> {
                           name: nameController.text.trim(),
                           type: type,
                           initialBalance:
-                              double.tryParse(initialController.text.trim()) ?? 0,
+                              double.tryParse(initialController.text.trim()) ??
+                              0,
                           // Preserve current balance logic
                           currentBalance: (account['current'] is num)
                               ? (account['current'] as num).toDouble()
                               : double.tryParse(
-                                    account['current']?.toString() ?? '',
-                                  ) ??
-                                  0,
+                                      account['current']?.toString() ?? '',
+                                    ) ??
+                                    0,
                           description: descController.text.trim().isEmpty
                               ? null
                               : descController.text.trim(),
@@ -1211,7 +1253,7 @@ class _AccountPageState extends State<AccountPage> {
                         try {
                           final saved = await _upsertAccount(updated);
                           if (!mounted) return;
-                          
+
                           setState(() {
                             account['name'] = saved.name;
                             account['type'] = saved.type;
@@ -1219,12 +1261,15 @@ class _AccountPageState extends State<AccountPage> {
                             account['current'] = saved.currentBalance;
                             account['desc'] = saved.description ?? '';
                           });
-                          
+
                           CacheService.save('accounts', _myAccounts);
                           CacheService.save('transactions', _allTransactions);
-                          
-                          Navigator.pop(ctx); // Close Sheet
-                          
+
+                          Navigator.pop(ctx); // Close bottom sheet
+                          Navigator.pop(
+                            context,
+                          ); // Return to account page (if needed)
+
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('Account updated')),
@@ -1241,7 +1286,10 @@ class _AccountPageState extends State<AccountPage> {
                       },
                       child: const Text(
                         'Save Changes',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ],
