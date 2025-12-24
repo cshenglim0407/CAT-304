@@ -423,18 +423,25 @@ class _AccountPageState extends State<AccountPage> {
       final String displayAmount =
           (isExpense ? '- \$' : '+ \$') + rawAmount.toStringAsFixed(2);
 
+      // --- 1. SENDER LOGIC (Current Account) ---
       IconData icon;
+      String title = result['itemName'] ?? result['title'] ?? 'Transaction';
+
       if (isTransfer) {
         icon = Icons.arrow_outward_rounded;
+        // FIX: Display "To [Receiver Name]" for the sender
+        if (result['toAccount'] != null) {
+          title = "To ${result['toAccount']}";
+        }
       } else if (isExpense) {
         icon = getExpenseIcon(result['category'] ?? '');
       } else {
         icon = getIncomeIcon(result['category'] ?? '');
       }
 
-      final newTx = {
+      final newTxSender = {
         'type': isTransfer ? 'transfer' : (isExpense ? 'expense' : 'income'),
-        'title': result['itemName'] ?? result['title'] ?? 'Transaction',
+        'title': title,
         'date': "${result['date'].day}/${result['date'].month}",
         'amount': displayAmount,
         'rawAmount': rawAmount,
@@ -445,23 +452,57 @@ class _AccountPageState extends State<AccountPage> {
         'toAccount': result['toAccount'],
         'qty': result['quantity'],
         'unitPrice': result['unitPrice'],
-        'items': result['items'], // <--- CRITICAL FIX: Storing the list in state
+        'items': result['items'],
       };
 
+      // Add to Sender (Current Card)
       if (_currentCardIndex < _allTransactions.length) {
-        _allTransactions[_currentCardIndex].insert(0, newTx);
-        // Update balance
+        _allTransactions[_currentCardIndex].insert(0, newTxSender);
         if (isExpense) {
           _myAccounts[_currentCardIndex]['current'] -= rawAmount;
         } else {
           _myAccounts[_currentCardIndex]['current'] += rawAmount;
         }
       }
+
+      // --- 2. RECEIVER LOGIC (The Other Account) ---
+      // This part finds the receiver account and adds the "Incoming" transaction
+      if (isTransfer && result['toAccount'] != null) {
+        final String targetName = result['toAccount'];
+        final String senderName = _myAccounts[_currentCardIndex]['name'];
+
+        // Find the index of the receiver account in your list
+        final int targetIndex = _myAccounts.indexWhere((acc) => acc['name'] == targetName);
+
+        if (targetIndex != -1 && targetIndex < _allTransactions.length) {
+          // Create the "Incoming" version of the transaction
+          final String displayAmountReceiver = '+ \$' + rawAmount.toStringAsFixed(2);
+          
+          final newTxReceiver = {
+            'type': 'transfer',
+            'title': "From $senderName", // FIX: Display "From [Sender Name]"
+            'date': "${result['date'].day}/${result['date'].month}",
+            'amount': displayAmountReceiver,
+            'rawAmount': rawAmount,
+            'isExpense': false, // It's income for the receiver
+            'icon': Icons.arrow_downward_rounded, // Icon pointing down for received money
+            'isRecurrent': false,
+            'category': 'Transfer',
+            'toAccount': null, 
+          };
+
+          // Add to Receiver
+          _allTransactions[targetIndex].insert(0, newTxReceiver);
+          // Update Receiver Balance
+          _myAccounts[targetIndex]['current'] += rawAmount;
+        }
+      }
     });
-    
+
+    // Save changes to cache
     CacheService.save('transactions', _allTransactions);
     CacheService.save('accounts', _myAccounts);
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("Transaction saved successfully!")),
     );
