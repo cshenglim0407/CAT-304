@@ -413,12 +413,29 @@ class _AccountPageState extends State<AccountPage> {
     Map<String, dynamic> account,
     String category,
   ) async {
+    final List<String> allAccountNames = _myAccounts
+        .map((acc) => acc['name'] as String)
+        .toList();
+    
+    const List<String> expenseCategories = [
+      'FOOD',
+      'TRANSPORT',
+      'ENTERTAINMENT',
+      'SHOPPING',
+      'UTILITIES',
+      'HEALTHCARE',
+      'EDUCATION',
+      'TRAVEL',
+    ];
+    
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => AddExpensePage(
           accountName: account['name']?.toString() ?? 'Account',
+          availableAccounts: allAccountNames,
           category: category,
+          availableCategories: expenseCategories,
         ),
       ),
     );

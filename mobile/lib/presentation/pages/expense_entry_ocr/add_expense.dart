@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
+
+import 'package:cashlytics/core/config/icons.dart';
+
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
 import 'package:cashlytics/presentation/widgets/index.dart';
 
 class AddExpensePage extends StatefulWidget {
   final String accountName;
+  final List<String> availableAccounts;
   final String category;
+  final List<String> availableCategories;
 
   const AddExpensePage({
     super.key,
     required this.accountName,
+    required this.availableAccounts,
     required this.category,
+    required this.availableCategories,
   });
 
   @override
@@ -24,12 +31,16 @@ class _AddExpensePageState extends State<AddExpensePage> {
   // List of items
   final List<Map<String, TextEditingController>> _items = [];
 
+  String? _selectedAccount;
+  String? _selectedCategory;
   double _totalPrice = 0.0;
   DateTime _selectedDate = DateTime.now();
 
   @override
   void initState() {
     super.initState();
+    _selectedAccount = widget.accountName;
+    _selectedCategory = widget.category;
     _addNewItem();
   }
 
@@ -152,14 +163,14 @@ class _AddExpensePageState extends State<AddExpensePage> {
 
     final newTransaction = {
       'amount': _totalPrice,
-      'category': widget.category,
+      'category': _selectedCategory ?? widget.category,
       'itemName': finalTitle, // Main title
       'quantity': _items.length > 1 ? '1' : _items[0]['qty']!.text,
       'unitPrice': _items.length > 1
           ? _totalPrice.toString()
           : _items[0]['price']!.text,
       'date': _selectedDate,
-      'accountName': widget.accountName,
+      'accountName': _selectedAccount ?? widget.accountName,
       'items': itemsList, // <--- CRITICAL FIX: Sending the list
     };
 
@@ -194,20 +205,96 @@ class _AddExpensePageState extends State<AddExpensePage> {
             Row(
               children: [
                 Expanded(
-                  child: _buildInfoBadge(
-                    context,
-                    icon: Icons.category,
-                    label: widget.category,
-                    color: primaryColor,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: primaryColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _selectedCategory ?? widget.category,
+                        isExpanded: true,
+                        icon: Icon(Icons.arrow_drop_down, color: primaryColor),
+                        dropdownColor: AppColors.white,
+                        items: widget.availableCategories
+                            .map(
+                              (cat) => DropdownMenuItem(
+                                value: cat,
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      getExpenseIcon(cat),
+                                      color: primaryColor,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Flexible(
+                                      child: Text(
+                                        cat,
+                                        style: AppTypography.bodySmall.copyWith(
+                                          color: primaryColor,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (val) => setState(() => _selectedCategory = val!),
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _buildInfoBadge(
-                    context,
-                    icon: Icons.account_balance_wallet,
-                    label: widget.accountName,
-                    color: primaryColor,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: primaryColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _selectedAccount ?? widget.accountName,
+                        isExpanded: true,
+                        icon: Icon(Icons.arrow_drop_down, color: primaryColor),
+                        dropdownColor: AppColors.white,
+                        items: widget.availableAccounts
+                            .map(
+                              (acc) => DropdownMenuItem(
+                                value: acc,
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      getAccountTypeIcon(acc),
+                                      color: primaryColor,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Flexible(
+                                      child: Text(
+                                        acc,
+                                        style: AppTypography.bodySmall.copyWith(
+                                          color: primaryColor,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (val) => setState(() => _selectedAccount = val!),
+                      ),
+                    ),
                   ),
                 ),
               ],
