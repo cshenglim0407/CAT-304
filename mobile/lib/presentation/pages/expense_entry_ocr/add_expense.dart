@@ -20,7 +20,7 @@ class AddExpensePage extends StatefulWidget {
 class _AddExpensePageState extends State<AddExpensePage> {
   // Controller for the overall Transaction Name (e.g. "Grocery Run")
   final _transactionNameController = TextEditingController();
-  
+
   // List of items
   final List<Map<String, TextEditingController>> _items = [];
 
@@ -53,11 +53,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
     priceParams.addListener(_calculateTotal);
 
     setState(() {
-      _items.add({
-        'name': nameParams,
-        'qty': qtyParams,
-        'price': priceParams,
-      });
+      _items.add({'name': nameParams, 'qty': qtyParams, 'price': priceParams});
     });
   }
 
@@ -105,9 +101,9 @@ class _AddExpensePageState extends State<AddExpensePage> {
       lastDate: DateTime.now().add(const Duration(days: 365)),
       builder: (context, child) {
         return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(primary: primaryColor),
-          ),
+          data: Theme.of(
+            context,
+          ).copyWith(colorScheme: ColorScheme.light(primary: primaryColor)),
           child: child!,
         );
       },
@@ -122,7 +118,9 @@ class _AddExpensePageState extends State<AddExpensePage> {
   void _saveExpense() {
     if (_totalPrice <= 0 || _items.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please enter at least one item and price")),
+        const SnackBar(
+          content: Text("Please enter at least one item and price"),
+        ),
       );
       return;
     }
@@ -157,7 +155,9 @@ class _AddExpensePageState extends State<AddExpensePage> {
       'category': widget.category,
       'itemName': finalTitle, // Main title
       'quantity': _items.length > 1 ? '1' : _items[0]['qty']!.text,
-      'unitPrice': _items.length > 1 ? _totalPrice.toString() : _items[0]['price']!.text,
+      'unitPrice': _items.length > 1
+          ? _totalPrice.toString()
+          : _items[0]['price']!.text,
       'date': _selectedDate,
       'accountName': widget.accountName,
       'items': itemsList, // <--- CRITICAL FIX: Sending the list
@@ -190,47 +190,77 @@ class _AddExpensePageState extends State<AddExpensePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- 1. Transaction Name ---
-            const FormLabel(label: "Transaction Name", useGreyStyle: true),
-            TextField(
-              controller: _transactionNameController,
-              decoration: CustomInputDecoration.simple("e.g. Weekly Groceries", fieldColor),
-            ),
-            const SizedBox(height: 30),
-
-            Divider(color: Colors.grey.shade200, thickness: 2),
-            const SizedBox(height: 20),
-            Text(
-              "Items", 
-              style: AppTypography.headline3.copyWith(fontSize: 18),
-            ),
-            const SizedBox(height: 16),
-            
-            // --- 2. Header Badges ---
+            // --- 1. Header Badges ---
             Row(
               children: [
                 Expanded(
                   child: _buildInfoBadge(
-                    context, 
-                    icon: Icons.category, 
-                    label: widget.category, 
-                    color: primaryColor
+                    context,
+                    icon: Icons.category,
+                    label: widget.category,
+                    color: primaryColor,
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: _buildInfoBadge(
-                    context, 
-                    icon: Icons.account_balance_wallet, 
-                    label: widget.accountName, 
-                    color: primaryColor
+                    context,
+                    icon: Icons.account_balance_wallet,
+                    label: widget.accountName,
+                    color: primaryColor,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 24),
 
-            // --- 3. TOTAL EXPENSE DISPLAY ---
+            // --- 2. Transaction Name ---
+            const FormLabel(label: "Name", useGreyStyle: true),
+            TextField(
+              controller: _transactionNameController,
+              decoration: CustomInputDecoration.simple(
+                "e.g. Weekly Groceries",
+                fieldColor,
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // --- 3. Date Input ---
+            Text(
+              "Date",
+              style: AppTypography.labelLarge.copyWith(
+                color: AppColors.greyText,
+              ),
+            ),
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: _pickDate,
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: fieldColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.calendar_today, color: primaryColor, size: 20),
+                    const SizedBox(width: 12),
+                    Text(
+                      _formatDate(_selectedDate),
+                      style: AppTypography.bodySmall.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+            Divider(color: Colors.grey.shade200, thickness: 2),
+            const SizedBox(height: 20),
+
+            // --- 4. TOTAL EXPENSE DISPLAY ---
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -260,7 +290,9 @@ class _AddExpensePageState extends State<AddExpensePage> {
                       child: Text(
                         "\$${_totalPrice.toStringAsFixed(2)}",
                         style: TextStyle(
-                          color: _totalPrice == 0 ? Colors.grey[400] : primaryColor,
+                          color: _totalPrice == 0
+                              ? Colors.grey[400]
+                              : primaryColor,
                           fontSize: 40,
                           fontWeight: FontWeight.bold,
                         ),
@@ -270,35 +302,18 @@ class _AddExpensePageState extends State<AddExpensePage> {
                 ],
               ),
             ),
-            
-            const SizedBox(height: 30),
 
-            // --- 4. Date Input ---
-            Text("Date", style: AppTypography.labelLarge.copyWith(color: AppColors.greyText)),
-            const SizedBox(height: 8),
-            GestureDetector(
-              onTap: _pickDate,
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: fieldColor,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.calendar_today, color: primaryColor, size: 20),
-                    const SizedBox(width: 12),
-                    Text(
-                      _formatDate(_selectedDate),
-                      style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            const SizedBox(height: 20),
+            Divider(color: Colors.grey.shade200, thickness: 2),
             const SizedBox(height: 20),
 
             // --- 5. DYNAMIC ITEMS LIST ---
+            Text(
+              "Items",
+              style: AppTypography.headline3.copyWith(fontSize: 18),
+            ),
+            const SizedBox(height: 16),
+
             Column(
               children: List.generate(_items.length, (index) {
                 return _buildItemRow(index, fieldColor);
@@ -318,7 +333,10 @@ class _AddExpensePageState extends State<AddExpensePage> {
                   ),
                 ),
                 style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
                 ),
               ),
             ),
@@ -332,7 +350,9 @@ class _AddExpensePageState extends State<AddExpensePage> {
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryColor,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                   elevation: 0,
                 ),
                 onPressed: _saveExpense,
@@ -377,14 +397,21 @@ class _AddExpensePageState extends State<AddExpensePage> {
             children: [
               Text(
                 "Item ${index + 1}",
-                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey,
+                ),
               ),
               if (_items.length > 1)
                 InkWell(
                   onTap: () => _removeItem(index),
                   child: const Padding(
                     padding: EdgeInsets.all(4.0),
-                    child: Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                    child: Icon(
+                      Icons.delete_outline,
+                      color: Colors.red,
+                      size: 20,
+                    ),
                   ),
                 ),
             ],
@@ -423,8 +450,13 @@ class _AddExpensePageState extends State<AddExpensePage> {
                     const FormLabel(label: "Unit Price", useGreyStyle: true),
                     TextField(
                       controller: _items[index]['price'],
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: CustomInputDecoration.simple("0.00", fieldColor),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: CustomInputDecoration.simple(
+                        "0.00",
+                        fieldColor,
+                      ),
                     ),
                   ],
                 ),
@@ -436,9 +468,12 @@ class _AddExpensePageState extends State<AddExpensePage> {
     );
   }
 
-
-
-  Widget _buildInfoBadge(BuildContext context, {required IconData icon, required String label, required Color color}) {
+  Widget _buildInfoBadge(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       decoration: BoxDecoration(
@@ -456,7 +491,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
               style: AppTypography.bodySmall.copyWith(
                 color: color,
                 fontWeight: FontWeight.bold,
-                fontSize: 12
+                fontSize: 12,
               ),
               overflow: TextOverflow.ellipsis,
             ),

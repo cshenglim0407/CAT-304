@@ -119,7 +119,6 @@ class _AddIncomePageState extends State<AddIncomePage> {
           children: [
             // --- 1. Account Dropdown (Read-Only) ---
             const FormLabel(label: "Account", useGreyStyle: true),
-            const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               decoration: BoxDecoration(
@@ -187,8 +186,10 @@ class _AddIncomePageState extends State<AddIncomePage> {
                     style: TextStyle(
                       color: primaryColor,
                       fontWeight: FontWeight.bold,
+                      fontSize: 14,
                     ),
                   ),
+                  const SizedBox(height: 12),
                   TextField(
                     controller: _amountController,
                     keyboardType: const TextInputType.numberWithOptions(
@@ -216,7 +217,6 @@ class _AddIncomePageState extends State<AddIncomePage> {
 
             // --- 4. Category Dropdown ---
             const FormLabel(label: "Category", useGreyStyle: true),
-            const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               decoration: BoxDecoration(
