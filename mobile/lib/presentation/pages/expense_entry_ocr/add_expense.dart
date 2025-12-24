@@ -27,6 +27,7 @@ class AddExpensePage extends StatefulWidget {
 class _AddExpensePageState extends State<AddExpensePage> {
   // Controller for the overall Transaction Name (e.g. "Grocery Run")
   final _transactionNameController = TextEditingController();
+  final _totalPriceController = TextEditingController();
 
   // List of items
   final List<Map<String, TextEditingController>> _items = [];
@@ -47,6 +48,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
   @override
   void dispose() {
     _transactionNameController.dispose();
+    _totalPriceController.dispose();
     for (var item in _items) {
       item['name']?.dispose();
       item['qty']?.dispose();
@@ -96,6 +98,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
     }
     setState(() {
       _totalPrice = tempTotal;
+      _totalPriceController.text = tempTotal == 0 ? "" : "\$${tempTotal.toStringAsFixed(2)}";
     });
   }
 
@@ -373,15 +376,31 @@ class _AddExpensePageState extends State<AddExpensePage> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: Center(
-                      child: Text(
-                        "\$${_totalPrice.toStringAsFixed(2)}",
-                        style: TextStyle(
-                          color: _totalPrice == 0
-                              ? Colors.grey[400]
-                              : primaryColor,
-                          fontSize: 40,
-                          fontWeight: FontWeight.bold,
+                    child: TextField(
+                      controller: _totalPriceController,
+                      onChanged: (value) {
+                        final cleanValue = value.replaceAll(r'$', '').replaceAll(',', '');
+                        setState(() {
+                          _totalPrice = double.tryParse(cleanValue) ?? 0.0;
+                        });
+                      },
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: primaryColor,
+                        fontSize: 40,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      decoration: InputDecoration(
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
+                        hintText: r"$0.00",
+                        hintStyle: TextStyle(
+                          color: primaryColor.withValues(alpha: 0.5),
                         ),
                       ),
                     ),
@@ -549,39 +568,6 @@ class _AddExpensePageState extends State<AddExpensePage> {
                 ),
               ),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoBadge(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 18, color: color),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Text(
-              label,
-              style: AppTypography.bodySmall.copyWith(
-                color: color,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
           ),
         ],
       ),

@@ -22,7 +22,9 @@ class AddIncomePage extends StatefulWidget {
 
 class _AddIncomePageState extends State<AddIncomePage> {
   final _transactionNameController = TextEditingController();
-  final TextEditingController _amountController = TextEditingController();
+  final TextEditingController _totalIncomeController = TextEditingController();
+
+  double _totalIncome = 0.0;
 
   // 1. New variable for the Recurrent feature
   bool _isRecurrent = false;
@@ -49,7 +51,7 @@ class _AddIncomePageState extends State<AddIncomePage> {
 
   @override
   void dispose() {
-    _amountController.dispose();
+    _totalIncomeController.dispose();
     super.dispose();
   }
 
@@ -72,7 +74,7 @@ class _AddIncomePageState extends State<AddIncomePage> {
   }
 
   void _saveIncome() {
-    final amountText = _amountController.text;
+    final amountText = _totalIncomeController.text;
     if (amountText.isEmpty) return;
 
     final double amount = double.tryParse(amountText) ?? 0.0;
@@ -174,6 +176,7 @@ class _AddIncomePageState extends State<AddIncomePage> {
 
             // --- 3. Amount Input ---
             Container(
+              width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: primaryColor.withValues(alpha: 0.1),
@@ -182,7 +185,7 @@ class _AddIncomePageState extends State<AddIncomePage> {
               child: Column(
                 children: [
                   Text(
-                    "Amount",
+                    "Total Income",
                     style: TextStyle(
                       color: primaryColor,
                       fontWeight: FontWeight.bold,
@@ -190,23 +193,41 @@ class _AddIncomePageState extends State<AddIncomePage> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  TextField(
-                    controller: _amountController,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: primaryColor,
-                      fontSize: 40,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                      // --- FIXED: Placeholder set to 0.00 ---
-                      hintText: r"$0.00",
-                      hintStyle: TextStyle(
-                        color: primaryColor.withValues(alpha: 0.5),
+                    child: TextField(
+                      controller: _totalIncomeController,
+                      onChanged: (value) {
+                        final cleanValue = value
+                            .replaceAll(r'$', '')
+                            .replaceAll(',', '');
+                        setState(() {
+                          _totalIncome = double.tryParse(cleanValue) ?? 0.0;
+                        });
+                      },
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: primaryColor,
+                        fontSize: 40,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      decoration: InputDecoration(
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
+                        hintText: r"$0.00",
+                        hintStyle: TextStyle(
+                          color: primaryColor.withValues(alpha: 0.5),
+                        ),
                       ),
                     ),
                   ),

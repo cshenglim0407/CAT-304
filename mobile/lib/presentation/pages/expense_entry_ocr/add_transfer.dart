@@ -23,6 +23,8 @@ class _AddTransferPageState extends State<AddTransferPage> {
   String? _selectedToAccount;
   late List<String> _validToAccounts;
 
+  double _amount = 0.0;
+
   @override
   void initState() {
     super.initState();
@@ -89,39 +91,58 @@ class _AddTransferPageState extends State<AddTransferPage> {
           children: [
             // --- 1. Amount Input ---
             Container(
+              width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                // UPDATED: Uses Primary Color tint
                 color: primaryColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Column(
                 children: [
                   Text(
-                    "Amount to Transfer",
-                    // UPDATED: Uses Primary Color
-                    style: AppTypography.bodySmall.copyWith(
+                    "Total Transfer",
+                    style: TextStyle(
                       color: primaryColor,
                       fontWeight: FontWeight.bold,
+                      fontSize: 14,
                     ),
                   ),
-                  TextField(
-                    controller: _amountController,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    textAlign: TextAlign.center,
-                    style: AppTypography.headline1.copyWith(
-                      color: primaryColor, // UPDATED: Uses Primary Color
-                      fontSize: 40,
-                    ),
-                    cursorColor: primaryColor, // UPDATED: Uses Primary Color
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                      hintText: r"$0.00",
-                      hintStyle: AppTypography.headline1.copyWith(
-                        color: AppColors.greyText.withValues(alpha: 0.3),
+                    child: TextField(
+                      controller: _amountController,
+                      onChanged: (value) {
+                        final cleanValue = value
+                            .replaceAll(r'$', '')
+                            .replaceAll(',', '');
+                        setState(() {
+                          _amount = double.tryParse(cleanValue) ?? 0.0;
+                        });
+                      },
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: primaryColor,
                         fontSize: 40,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      decoration: InputDecoration(
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
+                        hintText: r"$0.00",
+                        hintStyle: TextStyle(
+                          color: primaryColor.withValues(alpha: 0.5),
+                        ),
                       ),
                     ),
                   ),
@@ -134,7 +155,7 @@ class _AddTransferPageState extends State<AddTransferPage> {
             FormLabel(label: "From", useGreyStyle: true),
             const SizedBox(height: 8),
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               decoration: BoxDecoration(
                 color: fieldColor,
                 borderRadius: BorderRadius.circular(12),
@@ -155,6 +176,7 @@ class _AddTransferPageState extends State<AddTransferPage> {
                 ],
               ),
             ),
+            const SizedBox(height: 20),
 
             // Arrow Visual
             Center(
@@ -180,12 +202,15 @@ class _AddTransferPageState extends State<AddTransferPage> {
                 ),
               ),
               child: _validToAccounts.isEmpty
-                  ? Padding(
-                      padding: const EdgeInsets.all(12.0),
-                      child: Text(
-                        "No other accounts available",
-                        style: TextStyle(color: Colors.grey),
-                      ),
+                  ? Row(
+                      children: [
+                        Icon(Icons.input_rounded, color: AppColors.success),
+                        const SizedBox(width: 12),
+                        Text(
+                          "No other accounts available",
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ],
                     )
                   : DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
@@ -204,12 +229,13 @@ class _AddTransferPageState extends State<AddTransferPage> {
                                 const Icon(
                                   Icons.input_rounded,
                                   color: AppColors.success,
-                                  size: 20,
                                 ),
                                 const SizedBox(width: 12),
                                 Text(
                                   accountName,
                                   style: AppTypography.bodySmall.copyWith(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
                                     color: primaryTextColor,
                                   ),
                                 ),
