@@ -12,6 +12,7 @@ class AddIncomePage extends StatefulWidget {
 }
 
 class _AddIncomePageState extends State<AddIncomePage> {
+  final _transactionNameController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
 
   // 1. New variable for the Recurrent feature
@@ -105,7 +106,15 @@ class _AddIncomePageState extends State<AddIncomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- 1. Amount Input ---
+            // --- 1. Transaction Name Input ---
+            _buildLabel("Transaction Name"),
+            TextField(
+              controller: _transactionNameController,
+              decoration: _inputDecoration("e.g. August Salary", fieldColor),
+            ),
+            const SizedBox(height: 30),
+
+            // --- 2. Amount Input ---
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -146,7 +155,7 @@ class _AddIncomePageState extends State<AddIncomePage> {
             ),
             const SizedBox(height: 30),
 
-            // --- 2. Category Dropdown ---
+            // --- 3. Category Dropdown ---
             Text(
               "Category",
               style: AppTypography.labelLarge.copyWith(
@@ -193,7 +202,7 @@ class _AddIncomePageState extends State<AddIncomePage> {
             ),
             const SizedBox(height: 20),
 
-            // --- 3. Recurrent Switch (New Feature) ---
+            // --- 4. Recurrent Switch (New Feature) ---
             Container(
               decoration: BoxDecoration(
                 color: fieldColor,
@@ -262,6 +271,30 @@ class _AddIncomePageState extends State<AddIncomePage> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Text(
+        text,
+        style: AppTypography.labelLarge.copyWith(color: AppColors.greyText),
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration(String hint, Color fillColor) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: const TextStyle(color: Colors.grey),
+      filled: true,
+      fillColor: fillColor,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     );
   }
 }
