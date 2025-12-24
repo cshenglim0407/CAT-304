@@ -73,6 +73,24 @@ class _AddIncomePageState extends State<AddIncomePage> {
     }
   }
 
+  // Resolve an icon for an account by its name
+  IconData _getAccountIcon(String name) {
+    final lower = name.toLowerCase();
+    if (lower.contains('wallet')) return Icons.account_balance_wallet_rounded;
+    if (lower.contains('ewallet') ||
+        lower.contains('tng') ||
+        lower.contains('touch')) {
+      return Icons.phone_iphone_rounded;
+    }
+    if (lower.contains('card')) return Icons.credit_card_rounded;
+    if (lower.contains('cash')) return Icons.payments_rounded;
+    if (lower.contains('saving')) return Icons.savings_rounded;
+    if (lower.contains('bank') || lower.contains('maybank')) {
+      return Icons.account_balance_rounded;
+    }
+    return Icons.account_balance_wallet_rounded;
+  }
+
   void _saveIncome() {
     final amountText = _amountController.text;
     if (amountText.isEmpty) return;
@@ -139,11 +157,21 @@ class _AddIncomePageState extends State<AddIncomePage> {
                       .map(
                         (acc) => DropdownMenuItem(
                           value: acc,
-                          child: Text(
-                            acc,
-                            style: AppTypography.bodySmall.copyWith(
-                              color: primaryTextColor,
-                            ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                _getAccountIcon(acc),
+                                color: primaryColor,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                acc,
+                                style: AppTypography.bodySmall.copyWith(
+                                  color: primaryTextColor,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       )
