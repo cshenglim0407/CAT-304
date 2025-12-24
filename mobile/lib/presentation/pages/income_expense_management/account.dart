@@ -488,7 +488,7 @@ class _AccountPageState extends State<AccountPage> {
         if (targetIndex != -1 && targetIndex < _allTransactions.length) {
           // Create the "Incoming" version of the transaction
           final String displayAmountReceiver =
-              '+ \$' + rawAmount.toStringAsFixed(2);
+              '+ \$${rawAmount.toStringAsFixed(2)}';
 
           final newTxReceiver = {
             'type': 'transfer',
@@ -859,7 +859,7 @@ class _AccountPageState extends State<AccountPage> {
 
                     // --- Type Selector ---
                     DropdownButtonFormField<String>(
-                      value: selectedType,
+                      initialValue: selectedType,
                       decoration: InputDecoration(
                         labelText: 'Type',
                         // Keeping 'Type' consistent with the others,
@@ -967,7 +967,7 @@ class _AccountPageState extends State<AccountPage> {
 
                           final savedAccount = await _upsertAccount(newAccount);
 
-                          if (!mounted) return;
+                          if (!ctx.mounted) return;
                           Navigator.pop(ctx);
 
                           setState(() {
@@ -999,18 +999,22 @@ class _AccountPageState extends State<AccountPage> {
                           CacheService.save('accounts', _myAccounts);
                           CacheService.save('transactions', _allTransactions);
 
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Account created successfully'),
-                            ),
-                          );
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Account created successfully'),
+                              ),
+                            );
+                          }
                         } catch (e) {
-                          Navigator.pop(ctx);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Error creating account: $e'),
-                            ),
-                          );
+                          if (mounted) {
+                            Navigator.pop(ctx);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error creating account: $e'),
+                              ),
+                            );
+                          }
                         }
                       },
                       child: const Text(
@@ -1120,7 +1124,7 @@ class _AccountPageState extends State<AccountPage> {
 
                     // --- Type Selector ---
                     DropdownButtonFormField<String>(
-                      value: types.contains(type) ? type : types.first,
+                      initialValue: types.contains(type) ? type : types.first,
                       decoration: InputDecoration(
                         labelText: 'Type',
                         labelStyle: const TextStyle(color: Colors.grey),
@@ -1265,18 +1269,20 @@ class _AccountPageState extends State<AccountPage> {
                           CacheService.save('accounts', _myAccounts);
                           CacheService.save('transactions', _allTransactions);
 
-                          Navigator.pop(ctx); // Close bottom sheet
-                          Navigator.pop(
-                            context,
-                          ); // Return to account page (if needed)
+                          if (ctx.mounted) {
+                            Navigator.pop(ctx); // Close bottom sheet
+                            Navigator.pop(
+                              context,
+                            ); // Return to account page (if needed)
+                          }
 
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
+                          if (ctx.mounted) {
+                            ScaffoldMessenger.of(ctx).showSnackBar(
                               const SnackBar(content: Text('Account updated')),
                             );
                           }
                         } catch (e) {
-                          if (mounted) {
+                          if (ctx.mounted) {
                             Navigator.pop(ctx);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text('Update failed: $e')),
@@ -1402,13 +1408,17 @@ class _AccountPageState extends State<AccountPage> {
         CacheService.save('transactions', _allTransactions);
       }
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Account deleted')));
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Account deleted')));
+      }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Delete failed: $e')));
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Delete failed: $e')));
+      }
     }
   }
 
