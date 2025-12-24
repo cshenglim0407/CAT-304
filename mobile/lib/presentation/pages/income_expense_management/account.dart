@@ -950,7 +950,7 @@ class _AccountPageState extends State<AccountPage> {
         },
       );
     }
-  void _editAccount(BuildContext context, Map<String, dynamic> account) async {
+  void _editAccount(BuildContext context, Map<String, dynamic> account) {
     final nameController = TextEditingController(
       text: account['name']?.toString() ?? '',
     );
@@ -963,9 +963,9 @@ class _AccountPageState extends State<AccountPage> {
     final currentController = TextEditingController(
       text: (account['current'] ?? 0).toString(),
     );
-    // Enforce DB-allowed TYPE values (see accounts_type_options)
-    String type = (account['type']?.toString() ?? 'CASH').toUpperCase();
 
+    // Enforce DB-allowed TYPE values
+    String type = (account['type']?.toString() ?? 'CASH').toUpperCase();
     final types = <String>[
       'CASH',
       'BANK',
@@ -976,127 +976,237 @@ class _AccountPageState extends State<AccountPage> {
       'OTHER',
     ];
 
-    await showDialog(
+    showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+      ),
+      backgroundColor: Colors.white,
       builder: (ctx) {
-        return AlertDialog(
-          title: const Text('Edit Account'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(labelText: 'Name'),
-                ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  initialValue: types.contains(type) ? type : types.first,
-                  items: types
-                      .map((t) => DropdownMenuItem(value: t, child: Text(t)))
-                      .toList(),
-                  onChanged: (v) => type = v ?? type,
-                  decoration: const InputDecoration(labelText: 'Type'),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: initialController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: const InputDecoration(
-                    labelText: 'Initial Balance',
-                  ),
-                ),
-                const SizedBox(height: 8),
-                // Current balance is derived from transactions; not editable
-                TextField(
-                  controller: currentController,
-                  readOnly: true,
-                  enabled: false,
-                  decoration: const InputDecoration(
-                    labelText: 'Current Balance (read-only)',
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: descController,
-                  decoration: const InputDecoration(labelText: 'Description'),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final userId = supabase.auth.currentUser?.id;
-                if (userId == null) {
-                  Navigator.pop(ctx);
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Not signed in')),
-                    );
-                  }
-                  return;
-                }
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                top: 24,
+                left: 24,
+                right: 24,
+                // Handle keyboard covering inputs
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // --- Handle Bar ---
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
 
-                final updated = Account(
-                  id: account['id']?.toString(),
-                  userId: userId,
-                  name: nameController.text.trim(),
-                  type: type,
-                  initialBalance:
-                      double.tryParse(initialController.text.trim()) ?? 0,
-                  // Preserve current balance from existing account; not user-editable
-                  currentBalance: (account['current'] is num)
-                      ? (account['current'] as num).toDouble()
-                      : double.tryParse(account['current']?.toString() ?? '') ??
-                            0,
-                  description: descController.text.trim().isEmpty
-                      ? null
-                      : descController.text.trim(),
-                );
+                    // --- Title ---
+                    Text(
+                      "Edit Account",
+                      style: AppTypography.headline3,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
 
-                try {
-                  final saved = await _upsertAccount(updated);
-                  if (!mounted) return;
-                  setState(() {
-                    account['name'] = saved.name;
-                    account['type'] = saved.type;
-                    account['initial'] = saved.initialBalance;
-                    account['current'] = saved.currentBalance;
-                    account['desc'] = saved.description ?? '';
-                  });
-                  CacheService.save('accounts', _myAccounts);
-                  // Keep transactions cache consistent even if not changed
-                  CacheService.save('transactions', _allTransactions);
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Account updated')),
-                    );
-                  }
-                } catch (e) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Update failed: $e')),
-                    );
-                  }
-                } finally {
-                  if (mounted) {
-                    final navigator = Navigator.of(context);
-                    if (navigator.canPop()) {
-                      navigator.pop();
-                    }
-                  }
-                }
-              },
-              child: const Text('Save'),
-            ),
-          ],
+                    // --- Name Input ---
+                    TextField(
+                      controller: nameController,
+                      decoration: InputDecoration(
+                        labelText: 'Name',
+                        labelStyle: const TextStyle(color: Colors.grey),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // --- Type Selector ---
+                    DropdownButtonFormField<String>(
+                      value: types.contains(type) ? type : types.first,
+                      decoration: InputDecoration(
+                        labelText: 'Type',
+                        labelStyle: const TextStyle(color: Colors.grey),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                      ),
+                      items: types
+                          .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                          .toList(),
+                      onChanged: (v) {
+                        if (v != null) {
+                          setSheetState(() => type = v);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // --- Initial Balance Input ---
+                    TextField(
+                      controller: initialController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: 'Initial Balance',
+                        labelStyle: const TextStyle(color: Colors.grey),
+                        prefixText: '\$ ',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // --- Current Balance (Read-Only) ---
+                    TextField(
+                      controller: currentController,
+                      readOnly: true,
+                      enabled: false,
+                      style: const TextStyle(color: Colors.grey),
+                      decoration: InputDecoration(
+                        labelText: 'Current Balance (Read-only)',
+                        labelStyle: const TextStyle(color: Colors.grey),
+                        prefixText: '\$ ',
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // --- Description Input ---
+                    TextField(
+                      controller: descController,
+                      decoration: InputDecoration(
+                        labelText: 'Description',
+                        labelStyle: const TextStyle(color: Colors.grey),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+
+                    // --- Save Button ---
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      onPressed: () async {
+                        final userId = supabase.auth.currentUser?.id;
+                        if (userId == null) {
+                          Navigator.pop(ctx);
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Not signed in')),
+                            );
+                          }
+                          return;
+                        }
+
+                        final updated = Account(
+                          id: account['id']?.toString(),
+                          userId: userId,
+                          name: nameController.text.trim(),
+                          type: type,
+                          initialBalance:
+                              double.tryParse(initialController.text.trim()) ?? 0,
+                          // Preserve current balance logic
+                          currentBalance: (account['current'] is num)
+                              ? (account['current'] as num).toDouble()
+                              : double.tryParse(
+                                    account['current']?.toString() ?? '',
+                                  ) ??
+                                  0,
+                          description: descController.text.trim().isEmpty
+                              ? null
+                              : descController.text.trim(),
+                        );
+
+                        try {
+                          final saved = await _upsertAccount(updated);
+                          if (!mounted) return;
+                          
+                          setState(() {
+                            account['name'] = saved.name;
+                            account['type'] = saved.type;
+                            account['initial'] = saved.initialBalance;
+                            account['current'] = saved.currentBalance;
+                            account['desc'] = saved.description ?? '';
+                          });
+                          
+                          CacheService.save('accounts', _myAccounts);
+                          CacheService.save('transactions', _allTransactions);
+                          
+                          Navigator.pop(ctx); // Close Sheet
+                          
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Account updated')),
+                            );
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            Navigator.pop(ctx);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Update failed: $e')),
+                            );
+                          }
+                        }
+                      },
+                      child: const Text(
+                        'Save Changes',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         );
       },
     );
