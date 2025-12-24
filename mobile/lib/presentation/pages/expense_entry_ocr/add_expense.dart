@@ -190,7 +190,23 @@ class _AddExpensePageState extends State<AddExpensePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- 1. Header Badges ---
+            // --- 1. Transaction Name ---
+            const FormLabel(label: "Transaction Name", useGreyStyle: true),
+            TextField(
+              controller: _transactionNameController,
+              decoration: CustomInputDecoration.simple("e.g. Weekly Groceries", fieldColor),
+            ),
+            const SizedBox(height: 30),
+
+            Divider(color: Colors.grey.shade200, thickness: 2),
+            const SizedBox(height: 20),
+            Text(
+              "Items", 
+              style: AppTypography.headline3.copyWith(fontSize: 18),
+            ),
+            const SizedBox(height: 16),
+            
+            // --- 2. Header Badges ---
             Row(
               children: [
                 Expanded(
@@ -214,7 +230,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
             ),
             const SizedBox(height: 24),
 
-            // --- 2. TOTAL EXPENSE DISPLAY ---
+            // --- 3. TOTAL EXPENSE DISPLAY ---
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -257,7 +273,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
             
             const SizedBox(height: 30),
 
-            // --- 3. Date Input ---
+            // --- 4. Date Input ---
             Text("Date", style: AppTypography.labelLarge.copyWith(color: AppColors.greyText)),
             const SizedBox(height: 8),
             GestureDetector(
@@ -281,22 +297,6 @@ class _AddExpensePageState extends State<AddExpensePage> {
               ),
             ),
             const SizedBox(height: 20),
-
-            // --- 4. Transaction Name (New Feature) ---
-            const FormLabel(label: "Transaction Name", useGreyStyle: true),
-            TextField(
-              controller: _transactionNameController,
-              decoration: CustomInputDecoration.simple("e.g. Weekly Groceries", fieldColor),
-            ),
-            const SizedBox(height: 30),
-
-            Divider(color: Colors.grey.shade200, thickness: 2),
-            const SizedBox(height: 20),
-            Text(
-              "Items", 
-              style: AppTypography.headline3.copyWith(fontSize: 18),
-            ),
-            const SizedBox(height: 16),
 
             // --- 5. DYNAMIC ITEMS LIST ---
             Column(
