@@ -79,7 +79,10 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
       final savedItems = widget.transaction['items'] as List;
       for (var item in savedItems) {
         String q = (item['qty'] ?? '1').toString();
-        String p = (item['unitPrice'] ?? item['price'] ?? '0').toString();
+        // Ensure initial prices are formatted to 2 decimals
+        double pVal = (item['unitPrice'] ?? item['price'] ?? 0).toDouble();
+        String p = pVal.toStringAsFixed(2);
+        
         String n = (item['name'] ?? '').toString();
         _addExpenseItemRow(name: n, qty: q, price: p);
       }
@@ -89,7 +92,9 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
       dynamic rawUP = widget.transaction['unitPrice'];
       
       String qtyStr = (rawQty != null) ? rawQty.toString() : "1";
-      String uPriceStr = (rawUP != null) ? rawUP.toString() : totalAmount.toStringAsFixed(2);
+      // Ensure initial fallback price is formatted
+      double upVal = (rawUP != null) ? rawUP.toDouble() : totalAmount;
+      String uPriceStr = upVal.toStringAsFixed(2);
 
       _addExpenseItemRow(name: itemName, qty: qtyStr, price: uPriceStr);
     }
@@ -136,6 +141,21 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
       total += (q * p);
     }
     _amountController.text = total.toStringAsFixed(2);
+  }
+
+  // --- NEW: Helper to format price to 2 decimals ---
+  void _formatPriceField(TextEditingController controller) {
+    final text = controller.text;
+    if (text.isNotEmpty) {
+      final val = double.tryParse(text);
+      if (val != null) {
+        // Only update if it actually changes the visual string (avoids cursor jumping unnecessarily)
+        final formatted = val.toStringAsFixed(2);
+        if (formatted != text) {
+          controller.text = formatted;
+        }
+      }
+    }
   }
 
   @override
@@ -255,14 +275,13 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
             decoration: _inputDecoration(hint: "Income Source")
         ),
         const SizedBox(height: 20),
-        // Matching Header Style for Consistency
         const Align(
           alignment: Alignment.centerLeft,
           child: Text("Category", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))
         ),
         const SizedBox(height: 8),
         _buildDropdown(
-          label: null, // Null label to avoid double printing
+          label: null,
           value: _selectedCategory,
           items: _incomeCategories,
           onChanged: (val) => setState(() => _selectedCategory = val),
@@ -299,10 +318,9 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildAmountBox(color, readOnly: true), // Auto-calculated
+        _buildAmountBox(color, readOnly: true),
         const SizedBox(height: 20),
         
-        // 1. Transaction Name: Black, Bold Header
         const Text("Transaction Name", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         const SizedBox(height: 8),
         TextField(
@@ -311,22 +329,19 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
         ),
         const SizedBox(height: 20),
         
-        // 2. Category: Black, Bold Header (Matching above)
         const Text("Category", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         const SizedBox(height: 8),
         _buildDropdown(
-          label: null, // Don't use the internal small label
+          label: null,
           value: _selectedCategory,
           items: _expenseCategories,
           onChanged: (val) => setState(() => _selectedCategory = val),
         ),
         const SizedBox(height: 30),
         
-        // 3. Items List: Black, Bold Header
         const Text("Items List", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         const SizedBox(height: 10),
 
-        // --- DYNAMIC ITEMS LIST ---
         ...List.generate(_expenseItems.length, (index) {
            return _buildExpenseItemRow(index);
         }),
@@ -381,6 +396,15 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
                   controller: _expenseItems[index]['price'],
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   decoration: _inputDecoration(hint: "0.00", label: "Unit Price"),
+                  // --- CHANGE: Auto-format on focus loss ---
+                  onTapOutside: (event) {
+                    FocusScope.of(context).unfocus();
+                    _formatPriceField(_expenseItems[index]['price']!);
+                  },
+                  onEditingComplete: () {
+                    FocusScope.of(context).unfocus();
+                    _formatPriceField(_expenseItems[index]['price']!);
+                  },
                 ),
               ),
             ],
