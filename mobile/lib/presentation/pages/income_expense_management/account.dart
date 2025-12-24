@@ -1,3 +1,4 @@
+import 'package:cashlytics/core/utils/string_case_formatter.dart';
 import 'package:flutter/material.dart';
 
 import 'package:cashlytics/core/services/supabase/client.dart';
@@ -588,7 +589,7 @@ class _AccountPageState extends State<AccountPage> {
                           ),
                         ),
                         title: Text(
-                          cat,
+                          StringCaseFormatter.toTitleCase(cat),
                           style: const TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 15,

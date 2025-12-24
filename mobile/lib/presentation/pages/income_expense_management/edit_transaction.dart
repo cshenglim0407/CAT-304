@@ -1,3 +1,4 @@
+import 'package:cashlytics/core/utils/string_case_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:cashlytics/presentation/themes/colors.dart';
 
@@ -230,7 +231,7 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
-          title: Text("Edit ${_type[0].toUpperCase()}${_type.substring(1)}"),
+          title: Text("Edit ${StringCaseFormatter.toTitleCase(_type)}"),
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
           elevation: 0,

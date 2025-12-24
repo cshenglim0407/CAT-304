@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cashlytics/core/utils/string_case_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
@@ -334,8 +335,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
       final themePref = currentUserProfile!['theme_pref'] ?? 'system';
       _themePref = themePref.isNotEmpty
-          ? themePref[0].toUpperCase() +
-              (themePref.length > 1 ? themePref.substring(1) : '')
+          ? StringCaseFormatter.toTitleCase(themePref)
           : 'System';
     });
   }
@@ -429,7 +429,6 @@ class _ProfilePageState extends State<ProfilePage> {
             children: [
               // --- Removed AppBackButton here ---
               const SizedBox(height: 16), // Kept some top spacing
-
               // --- Profile Header ---
               Center(
                 child: Column(
