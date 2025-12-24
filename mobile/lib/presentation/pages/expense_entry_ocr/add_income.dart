@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+
+import 'package:cashlytics/core/config/icons.dart';
+
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
 import 'package:cashlytics/presentation/widgets/index.dart';
@@ -48,29 +51,6 @@ class _AddIncomePageState extends State<AddIncomePage> {
   void dispose() {
     _amountController.dispose();
     super.dispose();
-  }
-
-  IconData _getCategoryIcon(String category) {
-    switch (category) {
-      case 'Salary':
-        return Icons.work_rounded;
-      case 'Allowance':
-        return Icons.volunteer_activism_rounded;
-      case 'Bonus':
-        return Icons.stars_rounded;
-      case 'Dividend':
-        return Icons.trending_up_rounded;
-      case 'Investment':
-        return Icons.account_balance_rounded;
-      case 'Rental':
-        return Icons.home_work_rounded;
-      case 'Refund':
-        return Icons.refresh_rounded;
-      case 'Sale':
-        return Icons.storefront_rounded;
-      default:
-        return Icons.attach_money_rounded;
-    }
   }
 
   // Resolve an icon for an account by its name
@@ -255,7 +235,7 @@ class _AddIncomePageState extends State<AddIncomePage> {
                       child: Row(
                         children: [
                           Icon(
-                            _getCategoryIcon(cat),
+                            getIncomeIcon(cat),
                             color: primaryColor,
                             size: 20,
                           ),
