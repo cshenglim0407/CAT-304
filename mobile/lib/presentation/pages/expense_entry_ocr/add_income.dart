@@ -4,8 +4,13 @@ import 'package:cashlytics/presentation/themes/typography.dart';
 
 class AddIncomePage extends StatefulWidget {
   final String accountName;
+  final List<String> availableAccounts;
 
-  const AddIncomePage({super.key, required this.accountName});
+  const AddIncomePage({
+    super.key,
+    required this.accountName,
+    required this.availableAccounts,
+  });
 
   @override
   State<AddIncomePage> createState() => _AddIncomePageState();
@@ -18,6 +23,7 @@ class _AddIncomePageState extends State<AddIncomePage> {
   // 1. New variable for the Recurrent feature
   bool _isRecurrent = false;
 
+  String? _selectedAccount;
   String _selectedCategory = 'Salary';
   final List<String> _categories = [
     'Salary',
@@ -30,6 +36,12 @@ class _AddIncomePageState extends State<AddIncomePage> {
     'Sale',
     'Other',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedAccount = widget.accountName;
+  }
 
   @override
   void dispose() {
@@ -73,7 +85,7 @@ class _AddIncomePageState extends State<AddIncomePage> {
       'category': _selectedCategory,
       'isRecurrent': _isRecurrent, // The new boolean flag
       'date': DateTime.now(), // defaulting to now
-      'accountName': widget.accountName,
+      'accountName': _selectedAccount ?? widget.accountName,
     };
 
     Navigator.pop(context, newTransaction);
@@ -106,7 +118,42 @@ class _AddIncomePageState extends State<AddIncomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- 1. Transaction Name Input ---
+            // --- 1. Account Dropdown (Read-Only) ---
+            _buildLabel("Account"),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              decoration: BoxDecoration(
+                color: fieldColor,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _selectedAccount ?? widget.accountName,
+                  isExpanded: true,
+                  icon: Icon(Icons.arrow_drop_down, color: primaryColor),
+                  dropdownColor: AppColors.white,
+                  // can select all accounts
+                  items: widget.availableAccounts
+                      .map(
+                        (acc) => DropdownMenuItem(
+                          value: acc,
+                          child: Text(
+                            acc,
+                            style: AppTypography.bodySmall.copyWith(
+                              color: primaryTextColor,
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (val) => setState(() => _selectedAccount = val!),
+                ),
+              ),
+            ),
+            const SizedBox(height: 30),
+
+            // --- 2. Transaction Name Input ---
             _buildLabel("Transaction Name"),
             TextField(
               controller: _transactionNameController,
@@ -114,7 +161,7 @@ class _AddIncomePageState extends State<AddIncomePage> {
             ),
             const SizedBox(height: 30),
 
-            // --- 2. Amount Input ---
+            // --- 3. Amount Input ---
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -155,13 +202,8 @@ class _AddIncomePageState extends State<AddIncomePage> {
             ),
             const SizedBox(height: 30),
 
-            // --- 3. Category Dropdown ---
-            Text(
-              "Category",
-              style: AppTypography.labelLarge.copyWith(
-                color: secondaryTextColor,
-              ),
-            ),
+            // --- 4. Category Dropdown ---
+            _buildLabel("Category"),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -202,7 +244,7 @@ class _AddIncomePageState extends State<AddIncomePage> {
             ),
             const SizedBox(height: 20),
 
-            // --- 4. Recurrent Switch (New Feature) ---
+            // --- 5. Recurrent Switch (New Feature) ---
             Container(
               decoration: BoxDecoration(
                 color: fieldColor,

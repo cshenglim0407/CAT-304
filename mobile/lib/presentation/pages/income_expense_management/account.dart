@@ -371,11 +371,15 @@ class _AccountPageState extends State<AccountPage> {
 
   // --- NAVIGATION HELPERS (ADD) ---
   Future<void> _navigateToAddIncome(Map<String, dynamic> account) async {
+    final List<String> allAccountNames = _myAccounts
+        .map((acc) => acc['name'] as String)
+        .toList();
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => AddIncomePage(
           accountName: account['name']?.toString() ?? 'Account',
+          availableAccounts: allAccountNames,
         ),
       ),
     );
