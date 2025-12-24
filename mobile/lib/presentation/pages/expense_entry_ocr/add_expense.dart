@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
+import 'package:cashlytics/presentation/widgets/index.dart';
 
 class AddExpensePage extends StatefulWidget {
   final String accountName;
@@ -282,10 +283,10 @@ class _AddExpensePageState extends State<AddExpensePage> {
             const SizedBox(height: 20),
 
             // --- 4. Transaction Name (New Feature) ---
-            _buildLabel("Transaction Name"),
+            const FormLabel(label: "Transaction Name", useGreyStyle: true),
             TextField(
               controller: _transactionNameController,
-              decoration: _inputDecoration("e.g. Weekly Groceries", fieldColor),
+              decoration: CustomInputDecoration.simple("e.g. Weekly Groceries", fieldColor),
             ),
             const SizedBox(height: 30),
 
@@ -391,10 +392,10 @@ class _AddExpensePageState extends State<AddExpensePage> {
           const SizedBox(height: 12),
 
           // Item Name
-          _buildLabel("Item Name"),
+          const FormLabel(label: "Item Name", useGreyStyle: true),
           TextField(
             controller: _items[index]['name'],
-            decoration: _inputDecoration("e.g. Milk", fieldColor),
+            decoration: CustomInputDecoration.simple("e.g. Milk", fieldColor),
           ),
           const SizedBox(height: 12),
 
@@ -405,11 +406,11 @@ class _AddExpensePageState extends State<AddExpensePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildLabel("Quantity"),
+                    const FormLabel(label: "Quantity", useGreyStyle: true),
                     TextField(
                       controller: _items[index]['qty'],
                       keyboardType: TextInputType.number,
-                      decoration: _inputDecoration("1", fieldColor),
+                      decoration: CustomInputDecoration.simple("1", fieldColor),
                     ),
                   ],
                 ),
@@ -419,11 +420,11 @@ class _AddExpensePageState extends State<AddExpensePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildLabel("Unit Price"),
+                    const FormLabel(label: "Unit Price", useGreyStyle: true),
                     TextField(
                       controller: _items[index]['price'],
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: _inputDecoration("0.00", fieldColor),
+                      decoration: CustomInputDecoration.simple("0.00", fieldColor),
                     ),
                   ],
                 ),
@@ -435,26 +436,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
     );
   }
 
-  Widget _buildLabel(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Text(text, style: AppTypography.labelLarge.copyWith(color: AppColors.greyText)),
-    );
-  }
 
-  InputDecoration _inputDecoration(String hint, Color fillColor) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: const TextStyle(color: Colors.grey),
-      filled: true,
-      fillColor: fillColor,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-    );
-  }
 
   Widget _buildInfoBadge(BuildContext context, {required IconData icon, required String label, required Color color}) {
     return Container(

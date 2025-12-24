@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
+import 'package:cashlytics/presentation/widgets/index.dart';
 
 class AddIncomePage extends StatefulWidget {
   final String accountName;
@@ -119,7 +120,7 @@ class _AddIncomePageState extends State<AddIncomePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // --- 1. Account Dropdown (Read-Only) ---
-            _buildLabel("Account"),
+            const FormLabel(label: "Account", useGreyStyle: true),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -154,10 +155,13 @@ class _AddIncomePageState extends State<AddIncomePage> {
             const SizedBox(height: 30),
 
             // --- 2. Transaction Name Input ---
-            _buildLabel("Transaction Name"),
+            const FormLabel(label: "Transaction Name", useGreyStyle: true),
             TextField(
               controller: _transactionNameController,
-              decoration: _inputDecoration("e.g. August Salary", fieldColor),
+              decoration: CustomInputDecoration.simple(
+                "e.g. August Salary",
+                fieldColor,
+              ),
             ),
             const SizedBox(height: 30),
 
@@ -203,7 +207,7 @@ class _AddIncomePageState extends State<AddIncomePage> {
             const SizedBox(height: 30),
 
             // --- 4. Category Dropdown ---
-            _buildLabel("Category"),
+            const FormLabel(label: "Category", useGreyStyle: true),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -313,30 +317,6 @@ class _AddIncomePageState extends State<AddIncomePage> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildLabel(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Text(
-        text,
-        style: AppTypography.labelLarge.copyWith(color: AppColors.greyText),
-      ),
-    );
-  }
-
-  InputDecoration _inputDecoration(String hint, Color fillColor) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: const TextStyle(color: Colors.grey),
-      filled: true,
-      fillColor: fillColor,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     );
   }
 }

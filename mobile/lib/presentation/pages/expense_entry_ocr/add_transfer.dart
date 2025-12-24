@@ -1,10 +1,11 @@
+import 'package:cashlytics/presentation/widgets/index.dart';
 import 'package:flutter/material.dart';
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
 
 class AddTransferPage extends StatefulWidget {
   final String fromAccountName;
-  final List<String> availableAccounts; 
+  final List<String> availableAccounts;
 
   const AddTransferPage({
     super.key,
@@ -18,7 +19,7 @@ class AddTransferPage extends StatefulWidget {
 
 class _AddTransferPageState extends State<AddTransferPage> {
   final TextEditingController _amountController = TextEditingController();
-  
+
   String? _selectedToAccount;
   late List<String> _validToAccounts;
 
@@ -54,7 +55,7 @@ class _AddTransferPageState extends State<AddTransferPage> {
       'fromAccount': widget.fromAccountName,
       'toAccount': _selectedToAccount,
       'date': DateTime.now(),
-      'type': 'transfer', 
+      'type': 'transfer',
     };
 
     Navigator.pop(context, transferData);
@@ -91,7 +92,7 @@ class _AddTransferPageState extends State<AddTransferPage> {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 // UPDATED: Uses Primary Color tint
-                color: primaryColor.withValues(alpha: 0.1), 
+                color: primaryColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Column(
@@ -99,11 +100,16 @@ class _AddTransferPageState extends State<AddTransferPage> {
                   Text(
                     "Amount to Transfer",
                     // UPDATED: Uses Primary Color
-                    style: AppTypography.bodySmall.copyWith(color: primaryColor, fontWeight: FontWeight.bold),
+                    style: AppTypography.bodySmall.copyWith(
+                      color: primaryColor,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   TextField(
                     controller: _amountController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     textAlign: TextAlign.center,
                     style: AppTypography.headline1.copyWith(
                       color: primaryColor, // UPDATED: Uses Primary Color
@@ -125,14 +131,14 @@ class _AddTransferPageState extends State<AddTransferPage> {
             const SizedBox(height: 30),
 
             // --- 2. From Account (Read Only) ---
-            Text("From", style: AppTypography.labelLarge.copyWith(color: AppColors.greyText)),
+            FormLabel(label: "From", useGreyStyle: true),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: fieldColor,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.red.withValues(alpha: 0.3)), 
+                border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
@@ -149,53 +155,74 @@ class _AddTransferPageState extends State<AddTransferPage> {
                 ],
               ),
             ),
-            
+
             // Arrow Visual
             Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 10),
-                child: Icon(Icons.arrow_downward_rounded, color: AppColors.greyText),
+                child: Icon(
+                  Icons.arrow_downward_rounded,
+                  color: AppColors.greyText,
+                ),
               ),
             ),
 
             // --- 3. To Account (Dropdown) ---
-            Text("To", style: AppTypography.labelLarge.copyWith(color: AppColors.greyText)),
+            FormLabel(label: "To", useGreyStyle: true),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               decoration: BoxDecoration(
                 color: fieldColor,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.success.withValues(alpha: 0.3)), 
-              ),
-              child: _validToAccounts.isEmpty 
-              ? Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Text("No other accounts available", style: TextStyle(color: Colors.grey)),
-                )
-              : DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: _selectedToAccount,
-                  isExpanded: true,
-                  icon: const Icon(Icons.arrow_drop_down, color: AppColors.success),
-                  dropdownColor: AppColors.white,
-                  items: _validToAccounts.map((accountName) {
-                    return DropdownMenuItem(
-                      value: accountName,
-                      child: Row(
-                        children: [
-                          const Icon(Icons.input_rounded, color: AppColors.success, size: 20),
-                          const SizedBox(width: 12),
-                          Text(accountName, style: AppTypography.bodySmall.copyWith(color: primaryTextColor)),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (val) => setState(() => _selectedToAccount = val!),
+                border: Border.all(
+                  color: AppColors.success.withValues(alpha: 0.3),
                 ),
               ),
+              child: _validToAccounts.isEmpty
+                  ? Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Text(
+                        "No other accounts available",
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    )
+                  : DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _selectedToAccount,
+                        isExpanded: true,
+                        icon: const Icon(
+                          Icons.arrow_drop_down,
+                          color: AppColors.success,
+                        ),
+                        dropdownColor: AppColors.white,
+                        items: _validToAccounts.map((accountName) {
+                          return DropdownMenuItem(
+                            value: accountName,
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.input_rounded,
+                                  color: AppColors.success,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  accountName,
+                                  style: AppTypography.bodySmall.copyWith(
+                                    color: primaryTextColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (val) =>
+                            setState(() => _selectedToAccount = val!),
+                      ),
+                    ),
             ),
-            
+
             const SizedBox(height: 40),
 
             // --- Save Button ---
@@ -205,7 +232,9 @@ class _AddTransferPageState extends State<AddTransferPage> {
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryColor, // UPDATED: Uses Primary Color
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                   elevation: 0,
                 ),
                 onPressed: _validToAccounts.isEmpty ? null : _saveTransfer,
