@@ -423,7 +423,6 @@ class _AccountPageState extends State<AccountPage> {
       final String displayAmount =
           (isExpense ? '- \$' : '+ \$') + rawAmount.toStringAsFixed(2);
 
-      // Determine Icon correctly on ADD
       IconData icon;
       if (isTransfer) {
         icon = Icons.arrow_outward_rounded;
@@ -435,11 +434,7 @@ class _AccountPageState extends State<AccountPage> {
 
       final newTx = {
         'type': isTransfer ? 'transfer' : (isExpense ? 'expense' : 'income'),
-        'title':
-            result['itemName'] ??
-            result['title'] ??
-            result['category'] ??
-            'Transaction',
+        'title': result['itemName'] ?? result['title'] ?? 'Transaction',
         'date': "${result['date'].day}/${result['date'].month}",
         'amount': displayAmount,
         'rawAmount': rawAmount,
@@ -450,10 +445,12 @@ class _AccountPageState extends State<AccountPage> {
         'toAccount': result['toAccount'],
         'qty': result['quantity'],
         'unitPrice': result['unitPrice'],
+        'items': result['items'], // <--- CRITICAL FIX: Storing the list in state
       };
 
       if (_currentCardIndex < _allTransactions.length) {
         _allTransactions[_currentCardIndex].insert(0, newTx);
+        // Update balance
         if (isExpense) {
           _myAccounts[_currentCardIndex]['current'] -= rawAmount;
         } else {
@@ -461,6 +458,10 @@ class _AccountPageState extends State<AccountPage> {
         }
       }
     });
+    
+    CacheService.save('transactions', _allTransactions);
+    CacheService.save('accounts', _myAccounts);
+    
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("Transaction saved successfully!")),
     );
