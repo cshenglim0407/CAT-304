@@ -9,10 +9,11 @@ import 'package:cashlytics/core/services/supabase/client.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_state_listener.dart';
 import 'package:cashlytics/core/services/cache/cache_service.dart';
+import 'package:cashlytics/core/utils/math_formatter.dart';
 import 'package:cashlytics/core/utils/ai_insights/ai_insights_service.dart';
+
 import 'package:cashlytics/domain/entities/ai_report.dart';
 import 'package:cashlytics/data/repositories/ai_report_repository_impl.dart';
-
 import 'package:cashlytics/domain/repositories/dashboard_repository.dart';
 import 'package:cashlytics/domain/repositories/account_repository.dart';
 import 'package:cashlytics/data/repositories/dashboard_repository_impl.dart';
@@ -412,7 +413,8 @@ class _AISuggestionsModalContentState
             final user = auth.currentUser;
             if (user != null) {
               final now = DateTime.now();
-              final monthKey = '${now.month.toString().padLeft(2, '0')}-${now.year}';
+              final monthKey =
+                  '${now.month.toString().padLeft(2, '0')}-${now.year}';
               final repo = AiReportRepositoryImpl();
               final recent = await repo.getRecentReports(
                 user.id,
@@ -582,7 +584,12 @@ class _AISuggestionsModalContentState
     return 'Needs Improvement';
   }
 
-  bool _textOverflows(String text, TextStyle style, int maxLines, {double maxWidth = 300}) {
+  bool _textOverflows(
+    String text,
+    TextStyle style,
+    int maxLines, {
+    double maxWidth = 300,
+  }) {
     final textPainter = TextPainter(
       text: TextSpan(text: text, style: style),
       maxLines: maxLines,
@@ -627,27 +634,29 @@ class _AISuggestionsModalContentState
                 ),
                 const Spacer(),
                 // Chevron navigation between current and previous months
-                Builder(builder: (context) {
-                  final total = 1 + _recentReports.length;
-                  return Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.chevron_left),
-                        color: AppColors.getTextPrimary(context),
-                        onPressed: _viewingIndex > 0
-                            ? () => _setViewingIndex(_viewingIndex - 1)
-                            : null,
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.chevron_right),
-                        color: AppColors.getTextPrimary(context),
-                        onPressed: _viewingIndex < (total - 1)
-                            ? () => _setViewingIndex(_viewingIndex + 1)
-                            : null,
-                      ),
-                    ],
-                  );
-                }),
+                Builder(
+                  builder: (context) {
+                    final total = 1 + _recentReports.length;
+                    return Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.chevron_left),
+                          color: AppColors.getTextPrimary(context),
+                          onPressed: _viewingIndex > 0
+                              ? () => _setViewingIndex(_viewingIndex - 1)
+                              : null,
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.chevron_right),
+                          color: AppColors.getTextPrimary(context),
+                          onPressed: _viewingIndex < (total - 1)
+                              ? () => _setViewingIndex(_viewingIndex + 1)
+                              : null,
+                        ),
+                      ],
+                    );
+                  },
+                ),
               ],
             ),
           ),
@@ -765,33 +774,39 @@ class _AISuggestionsModalContentState
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               // Show the month for the currently viewed report
-                              Builder(builder: (context) {
-                                AiReport? target;
-                                if (_viewingIndex == 0) {
-                                  target = _currentReport;
-                                } else if (_recentReports.isNotEmpty &&
-                                    _viewingIndex - 1 < _recentReports.length) {
-                                  target = _recentReports[_viewingIndex - 1];
-                                }
-                                final month = target?.month ?? '';
-                                final isCurrent = _viewingIndex == 0;
-                                return month.isNotEmpty
-                                    ? Padding(
-                                        padding:
-                                            const EdgeInsets.only(bottom: 4),
-                                        child: Text(
-                                          isCurrent ? 'Month: $month (Current)' : 'Month: $month',
-                                          style: AppTypography.bodySmall
-                                              .copyWith(
-                                            color:
-                                                AppColors.getTextSecondary(
-                                              context,
-                                            ),
+                              Builder(
+                                builder: (context) {
+                                  AiReport? target;
+                                  if (_viewingIndex == 0) {
+                                    target = _currentReport;
+                                  } else if (_recentReports.isNotEmpty &&
+                                      _viewingIndex - 1 <
+                                          _recentReports.length) {
+                                    target = _recentReports[_viewingIndex - 1];
+                                  }
+                                  final month = target?.month ?? '';
+                                  final isCurrent = _viewingIndex == 0;
+                                  return month.isNotEmpty
+                                      ? Padding(
+                                          padding: const EdgeInsets.only(
+                                            bottom: 4,
                                           ),
-                                        ),
-                                      )
-                                    : const SizedBox.shrink();
-                              }),
+                                          child: Text(
+                                            isCurrent
+                                                ? 'Month: $month (Current)'
+                                                : 'Month: $month',
+                                            style: AppTypography.bodySmall
+                                                .copyWith(
+                                                  color:
+                                                      AppColors.getTextSecondary(
+                                                        context,
+                                                      ),
+                                                ),
+                                          ),
+                                        )
+                                      : const SizedBox.shrink();
+                                },
+                              ),
                               Text(
                                 _getHealthStatus(),
                                 style: AppTypography.bodyLarge.copyWith(
@@ -828,7 +843,9 @@ class _AISuggestionsModalContentState
                                       _insightsExpanded = !_insightsExpanded;
                                     }),
                                     child: Text(
-                                      _insightsExpanded ? 'Show less' : 'Show more',
+                                      _insightsExpanded
+                                          ? 'Show less'
+                                          : 'Show more',
                                       style: AppTypography.caption.copyWith(
                                         color: AppColors.primary,
                                         fontWeight: FontWeight.w600,
@@ -878,7 +895,9 @@ class _AISuggestionsModalContentState
                                   Text(
                                     month,
                                     style: AppTypography.bodyMedium.copyWith(
-                                      color: AppColors.getTextSecondary(context),
+                                      color: AppColors.getTextSecondary(
+                                        context,
+                                      ),
                                     ),
                                   ),
                                   const Spacer(),
@@ -984,7 +1003,12 @@ class _SuggestionTile extends StatefulWidget {
 class _SuggestionTileState extends State<_SuggestionTile> {
   bool _expanded = false;
 
-  bool _textOverflows(String text, TextStyle style, int maxLines, {double maxWidth = 300}) {
+  bool _textOverflows(
+    String text,
+    TextStyle style,
+    int maxLines, {
+    double maxWidth = 300,
+  }) {
     final textPainter = TextPainter(
       text: TextSpan(text: text, style: style),
       maxLines: maxLines,
@@ -1038,8 +1062,9 @@ class _SuggestionTileState extends State<_SuggestionTile> {
                       height: 1.45,
                     ),
                     maxLines: _expanded ? null : 2,
-                    overflow:
-                        _expanded ? TextOverflow.visible : TextOverflow.ellipsis,
+                    overflow: _expanded
+                        ? TextOverflow.visible
+                        : TextOverflow.ellipsis,
                   ),
                 ),
                 if (widget.body.isNotEmpty &&
@@ -1214,10 +1239,6 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
         _previousQuarterlyBalances = [];
       });
     }
-  }
-
-  String _formatCurrency(double amount) {
-    return '\$${amount.toStringAsFixed(2)}';
   }
 
   String _getCompareText() {
@@ -1408,7 +1429,7 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
         : (_data[_selectedFilter] ?? _data['This month']);
 
     final displayAmount = useRealData
-        ? _formatCurrency(_calculateTotalBalance())
+        ? MathFormatter.formatCurrency(_calculateTotalBalance())
         : currentData['amount'];
 
     final displayPct = useRealData

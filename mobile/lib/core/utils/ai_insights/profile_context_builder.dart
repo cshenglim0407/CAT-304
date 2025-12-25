@@ -2,6 +2,8 @@ import 'package:cashlytics/domain/entities/account.dart';
 import 'package:cashlytics/domain/entities/detailed.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:cashlytics/core/utils/math_formatter.dart';
+
 /// Builds the profile section of the Gemini prompt with user and optional detailed information
 class ProfileContextBuilder {
   /// Build comprehensive profile section for Gemini prompt
@@ -23,12 +25,14 @@ class ProfileContextBuilder {
 
     buffer.writeln('**FINANCIAL PROFILE:**');
     buffer.writeln('Total Accounts: $accountCount');
-    buffer.writeln('Total Assets: \$${totalAssets.toStringAsFixed(2)}');
+    buffer.writeln(
+      'Total Assets: ${MathFormatter.formatCurrency(totalAssets)}',
+    );
 
     // Include estimated loan if provided
     if (detailed?.estimatedLoan != null && detailed!.estimatedLoan! > 0) {
       buffer.writeln(
-        'Outstanding Loans: \$${detailed.estimatedLoan!.toStringAsFixed(2)}',
+        'Outstanding Loans: ${MathFormatter.formatCurrency(detailed.estimatedLoan!)}',
       );
     }
 
@@ -40,7 +44,7 @@ class ProfileContextBuilder {
       for (final account in accounts) {
         final balance = account.currentBalance;
         buffer.writeln(
-          '- ${account.name} (${account.type}): \$${balance.toStringAsFixed(2)}',
+          '- ${account.name} (${account.type}): ${MathFormatter.formatCurrency(balance)}',
         );
       }
       buffer.writeln();

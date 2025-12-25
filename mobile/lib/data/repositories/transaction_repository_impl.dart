@@ -1,6 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
+
+import 'package:cashlytics/core/utils/math_formatter.dart';
 import 'package:cashlytics/core/services/supabase/database/database_service.dart';
+
 import 'package:cashlytics/data/models/transaction_record_model.dart';
 import 'package:cashlytics/domain/entities/transaction_record.dart';
 import 'package:cashlytics/domain/repositories/transaction_repository.dart';
@@ -112,14 +115,6 @@ class TransactionRepositoryImpl implements TransactionRepository {
       final String? type = tx['type'] as String?;
       final String? accountId = tx['account_id'] as String?;
 
-      double _toDouble(dynamic v) {
-        if (v == null) return 0.0;
-        if (v is double) return v;
-        if (v is int) return v.toDouble();
-        if (v is String) return double.tryParse(v) ?? 0.0;
-        return 0.0;
-      }
-
       // Helper to update a single account's current_balance (no-op if account missing)
       Future<void> updateAccountBalance(String accId, double newBalance) async {
         await _databaseService.updateById(
@@ -137,7 +132,7 @@ class TransactionRepositoryImpl implements TransactionRepository {
           matchColumn: 'transaction_id',
           matchValue: transactionId,
         );
-        final amount = _toDouble(income?['amount']);
+        final amount = MathFormatter.toDouble(income?['amount']);
         if (accountId != null && accountId.isNotEmpty) {
           final account = await _databaseService.fetchSingle(
             'accounts',
@@ -145,7 +140,7 @@ class TransactionRepositoryImpl implements TransactionRepository {
             matchValue: accountId,
           );
           if (account != null) {
-            final current = _toDouble(account['current_balance']);
+            final current = MathFormatter.toDouble(account['current_balance']);
             final updated = current - amount; // revert income
             await updateAccountBalance(accountId, updated);
           }
@@ -163,7 +158,7 @@ class TransactionRepositoryImpl implements TransactionRepository {
           matchColumn: 'transaction_id',
           matchValue: transactionId,
         );
-        final amount = _toDouble(expense?['amount']);
+        final amount = MathFormatter.toDouble(expense?['amount']);
         if (accountId != null && accountId.isNotEmpty) {
           final account = await _databaseService.fetchSingle(
             'accounts',
@@ -171,7 +166,7 @@ class TransactionRepositoryImpl implements TransactionRepository {
             matchValue: accountId,
           );
           if (account != null) {
-            final current = _toDouble(account['current_balance']);
+            final current = MathFormatter.toDouble(account['current_balance']);
             final updated = current + amount; // revert expense
             await updateAccountBalance(accountId, updated);
           }
@@ -196,7 +191,7 @@ class TransactionRepositoryImpl implements TransactionRepository {
           matchColumn: 'transaction_id',
           matchValue: transactionId,
         );
-        final amount = _toDouble(transfer?['amount']);
+        final amount = MathFormatter.toDouble(transfer?['amount']);
         final fromAcc = transfer?['from_account_id'] as String?;
         final toAcc = transfer?['to_account_id'] as String?;
 
@@ -208,7 +203,7 @@ class TransactionRepositoryImpl implements TransactionRepository {
             matchValue: fromAcc,
           );
           if (account != null) {
-            final current = _toDouble(account['current_balance']);
+            final current = MathFormatter.toDouble(account['current_balance']);
             await updateAccountBalance(fromAcc, current + amount);
           }
         }
@@ -219,7 +214,7 @@ class TransactionRepositoryImpl implements TransactionRepository {
             matchValue: toAcc,
           );
           if (account != null) {
-            final current = _toDouble(account['current_balance']);
+            final current = MathFormatter.toDouble(account['current_balance']);
             await updateAccountBalance(toAcc, current - amount);
           }
         }

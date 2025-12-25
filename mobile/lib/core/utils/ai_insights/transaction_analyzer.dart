@@ -1,5 +1,7 @@
 import 'package:cashlytics/domain/entities/account_transaction_view.dart';
+
 import 'package:cashlytics/core/utils/date_formatter.dart';
+import 'package:cashlytics/core/utils/math_formatter.dart';
 
 /// Analyzes and formats transactions for the Gemini prompt
 class TransactionAnalyzer {
@@ -12,8 +14,9 @@ class TransactionAnalyzer {
     }
 
     // Exclude transfers from income/expense math
-    final nonTransferTx =
-        transactions.where((t) => (t.category ?? '').toLowerCase() != 'transfer').toList();
+    final nonTransferTx = transactions
+        .where((t) => (t.category ?? '').toLowerCase() != 'transfer')
+        .toList();
 
     // Calculate totals
     final income = nonTransferTx
@@ -30,9 +33,9 @@ class TransactionAnalyzer {
     final buffer = StringBuffer();
 
     buffer.writeln('**FINANCIAL SUMMARY:**');
-    buffer.writeln('Total Income: \$${income.toStringAsFixed(2)}');
-    buffer.writeln('Total Expenses: \$${expense.toStringAsFixed(2)}');
-    buffer.writeln('Net Balance: \$${netBalance.toStringAsFixed(2)}');
+    buffer.writeln('Total Income: ${MathFormatter.formatCurrency(income)}');
+    buffer.writeln('Total Expenses: ${MathFormatter.formatCurrency(expense)}');
+    buffer.writeln('Net Balance: ${MathFormatter.formatCurrency(netBalance)}');
     buffer.writeln('Savings Rate: ${savingsRate.toStringAsFixed(1)}%');
     buffer.writeln();
 
@@ -78,7 +81,9 @@ class TransactionAnalyzer {
         (sum, t) => sum + t.signedAmount,
       );
 
-      buffer.writeln('$category - Total: \$${categoryTotal.toStringAsFixed(2)}');
+      buffer.writeln(
+        '$category - Total: ${MathFormatter.formatCurrency(categoryTotal)}',
+      );
 
       // List individual transactions in this category
       for (final (index, tx) in txns.indexed) {
@@ -93,7 +98,7 @@ class TransactionAnalyzer {
         final sign = tx.signedAmount >= 0 ? '+' : '-';
         final date = DateFormatter.formatDate(tx.date);
         buffer.writeln(
-          '  $sign\$${tx.absAmount.toStringAsFixed(2)} - ${tx.title} ($date)',
+          '  $sign${MathFormatter.formatCurrency(tx.absAmount)} - ${tx.title} ($date)',
         );
       }
       buffer.writeln();
@@ -103,7 +108,9 @@ class TransactionAnalyzer {
   }
 
   /// Get category breakdown summary
-  static String getCategoryBreakdown(List<AccountTransactionView> transactions) {
+  static String getCategoryBreakdown(
+    List<AccountTransactionView> transactions,
+  ) {
     if (transactions.isEmpty) {
       return 'No category data available.';
     }
@@ -113,7 +120,8 @@ class TransactionAnalyzer {
     for (final tx in transactions) {
       final category = tx.category ?? 'Uncategorized';
       if (category.toLowerCase() == 'transfer') continue;
-      categorized[category] = (categorized[category] ?? 0) + (tx.isExpense ? tx.amount : 0);
+      categorized[category] =
+          (categorized[category] ?? 0) + (tx.isExpense ? tx.amount : 0);
     }
 
     final sorted = categorized.entries.toList()
@@ -123,7 +131,7 @@ class TransactionAnalyzer {
     buffer.writeln('**SPENDING BY CATEGORY:**');
 
     for (final entry in sorted) {
-      buffer.writeln('- ${entry.key}: \$${entry.value.toStringAsFixed(2)}');
+      buffer.writeln('- ${entry.key}: ${MathFormatter.formatCurrency(entry.value)}');
     }
 
     return buffer.toString();
@@ -192,7 +200,8 @@ class TransactionAnalyzer {
       merged.add(_DisplayTx.fromTx(outgoing[i]));
     }
 
-    return [...nonTransfers, ...merged]..sort((a, b) => b.date.compareTo(a.date));
+    return [...nonTransfers, ...merged]
+      ..sort((a, b) => b.date.compareTo(a.date));
   }
 
   static String _extractName(String title, String prefix) {

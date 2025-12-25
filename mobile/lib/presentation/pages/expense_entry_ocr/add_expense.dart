@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:cashlytics/core/config/icons.dart';
+import 'package:cashlytics/core/utils/math_formatter.dart';
 
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
@@ -103,7 +104,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
       _totalPrice = tempTotal;
       _totalPriceController.text = tempTotal == 0
           ? ""
-          : "\$${tempTotal.toStringAsFixed(2)}";
+          : MathFormatter.formatCurrency(tempTotal);
     });
   }
 

@@ -1,9 +1,11 @@
 import 'package:cashlytics/core/utils/string_case_formatter.dart';
 import 'package:flutter/material.dart';
 
+import 'package:cashlytics/core/utils/math_formatter.dart';
 import 'package:cashlytics/core/services/supabase/client.dart';
 import 'package:cashlytics/core/services/cache/cache_service.dart';
 import 'package:cashlytics/core/services/supabase/database/database_service.dart';
+
 import 'package:cashlytics/domain/repositories/account_repository.dart';
 import 'package:cashlytics/data/repositories/account_repository_impl.dart';
 import 'package:cashlytics/domain/usecases/accounts/get_accounts.dart';
@@ -113,10 +115,7 @@ class _AccountPageState extends State<AccountPage> {
 
     // If both present and non-empty, return early
     if (id != null && id.isNotEmpty && userId != null && userId.isNotEmpty) {
-      return {
-        'id': id,
-        'user_id': userId,
-      };
+      return {'id': id, 'user_id': userId};
     }
 
     // Try to resolve from backend using current user
@@ -154,10 +153,7 @@ class _AccountPageState extends State<AccountPage> {
     account['account_id'] = id;
     account['user_id'] = userId;
 
-    return {
-      'id': id,
-      'user_id': userId,
-    };
+    return {'id': id, 'user_id': userId};
   }
 
   void _initializeRepositories() {
@@ -529,7 +525,7 @@ class _AccountPageState extends State<AccountPage> {
     final List<String> allAccountNames = _myAccounts
         .map((acc) => acc['name'] as String)
         .toList();
-    
+
     const List<String> expenseCategories = [
       'FOOD',
       'TRANSPORT',
@@ -540,7 +536,7 @@ class _AccountPageState extends State<AccountPage> {
       'EDUCATION',
       'TRAVEL',
     ];
-    
+
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -566,7 +562,9 @@ class _AccountPageState extends State<AccountPage> {
     if (!_isRepositoriesInitialized()) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Please wait for initialization to complete")),
+          const SnackBar(
+            content: Text("Please wait for initialization to complete"),
+          ),
         );
       }
       return;
@@ -574,26 +572,31 @@ class _AccountPageState extends State<AccountPage> {
 
     // Get account ID for current account
     final currentAccount = _myAccounts[_currentCardIndex];
-    final String? accountId = currentAccount['id'] ?? currentAccount['account_id'];
+    final String? accountId =
+        currentAccount['id'] ?? currentAccount['account_id'];
     final String accountName = currentAccount['name'];
-    
+
     // Validate account ID
     if (accountId == null || accountId.isEmpty) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Invalid account ID")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Invalid account ID")));
       }
       return;
     }
-    
+
     try {
       // 1. Save to database first
-      final String transactionName = result['itemName'] ?? 
-                                      result['title'] ?? 
-                                      (isTransfer ? 'Transfer' : 
-                                       isExpense ? 'Expense' : 'Income');
-      
+      final String transactionName =
+          result['itemName'] ??
+          result['title'] ??
+          (isTransfer
+              ? 'Transfer'
+              : isExpense
+              ? 'Expense'
+              : 'Income');
+
       // Create and save main transaction record (without ID for new transactions)
       final transactionRecord = TransactionRecord(
         accountId: accountId,
@@ -602,31 +605,33 @@ class _AccountPageState extends State<AccountPage> {
         description: result['description'],
         currency: 'MYR',
       );
-      
-      debugPrint('Saving transaction: accountId=$accountId, name=$transactionName, type=${transactionRecord.type}');
+
+      debugPrint(
+        'Saving transaction: accountId=$accountId, name=$transactionName, type=${transactionRecord.type}',
+      );
       final savedTransaction = await _upsertTransaction(transactionRecord);
       final String? transactionId = savedTransaction.id;
-      
+
       if (transactionId == null || transactionId.isEmpty) {
         throw Exception('Transaction saved but ID is null or empty');
       }
-      
+
       debugPrint('Transaction saved with ID: $transactionId');
-      
+
       // Validate amount
       final amount = result['amount'];
       if (amount == null) {
         throw Exception('Amount is required');
       }
-      
+
       debugPrint('Amount validated: $amount');
-      
+
       // Save type-specific details
       if (isTransfer) {
         // Get account IDs
         final fromAccountName = result['fromAccount'] ?? accountName;
         final toAccountName = result['toAccount'];
-        
+
         final fromAccount = _myAccounts.firstWhere(
           (acc) => acc['name'] == fromAccountName,
           orElse: () => currentAccount,
@@ -635,23 +640,31 @@ class _AccountPageState extends State<AccountPage> {
           (acc) => acc['name'] == toAccountName,
           orElse: () => {},
         );
-        
+
         if (toAccount.isNotEmpty) {
-          final String? fromAccountId = fromAccount['id'] ?? fromAccount['account_id'];
-          final String? toAccountId = toAccount['id'] ?? toAccount['account_id'];
-          
-          if (fromAccountId != null && fromAccountId.isNotEmpty &&
-              toAccountId != null && toAccountId.isNotEmpty) {
+          final String? fromAccountId =
+              fromAccount['id'] ?? fromAccount['account_id'];
+          final String? toAccountId =
+              toAccount['id'] ?? toAccount['account_id'];
+
+          if (fromAccountId != null &&
+              fromAccountId.isNotEmpty &&
+              toAccountId != null &&
+              toAccountId.isNotEmpty) {
             final transfer = Transfer(
               transactionId: transactionId,
               amount: amount as double,
               fromAccountId: fromAccountId,
               toAccountId: toAccountId,
             );
-            debugPrint('Saving transfer with transactionId: $transactionId, from: $fromAccountId, to: $toAccountId');
+            debugPrint(
+              'Saving transfer with transactionId: $transactionId, from: $fromAccountId, to: $toAccountId',
+            );
             await _upsertTransfer(transfer);
           } else {
-            debugPrint('Invalid account IDs for transfer: from=$fromAccountId, to=$toAccountId');
+            debugPrint(
+              'Invalid account IDs for transfer: from=$fromAccountId, to=$toAccountId',
+            );
           }
         }
       } else if (isExpense) {
@@ -666,14 +679,18 @@ class _AccountPageState extends State<AccountPage> {
               matchValue: categoryName.toUpperCase(),
             );
             categoryId = categoryData?['expense_cat_id'] as String?;
-            debugPrint('Fetched category ID: $categoryId for category: $categoryName');
+            debugPrint(
+              'Fetched category ID: $categoryId for category: $categoryName',
+            );
           } catch (e) {
             debugPrint('Error fetching expense category ID: $e');
           }
         }
 
-        debugPrint('Creating expense with transactionId: $transactionId, amount: $amount, categoryId: $categoryId');
-        
+        debugPrint(
+          'Creating expense with transactionId: $transactionId, amount: $amount, categoryId: $categoryId',
+        );
+
         final expense = Expense(
           transactionId: transactionId,
           amount: amount as double,
@@ -682,15 +699,16 @@ class _AccountPageState extends State<AccountPage> {
         debugPrint('Expense object created, calling _upsertExpense()');
         await _upsertExpense(expense);
         debugPrint('Expense saved successfully');
-        
+
         // Save expense items if present
         final items = result['items'] as List<Map<String, dynamic>>?;
         if (items != null && items.isNotEmpty) {
           for (int i = 0; i < items.length; i++) {
             final item = items[i];
             final qty = int.tryParse(item['qty']?.toString() ?? '1') ?? 1;
-            final unitPrice = double.tryParse(item['unitPrice']?.toString() ?? '0') ?? 0.0;
-            
+            final unitPrice =
+                double.tryParse(item['unitPrice']?.toString() ?? '0') ?? 0.0;
+
             final expenseItem = ExpenseItem(
               transactionId: transactionId,
               itemId: i + 1,
@@ -705,104 +723,107 @@ class _AccountPageState extends State<AccountPage> {
       } else {
         // Income
         final String? category = result['category'];
-        debugPrint('Creating Income: transactionId=$transactionId, amount=$amount, category=$category');
-        
+        debugPrint(
+          'Creating Income: transactionId=$transactionId, amount=$amount, category=$category',
+        );
+
         final income = Income(
           transactionId: transactionId,
           amount: amount as double,
-          category: category?.toUpperCase(), // Ensure uppercase for database constraint
+          category: category
+              ?.toUpperCase(), // Ensure uppercase for database constraint
           isRecurrent: result['isRecurrent'] ?? false,
         );
         debugPrint('Income object created, calling _upsertIncome()');
         await _upsertIncome(income);
         debugPrint('Income saved successfully');
       }
-      
+
       // 2. Update local state after successful database save
       setState(() {
-      final double rawAmount = result['amount'];
-      final String displayAmount =
-          (isExpense ? '- \$' : '+ \$') + rawAmount.toStringAsFixed(2);
+        final double rawAmount = result['amount'];
+        final String displayAmount =
+            (isExpense ? '- \$' : '+ \$') + rawAmount.toStringAsFixed(2);
 
-      // --- 1. SENDER LOGIC (Current Account) ---
-      IconData icon;
-      String title = result['itemName'] ?? result['title'] ?? 'Transaction';
+        // --- 1. SENDER LOGIC (Current Account) ---
+        IconData icon;
+        String title = result['itemName'] ?? result['title'] ?? 'Transaction';
 
-      if (isTransfer) {
-        icon = Icons.north_east_rounded;
-        // FIX: Display "To [Receiver Name]" for the sender
-        if (result['toAccount'] != null) {
-          title = "To ${result['toAccount']}";
-        }
-      } else if (isExpense) {
-        icon = getExpenseIcon(result['category'] ?? '');
-      } else {
-        icon = getIncomeIcon(result['category'] ?? '');
-      }
-
-      final newTxSender = {
-        'type': isTransfer ? 'transfer' : (isExpense ? 'expense' : 'income'),
-        'title': title,
-        'date': "${result['date'].day}/${result['date'].month}",
-        'amount': displayAmount,
-        'rawAmount': rawAmount,
-        'isExpense': isExpense,
-        'icon': icon,
-        'isRecurrent': result['isRecurrent'] ?? false,
-        'category': result['category'],
-        'toAccount': result['toAccount'],
-        'qty': result['quantity'],
-        'unitPrice': result['unitPrice'],
-        'items': result['items'],
-        'description': result['description'],
-      };
-
-      // Add to Sender (Current Card)
-      if (_currentCardIndex < _allTransactions.length) {
-        _allTransactions[_currentCardIndex].insert(0, newTxSender);
-        if (isExpense) {
-          _myAccounts[_currentCardIndex]['current'] -= rawAmount;
+        if (isTransfer) {
+          icon = Icons.north_east_rounded;
+          // FIX: Display "To [Receiver Name]" for the sender
+          if (result['toAccount'] != null) {
+            title = "To ${result['toAccount']}";
+          }
+        } else if (isExpense) {
+          icon = getExpenseIcon(result['category'] ?? '');
         } else {
-          _myAccounts[_currentCardIndex]['current'] += rawAmount;
+          icon = getIncomeIcon(result['category'] ?? '');
         }
-      }
 
-      // --- 2. RECEIVER LOGIC (The Other Account) ---
-      // This part finds the receiver account and adds the "Incoming" transaction
-      if (isTransfer && result['toAccount'] != null) {
-        final String targetName = result['toAccount'];
-        final String senderName = _myAccounts[_currentCardIndex]['name'];
+        final newTxSender = {
+          'type': isTransfer ? 'transfer' : (isExpense ? 'expense' : 'income'),
+          'title': title,
+          'date': "${result['date'].day}/${result['date'].month}",
+          'amount': displayAmount,
+          'rawAmount': rawAmount,
+          'isExpense': isExpense,
+          'icon': icon,
+          'isRecurrent': result['isRecurrent'] ?? false,
+          'category': result['category'],
+          'toAccount': result['toAccount'],
+          'qty': result['quantity'],
+          'unitPrice': result['unitPrice'],
+          'items': result['items'],
+          'description': result['description'],
+        };
 
-        // Find the index of the receiver account in your list
-        final int targetIndex = _myAccounts.indexWhere(
-          (acc) => acc['name'] == targetName,
-        );
-
-        if (targetIndex != -1 && targetIndex < _allTransactions.length) {
-          // Create the "Incoming" version of the transaction
-          final String displayAmountReceiver =
-              '+ \$${rawAmount.toStringAsFixed(2)}';
-
-          final newTxReceiver = {
-            'type': 'transfer',
-            'title': "From $senderName", // FIX: Display "From [Sender Name]"
-            'date': "${result['date'].day}/${result['date'].month}",
-            'amount': displayAmountReceiver,
-            'rawAmount': rawAmount,
-            'isExpense': false, // It's income for the receiver
-            'icon': Icons
-                .arrow_downward_rounded, // Icon pointing down for received money
-            'isRecurrent': false,
-            'category': 'Transfer',
-            'toAccount': null,
-          };
-
-          // Add to Receiver
-          _allTransactions[targetIndex].insert(0, newTxReceiver);
-          // Update Receiver Balance
-          _myAccounts[targetIndex]['current'] += rawAmount;
+        // Add to Sender (Current Card)
+        if (_currentCardIndex < _allTransactions.length) {
+          _allTransactions[_currentCardIndex].insert(0, newTxSender);
+          if (isExpense) {
+            _myAccounts[_currentCardIndex]['current'] -= rawAmount;
+          } else {
+            _myAccounts[_currentCardIndex]['current'] += rawAmount;
+          }
         }
-      }
+
+        // --- 2. RECEIVER LOGIC (The Other Account) ---
+        // This part finds the receiver account and adds the "Incoming" transaction
+        if (isTransfer && result['toAccount'] != null) {
+          final String targetName = result['toAccount'];
+          final String senderName = _myAccounts[_currentCardIndex]['name'];
+
+          // Find the index of the receiver account in your list
+          final int targetIndex = _myAccounts.indexWhere(
+            (acc) => acc['name'] == targetName,
+          );
+
+          if (targetIndex != -1 && targetIndex < _allTransactions.length) {
+            // Create the "Incoming" version of the transaction
+            final String displayAmountReceiver =
+                '+ ${MathFormatter.formatCurrency(rawAmount)}';
+
+            final newTxReceiver = {
+              'type': 'transfer',
+              'title': "From $senderName", // FIX: Display "From [Sender Name]"
+              'date': "${result['date'].day}/${result['date'].month}",
+              'amount': displayAmountReceiver,
+              'rawAmount': rawAmount,
+              'isExpense': false, // It's income for the receiver
+              'icon': Icons
+                  .arrow_downward_rounded, // Icon pointing down for received money
+              'isRecurrent': false,
+              'category': 'Transfer',
+              'toAccount': null,
+            };
+
+            // Add to Receiver
+            _allTransactions[targetIndex].insert(0, newTxReceiver);
+            // Update Receiver Balance
+            _myAccounts[targetIndex]['current'] += rawAmount;
+          }
+        }
       });
 
       // 3. Update account balances in database
@@ -820,7 +841,7 @@ class _AccountPageState extends State<AccountPage> {
         description: currentAccount['description'] ?? currentAccount['desc'],
       );
       await _upsertAccount(updatedSenderAccount);
-      
+
       // Update receiver account balance if transfer
       if (isTransfer && result['toAccount'] != null) {
         final targetIndex = _myAccounts.indexWhere(
@@ -840,7 +861,8 @@ class _AccountPageState extends State<AccountPage> {
             type: receiverAccount['type'],
             initialBalance: (receiverAccount['initial'] ?? 0.0).toDouble(),
             currentBalance: _myAccounts[targetIndex]['current'].toDouble(),
-            description: receiverAccount['description'] ?? receiverAccount['desc'],
+            description:
+                receiverAccount['description'] ?? receiverAccount['desc'],
           );
           await _upsertAccount(updatedReceiverAccount);
         }
@@ -1567,76 +1589,90 @@ class _AccountPageState extends State<AccountPage> {
                         ),
                         elevation: 0,
                       ),
-                      onPressed: _isLoading ? null : () async {
-                        final userId = supabase.auth.currentUser?.id;
-                        if (userId == null) {
-                          Navigator.pop(ctx);
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Not signed in')),
-                            );
-                          }
-                          return;
-                        }
+                      onPressed: _isLoading
+                          ? null
+                          : () async {
+                              final userId = supabase.auth.currentUser?.id;
+                              if (userId == null) {
+                                Navigator.pop(ctx);
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Not signed in'),
+                                    ),
+                                  );
+                                }
+                                return;
+                              }
 
-                        // Show loading state
-                        setSheetState(() => _isLoading = true);
+                              // Show loading state
+                              setSheetState(() => _isLoading = true);
 
-                        final updated = Account(
-                          id: account['id']?.toString(),
-                          userId: userId,
-                          name: nameController.text.trim(),
-                          type: type,
-                          initialBalance:
-                              double.tryParse(initialController.text.trim()) ??
-                              0,
-                          // Preserve current balance logic
-                          currentBalance: (account['current'] is num)
-                              ? (account['current'] as num).toDouble()
-                              : double.tryParse(
-                                      account['current']?.toString() ?? '',
+                              final updated = Account(
+                                id: account['id']?.toString(),
+                                userId: userId,
+                                name: nameController.text.trim(),
+                                type: type,
+                                initialBalance:
+                                    double.tryParse(
+                                      initialController.text.trim(),
                                     ) ??
                                     0,
-                          description: descController.text.trim().isEmpty
-                              ? null
-                              : descController.text.trim(),
-                        );
+                                // Preserve current balance logic
+                                currentBalance: (account['current'] is num)
+                                    ? (account['current'] as num).toDouble()
+                                    : double.tryParse(
+                                            account['current']?.toString() ??
+                                                '',
+                                          ) ??
+                                          0,
+                                description: descController.text.trim().isEmpty
+                                    ? null
+                                    : descController.text.trim(),
+                              );
 
-                        try {
-                          final saved = await _upsertAccount(updated);
-                          if (!mounted) return;
+                              try {
+                                final saved = await _upsertAccount(updated);
+                                if (!mounted) return;
 
-                          setState(() {
-                            account['name'] = saved.name;
-                            account['type'] = saved.type;
-                            account['initial'] = saved.initialBalance;
-                            account['current'] = saved.currentBalance;
-                            account['desc'] = saved.description ?? '';
-                          });
+                                setState(() {
+                                  account['name'] = saved.name;
+                                  account['type'] = saved.type;
+                                  account['initial'] = saved.initialBalance;
+                                  account['current'] = saved.currentBalance;
+                                  account['desc'] = saved.description ?? '';
+                                });
 
-                          CacheService.save('accounts', _myAccounts);
-                          CacheService.save('transactions', _allTransactions);
+                                CacheService.save('accounts', _myAccounts);
+                                CacheService.save(
+                                  'transactions',
+                                  _allTransactions,
+                                );
 
-                          if (ctx.mounted) {
-                            Navigator.pop(ctx); // Close bottom sheet only
-                          }
+                                if (ctx.mounted) {
+                                  Navigator.pop(ctx); // Close bottom sheet only
+                                }
 
-                          if (ctx.mounted) {
-                            ScaffoldMessenger.of(ctx).showSnackBar(
-                              const SnackBar(content: Text('Account updated')),
-                            );
-                          }
-                        } catch (e) {
-                          if (ctx.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Update failed: $e')),
-                            );
-                          }
-                        } finally {
-                          // Hide loading state
-                          setSheetState(() => _isLoading = false);
-                        }
-                      },
+                                if (ctx.mounted) {
+                                  ScaffoldMessenger.of(ctx).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Account updated'),
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (ctx.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Update failed: $e'),
+                                    ),
+                                  );
+                                }
+                              } finally {
+                                // Hide loading state
+                                setSheetState(() => _isLoading = false);
+                              }
+                            },
                       child: _isLoading
                           ? const SizedBox(
                               height: 20,
