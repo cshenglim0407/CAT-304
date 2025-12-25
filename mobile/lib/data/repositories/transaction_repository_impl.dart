@@ -100,7 +100,6 @@ class TransactionRepositoryImpl implements TransactionRepository {
   @override
   Future<void> deleteTransaction(String transactionId) async {
     try {
-      // Fetch the transaction to determine its type and account
       final tx = await _databaseService.fetchSingle(
         _table,
         matchColumn: 'transaction_id',
@@ -109,70 +108,13 @@ class TransactionRepositoryImpl implements TransactionRepository {
 
       if (tx == null) {
         debugPrint('deleteTransaction: transaction not found $transactionId');
-        return;
+        throw Exception('Transaction not found');
       }
 
       final String? type = tx['type'] as String?;
-      final String? accountId = tx['account_id'] as String?;
 
-      // Helper to update a single account's current_balance (no-op if account missing)
-      Future<void> updateAccountBalance(String accId, double newBalance) async {
-        await _databaseService.updateById(
-          'accounts',
-          matchColumn: 'account_id',
-          matchValue: accId,
-          values: {'current_balance': newBalance},
-        );
-      }
-
-      // Read & compute adjustments BEFORE deleting child rows
-      if (type == 'I') {
-        final income = await _databaseService.fetchSingle(
-          'income',
-          matchColumn: 'transaction_id',
-          matchValue: transactionId,
-        );
-        final amount = MathFormatter.toDouble(income?['amount']);
-        if (accountId != null && accountId.isNotEmpty) {
-          final account = await _databaseService.fetchSingle(
-            'accounts',
-            matchColumn: 'account_id',
-            matchValue: accountId,
-          );
-          if (account != null) {
-            final current = MathFormatter.toDouble(account['current_balance']);
-            final updated = current - amount; // revert income
-            await updateAccountBalance(accountId, updated);
-          }
-        }
-
-        // delete income row
-        await _databaseService.deleteById(
-          'income',
-          matchColumn: 'transaction_id',
-          matchValue: transactionId,
-        );
-      } else if (type == 'E') {
-        final expense = await _databaseService.fetchSingle(
-          'expenses',
-          matchColumn: 'transaction_id',
-          matchValue: transactionId,
-        );
-        final amount = MathFormatter.toDouble(expense?['amount']);
-        if (accountId != null && accountId.isNotEmpty) {
-          final account = await _databaseService.fetchSingle(
-            'accounts',
-            matchColumn: 'account_id',
-            matchValue: accountId,
-          );
-          if (account != null) {
-            final current = MathFormatter.toDouble(account['current_balance']);
-            final updated = current + amount; // revert expense
-            await updateAccountBalance(accountId, updated);
-          }
-        }
-
-        // delete any expense_items then expense row
+      // Delete child rows first so DB child-level triggers handle balance reversion.
+      if (type == 'E') {
         try {
           await _databaseService.deleteById(
             'expense_items',
@@ -185,40 +127,13 @@ class TransactionRepositoryImpl implements TransactionRepository {
           matchColumn: 'transaction_id',
           matchValue: transactionId,
         );
-      } else if (type == 'T') {
-        final transfer = await _databaseService.fetchSingle(
-          'transfer',
+      } else if (type == 'I') {
+        await _databaseService.deleteById(
+          'income',
           matchColumn: 'transaction_id',
           matchValue: transactionId,
         );
-        final amount = MathFormatter.toDouble(transfer?['amount']);
-        final fromAcc = transfer?['from_account_id'] as String?;
-        final toAcc = transfer?['to_account_id'] as String?;
-
-        // revert: add back to source, subtract from destination
-        if (fromAcc != null && fromAcc.isNotEmpty) {
-          final account = await _databaseService.fetchSingle(
-            'accounts',
-            matchColumn: 'account_id',
-            matchValue: fromAcc,
-          );
-          if (account != null) {
-            final current = MathFormatter.toDouble(account['current_balance']);
-            await updateAccountBalance(fromAcc, current + amount);
-          }
-        }
-        if (toAcc != null && toAcc.isNotEmpty) {
-          final account = await _databaseService.fetchSingle(
-            'accounts',
-            matchColumn: 'account_id',
-            matchValue: toAcc,
-          );
-          if (account != null) {
-            final current = MathFormatter.toDouble(account['current_balance']);
-            await updateAccountBalance(toAcc, current - amount);
-          }
-        }
-
+      } else if (type == 'T') {
         await _databaseService.deleteById(
           'transfer',
           matchColumn: 'transaction_id',
@@ -226,16 +141,14 @@ class TransactionRepositoryImpl implements TransactionRepository {
         );
       }
 
-      // Finally delete the transaction row itself (transaction must be removed last)
+      // Finally delete transaction row (cascade won't double-revert because child already removed)
       await _databaseService.deleteById(
         _table,
         matchColumn: 'transaction_id',
         matchValue: transactionId,
       );
 
-      debugPrint(
-        'deleteTransaction: deleted $transactionId type=$type and adjusted accounts',
-      );
+      debugPrint('deleteTransaction: deleted $transactionId type=$type');
     } catch (e, st) {
       debugPrint('Error deleting transaction $transactionId: $e\n$st');
       rethrow;
