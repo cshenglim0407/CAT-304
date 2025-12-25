@@ -13,69 +13,103 @@ if not OCR_SPACE_API_KEY:
 
 app = FastAPI()
 
-def extract_total(text: str):
-    # Extract all monetary values
-    amounts = [float(x) for x in re.findall(r"\d+\.\d{2}", text)]
-
-    if not amounts:
-        return None
-
-    # Remove very small values and zeros (item prices, change)
-    filtered = [a for a in amounts if a > 1.0]
-
-    if filtered:
-        return max(filtered)
-
-    return max(amounts)
-
-def extract_date(text: str):
-    match = re.search(r"(\d{2}/\d{2}/\d{4})", text)
-    if match:
-        return datetime.strptime(match.group(1), "%m/%d/%Y").date().isoformat()
-    return None
+MERCHANT_KEYWORDS = [
+    "LIDL", "WALMART", "WALL-MART", "TESCO", "ALDI",
+    "CARREFOUR", "AEON", "GIANT", "LOTUS",
+    "MYDIN", "7-ELEVEN"
+]
 
 def extract_merchant(text: str):
-    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    lines = [l.strip() for l in text.splitlines() if l.strip()]
 
-    merchant_keywords = [
-        "STORE", "MART", "SHOP", "SUPERMARKET",
-        "SDN", "BHD", "ENTERPRISE", "HOLDINGS"
-    ]
-
-    blacklist = [
-        "TOTAL", "SUBTOTAL", "TAX", "CASH", "CREDIT",
-        "ACCOUNT", "ITEM", "QTY", "PRICE", "AMOUNT"
-    ]
-
-    candidates = []
-
-    for idx, line in enumerate(lines[:20]):
+    # 1️⃣ ABSOLUTE PRIORITY: known merchant keywords
+    # Brand name always beats heuristics
+    for line in lines:
         upper = line.upper()
+        for keyword in MERCHANT_KEYWORDS:
+            if keyword in upper:
+                return line
 
-        if any(word in upper for word in blacklist):
-            continue
+    # 2️⃣ FALLBACK: heuristic scoring (brand not recognised)
+    best_line = None
+    best_score = -999
 
+    for idx, line in enumerate(lines):
         score = 0
+        lower = line.lower()
 
-        if any(word in upper for word in merchant_keywords):
-            score += 5
-
-        if upper.isupper():
+        # Uppercase store-style names
+        if line.isupper():
             score += 2
 
-        if len(line) >= 10:
+        # Typical merchant length
+        if 2 <= len(line.split()) <= 5:
             score += 1
 
-        score += max(0, 5 - idx)
+        # Strong product penalties
+        if re.search(r"\bkg\b|\bx\b|eur|€|\d+[.,]\d{2}", lower):
+            score -= 6
 
-        if score > 0:
-            candidates.append((score, line))
+        # 🚫 Reject dense product blocks
+        window = lines[max(0, idx-4):min(len(lines), idx+5)]
+        product_neighbors = sum(
+            1 for w in window
+            if re.search(r"\bkg\b|\bx\b|\d+[.,]\d{2}", w.lower())
+        )
+        if product_neighbors >= 3:
+            score -= 20
 
-    if candidates:
-        candidates.sort(reverse=True)
-        return candidates[0][1]
+        if score > best_score:
+            best_score = score
+            best_line = line
+
+    return best_line
+
+def extract_total(text: str):
+    lines = [l.strip() for l in text.splitlines() if l.strip()]
+
+    for i, line in enumerate(lines):
+        if "TOTAL" in line.upper():
+            candidates = []
+
+            # Look 4 lines ABOVE and BELOW
+            for j in range(max(0, i-4), min(len(lines), i+5)):
+                if "%" in lines[j]:
+                    continue
+
+                nums = re.findall(r"\d+[.,]\d{2}", lines[j])
+                for n in nums:
+                    candidates.append(float(n.replace(",", ".")))
+
+            if candidates:
+                return max(candidates)
 
     return None
+
+def extract_date(text: str):
+    patterns = [
+        (r"\b\d{2}/\d{2}/\d{4}\b", "%m/%d/%Y"),
+        (r"\b\d{2}\.\d{2}\.\d{2}\b", "%d.%m.%y"),
+        (r"\b\d{2}\.\d{2}\.\d{4}\b", "%d.%m.%Y"),
+    ]
+    for pattern, fmt in patterns:
+        match = re.search(pattern, text)
+        if match:
+            try:
+                return datetime.strptime(match.group(), fmt).date().isoformat()
+            except ValueError:
+                pass
+    return None
+
+def compute_confidence(merchant, total, date):
+    score = 0
+    if merchant:
+        score += 0.3
+    if total:
+        score += 0.4
+    if date:
+        score += 0.3
+    return round(score, 2)
 
 @app.get("/")
 def health():
@@ -87,18 +121,12 @@ async def ocr_receipt(receipt: UploadFile = File(...)):
 
     response = requests.post(
         "https://api.ocr.space/parse/image",
-        files={
-            "file": (receipt.filename, image_bytes, receipt.content_type)
-        },
-        data={
-            "apikey": OCR_SPACE_API_KEY,
-            "language": "eng"
-        }
+        files={"file": (receipt.filename, image_bytes, receipt.content_type)},
+        data={"apikey": OCR_SPACE_API_KEY, "language": "eng"}
     )
 
     result = response.json()
 
-    # 🔴 Handle OCR errors safely
     if result.get("IsErroredOnProcessing"):
         return {
             "success": False,
@@ -106,12 +134,13 @@ async def ocr_receipt(receipt: UploadFile = File(...)):
             "raw_response": result
         }
 
-    # 🟢 Safe extraction
     parsed_text = result["ParsedResults"][0]["ParsedText"]
 
     merchant = extract_merchant(parsed_text)
     total = extract_total(parsed_text)
     expense_date = extract_date(parsed_text)
+    confidence = compute_confidence(merchant, total, expense_date)
+    confidence = min(0.95, confidence)
 
     return {
         "success": True,
@@ -119,5 +148,7 @@ async def ocr_receipt(receipt: UploadFile = File(...)):
         "merchant_name": merchant,
         "total_amount": total,
         "expense_date": expense_date,
-        "raw_text": parsed_text
+        "confidence_score": confidence,
+        "scanned_at": datetime.utcnow().isoformat(),
+        "ocr_raw_text": parsed_text
     }
