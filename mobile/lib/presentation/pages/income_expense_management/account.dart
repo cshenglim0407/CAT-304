@@ -103,6 +103,63 @@ class _AccountPageState extends State<AccountPage> {
     _loadData();
   }
 
+  /// Ensure account map has valid UUIDs for id and user_id.
+  Future<Map<String, dynamic>> _resolveAccountIdentifiers({
+    required Map<String, dynamic> account,
+    String? fallbackName,
+  }) async {
+    String? id = account['id'] ?? account['account_id'];
+    String? userId = account['user_id'];
+
+    // If both present and non-empty, return early
+    if (id != null && id.isNotEmpty && userId != null && userId.isNotEmpty) {
+      return {
+        'id': id,
+        'user_id': userId,
+      };
+    }
+
+    // Try to resolve from backend using current user
+    final authUserId = supabase.auth.currentUser?.id;
+    if (userId == null || userId.isEmpty) {
+      userId = authUserId;
+    }
+
+    if (id == null || id.isEmpty) {
+      // Fetch accounts for current user and match by name if possible
+      if (authUserId != null) {
+        try {
+          final accounts = await _getAccounts(authUserId);
+          final match = accounts.firstWhere(
+            (acc) => acc.name == (fallbackName ?? account['name']),
+            orElse: () => accounts.first,
+          );
+          id = match.id;
+          userId = match.userId;
+        } catch (e) {
+          debugPrint('Failed to resolve account ID from backend: $e');
+        }
+      }
+    }
+
+    if (id == null || id.isEmpty) {
+      throw Exception('Missing account id for balance update');
+    }
+    if (userId == null || userId.isEmpty) {
+      throw Exception('Missing user_id for balance update');
+    }
+
+    // Persist resolved values back into map to avoid future lookups
+    account['id'] = id;
+    account['account_id'] = id;
+    account['user_id'] = userId;
+
+    return {
+      'id': id,
+      'user_id': userId,
+    };
+  }
+
   void _initializeRepositories() {
     _pageController = PageController(viewportFraction: 0.85);
     _accountRepository = AccountRepositoryImpl();
@@ -193,6 +250,7 @@ class _AccountPageState extends State<AccountPage> {
           'initial': account.initialBalance,
           'current': account.currentBalance,
           'desc': account.description ?? '',
+          'user_id': account.userId,
         };
 
         final txList = <Map<String, dynamic>>[];
@@ -747,14 +805,18 @@ class _AccountPageState extends State<AccountPage> {
       });
 
       // 3. Update account balances in database
+      final resolvedSender = await _resolveAccountIdentifiers(
+        account: currentAccount,
+      );
+
       final updatedSenderAccount = Account(
-        id: currentAccount['id'] ?? currentAccount['account_id'],
-        userId: currentAccount['user_id'] ?? '',
+        id: resolvedSender['id'],
+        userId: resolvedSender['user_id'],
         name: currentAccount['name'],
         type: currentAccount['type'],
         initialBalance: (currentAccount['initial'] ?? 0.0).toDouble(),
         currentBalance: _myAccounts[_currentCardIndex]['current'].toDouble(),
-        description: currentAccount['description'],
+        description: currentAccount['description'] ?? currentAccount['desc'],
       );
       await _upsertAccount(updatedSenderAccount);
       
@@ -765,14 +827,19 @@ class _AccountPageState extends State<AccountPage> {
         );
         if (targetIndex != -1) {
           final receiverAccount = _myAccounts[targetIndex];
+          final resolvedReceiver = await _resolveAccountIdentifiers(
+            account: receiverAccount,
+            fallbackName: receiverAccount['name'],
+          );
+
           final updatedReceiverAccount = Account(
-            id: receiverAccount['id'] ?? receiverAccount['account_id'],
-            userId: receiverAccount['user_id'] ?? '',
+            id: resolvedReceiver['id'],
+            userId: resolvedReceiver['user_id'],
             name: receiverAccount['name'],
             type: receiverAccount['type'],
             initialBalance: (receiverAccount['initial'] ?? 0.0).toDouble(),
             currentBalance: _myAccounts[targetIndex]['current'].toDouble(),
-            description: receiverAccount['description'],
+            description: receiverAccount['description'] ?? receiverAccount['desc'],
           );
           await _upsertAccount(updatedReceiverAccount);
         }
