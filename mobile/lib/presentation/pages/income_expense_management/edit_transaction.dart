@@ -30,7 +30,7 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
   String? _selectedToAccount;
   
   final List<String> _incomeCategories = [
-    'Salary', 'Allowance', 'Bonus', 'Dividend', 'Investment', 'Rental', 'Refund', 'Sale', 'Others'
+    'Salary', 'Allowance', 'Bonus', 'Dividend', 'Investment', 'Rental', 'Refund', 'Sale', 'Other'
   ];
   final List<String> _expenseCategories = [
     'FOOD', 'TRANSPORT', 'ENTERTAINMENT', 'UTILITIES', 'HEALTHCARE',
@@ -210,7 +210,7 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
       'rawAmount': newAmount,
       'amount': (_type == 'income' ? '+ \$' : '- \$') + newAmount.toStringAsFixed(2),
       'isRecurrent': _isRecurrent,
-      'category': _selectedCategory,
+      'category': _selectedCategory?.toUpperCase(), // Convert to uppercase for database
       'toAccount': _selectedToAccount,
       'items': finalItems,
     };

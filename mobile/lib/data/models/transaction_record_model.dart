@@ -41,7 +41,7 @@ class TransactionRecordModel extends TransactionRecord {
 
   Map<String, dynamic> toInsert() {
     return {
-      if (id != null) 'transaction_id': id,
+      'transaction_id': id, // Always include ID (it's generated before calling this)
       'account_id': accountId,
       'name': name,
       'type': type,

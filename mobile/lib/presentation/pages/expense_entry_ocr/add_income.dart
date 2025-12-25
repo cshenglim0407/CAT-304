@@ -82,8 +82,11 @@ class _AddIncomePageState extends State<AddIncomePage> {
 
     // 2. Prepare the simplified data object
     final newTransaction = {
+      'title': _transactionNameController.text.trim().isNotEmpty 
+          ? _transactionNameController.text.trim() 
+          : 'Income',
       'amount': amount,
-      'category': _selectedCategory,
+      'category': _selectedCategory.toUpperCase(), // Convert to uppercase for database
       'isRecurrent': _isRecurrent, // The new boolean flag
       'date': DateTime.now(), // defaulting to now
       'accountName': _selectedAccount ?? widget.accountName,

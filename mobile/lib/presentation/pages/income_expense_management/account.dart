@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:cashlytics/core/services/supabase/client.dart';
 import 'package:cashlytics/core/services/cache/cache_service.dart';
+import 'package:cashlytics/core/services/supabase/database/database_service.dart';
 import 'package:cashlytics/domain/repositories/account_repository.dart';
 import 'package:cashlytics/data/repositories/account_repository_impl.dart';
 import 'package:cashlytics/domain/usecases/accounts/get_accounts.dart';
@@ -13,6 +14,24 @@ import 'package:cashlytics/domain/entities/account.dart';
 import 'package:cashlytics/domain/repositories/transaction_repository.dart';
 import 'package:cashlytics/data/repositories/transaction_repository_impl.dart';
 import 'package:cashlytics/domain/usecases/transactions/delete_transaction.dart';
+import 'package:cashlytics/domain/usecases/transactions/upsert_transaction.dart';
+import 'package:cashlytics/domain/entities/transaction_record.dart';
+import 'package:cashlytics/domain/entities/income.dart';
+import 'package:cashlytics/domain/entities/expense.dart';
+import 'package:cashlytics/domain/entities/transfer.dart';
+import 'package:cashlytics/domain/entities/expense_item.dart';
+import 'package:cashlytics/domain/repositories/income_repository.dart';
+import 'package:cashlytics/domain/repositories/expense_repository.dart';
+import 'package:cashlytics/domain/repositories/transfer_repository.dart';
+import 'package:cashlytics/domain/repositories/expense_item_repository.dart';
+import 'package:cashlytics/data/repositories/income_repository_impl.dart';
+import 'package:cashlytics/data/repositories/expense_repository_impl.dart';
+import 'package:cashlytics/data/repositories/transfer_repository_impl.dart';
+import 'package:cashlytics/data/repositories/expense_item_repository_impl.dart';
+import 'package:cashlytics/domain/usecases/income/upsert_income.dart';
+import 'package:cashlytics/domain/usecases/expenses/upsert_expense.dart';
+import 'package:cashlytics/domain/usecases/transfers/upsert_transfer.dart';
+import 'package:cashlytics/domain/usecases/expense_items/upsert_expense_item.dart';
 import 'package:cashlytics/core/config/icons.dart';
 
 import 'package:cashlytics/presentation/themes/colors.dart';
@@ -39,6 +58,9 @@ class _AccountPageState extends State<AccountPage> {
   late PageController _pageController;
   bool _isLoading = true;
 
+  // Database service
+  final DatabaseService _databaseService = const DatabaseService();
+
   // Repository and use cases
   late final AccountRepository _accountRepository;
   late final GetAccounts _getAccounts;
@@ -47,6 +69,15 @@ class _AccountPageState extends State<AccountPage> {
   late final DeleteAccount _deleteAccountUseCase;
   late final TransactionRepository _transactionRepository;
   late final DeleteTransaction _deleteTransactionUseCase;
+  late final UpsertTransaction _upsertTransaction;
+  late final IncomeRepository _incomeRepository;
+  late final ExpenseRepository _expenseRepository;
+  late final TransferRepository _transferRepository;
+  late final ExpenseItemRepository _expenseItemRepository;
+  late final UpsertIncome _upsertIncome;
+  late final UpsertExpense _upsertExpense;
+  late final UpsertTransfer _upsertTransfer;
+  late final UpsertExpenseItem _upsertExpenseItem;
 
   // Data loaded from database
   List<Map<String, dynamic>> _myAccounts = [];
@@ -68,6 +99,11 @@ class _AccountPageState extends State<AccountPage> {
   @override
   void initState() {
     super.initState();
+    _initializeRepositories();
+    _loadData();
+  }
+
+  void _initializeRepositories() {
     _pageController = PageController(viewportFraction: 0.85);
     _accountRepository = AccountRepositoryImpl();
     _getAccounts = GetAccounts(_accountRepository);
@@ -76,7 +112,26 @@ class _AccountPageState extends State<AccountPage> {
     _deleteAccountUseCase = DeleteAccount(_accountRepository);
     _transactionRepository = TransactionRepositoryImpl();
     _deleteTransactionUseCase = DeleteTransaction(_transactionRepository);
-    _loadData();
+    _upsertTransaction = UpsertTransaction(_transactionRepository);
+    _incomeRepository = IncomeRepositoryImpl();
+    _expenseRepository = ExpenseRepositoryImpl();
+    _transferRepository = TransferRepositoryImpl();
+    _expenseItemRepository = ExpenseItemRepositoryImpl();
+    _upsertIncome = UpsertIncome(_incomeRepository);
+    _upsertExpense = UpsertExpense(_expenseRepository);
+    _upsertTransfer = UpsertTransfer(_transferRepository);
+    _upsertExpenseItem = UpsertExpenseItem(_expenseItemRepository);
+  }
+
+  bool _isRepositoriesInitialized() {
+    try {
+      // Check if the critical repositories have been initialized
+      // by attempting to access them. If they haven't been initialized,
+      // this will throw a LateInitializationError.
+      return _transactionRepository != null && _upsertTransaction != null;
+    } catch (e) {
+      return false;
+    }
   }
 
   @override
@@ -385,7 +440,7 @@ class _AccountPageState extends State<AccountPage> {
       ),
     );
     if (result != null && result is Map<String, dynamic>) {
-      _addTransactionToState(result, isExpense: false);
+      await _addTransactionToState(result, isExpense: false);
     }
   }
 
@@ -405,7 +460,7 @@ class _AccountPageState extends State<AccountPage> {
       ),
     );
     if (result != null && result is Map<String, dynamic>) {
-      _addTransactionToState(result, isExpense: true, isTransfer: true);
+      await _addTransactionToState(result, isExpense: true, isTransfer: true);
     }
   }
 
@@ -440,16 +495,173 @@ class _AccountPageState extends State<AccountPage> {
       ),
     );
     if (result != null && result is Map<String, dynamic>) {
-      _addTransactionToState(result, isExpense: true);
+      await _addTransactionToState(result, isExpense: true);
     }
   }
 
-  void _addTransactionToState(
+  Future<void> _addTransactionToState(
     Map<String, dynamic> result, {
     required bool isExpense,
     bool isTransfer = false,
-  }) {
-    setState(() {
+  }) async {
+    // Ensure repositories are initialized before proceeding
+    if (!_isRepositoriesInitialized()) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Please wait for initialization to complete")),
+        );
+      }
+      return;
+    }
+
+    // Get account ID for current account
+    final currentAccount = _myAccounts[_currentCardIndex];
+    final String? accountId = currentAccount['id'] ?? currentAccount['account_id'];
+    final String accountName = currentAccount['name'];
+    
+    // Validate account ID
+    if (accountId == null || accountId.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Invalid account ID")),
+        );
+      }
+      return;
+    }
+    
+    try {
+      // 1. Save to database first
+      final String transactionName = result['itemName'] ?? 
+                                      result['title'] ?? 
+                                      (isTransfer ? 'Transfer' : 
+                                       isExpense ? 'Expense' : 'Income');
+      
+      // Create and save main transaction record (without ID for new transactions)
+      final transactionRecord = TransactionRecord(
+        accountId: accountId,
+        name: transactionName,
+        type: isTransfer ? 'T' : (isExpense ? 'E' : 'I'),
+        description: result['description'],
+        currency: 'MYR',
+      );
+      
+      debugPrint('Saving transaction: accountId=$accountId, name=$transactionName, type=${transactionRecord.type}');
+      final savedTransaction = await _upsertTransaction(transactionRecord);
+      final String? transactionId = savedTransaction.id;
+      
+      if (transactionId == null || transactionId.isEmpty) {
+        throw Exception('Transaction saved but ID is null or empty');
+      }
+      
+      debugPrint('Transaction saved with ID: $transactionId');
+      
+      // Validate amount
+      final amount = result['amount'];
+      if (amount == null) {
+        throw Exception('Amount is required');
+      }
+      
+      debugPrint('Amount validated: $amount');
+      
+      // Save type-specific details
+      if (isTransfer) {
+        // Get account IDs
+        final fromAccountName = result['fromAccount'] ?? accountName;
+        final toAccountName = result['toAccount'];
+        
+        final fromAccount = _myAccounts.firstWhere(
+          (acc) => acc['name'] == fromAccountName,
+          orElse: () => currentAccount,
+        );
+        final toAccount = _myAccounts.firstWhere(
+          (acc) => acc['name'] == toAccountName,
+          orElse: () => {},
+        );
+        
+        if (toAccount.isNotEmpty) {
+          final String? fromAccountId = fromAccount['id'] ?? fromAccount['account_id'];
+          final String? toAccountId = toAccount['id'] ?? toAccount['account_id'];
+          
+          if (fromAccountId != null && fromAccountId.isNotEmpty &&
+              toAccountId != null && toAccountId.isNotEmpty) {
+            final transfer = Transfer(
+              transactionId: transactionId,
+              amount: amount as double,
+              fromAccountId: fromAccountId,
+              toAccountId: toAccountId,
+            );
+            debugPrint('Saving transfer with transactionId: $transactionId, from: $fromAccountId, to: $toAccountId');
+            await _upsertTransfer(transfer);
+          } else {
+            debugPrint('Invalid account IDs for transfer: from=$fromAccountId, to=$toAccountId');
+          }
+        }
+      } else if (isExpense) {
+        // Fetch expense category ID from category name
+        String? categoryId;
+        final categoryName = result['category'] as String?;
+        if (categoryName != null && categoryName.isNotEmpty) {
+          try {
+            final categoryData = await _databaseService.fetchSingle(
+              'expense_category',
+              matchColumn: 'name',
+              matchValue: categoryName.toUpperCase(),
+            );
+            categoryId = categoryData?['expense_cat_id'] as String?;
+            debugPrint('Fetched category ID: $categoryId for category: $categoryName');
+          } catch (e) {
+            debugPrint('Error fetching expense category ID: $e');
+          }
+        }
+
+        debugPrint('Creating expense with transactionId: $transactionId, amount: $amount, categoryId: $categoryId');
+        
+        final expense = Expense(
+          transactionId: transactionId,
+          amount: amount as double,
+          expenseCategoryId: categoryId,
+        );
+        debugPrint('Expense object created, calling _upsertExpense()');
+        await _upsertExpense(expense);
+        debugPrint('Expense saved successfully');
+        
+        // Save expense items if present
+        final items = result['items'] as List<Map<String, dynamic>>?;
+        if (items != null && items.isNotEmpty) {
+          for (int i = 0; i < items.length; i++) {
+            final item = items[i];
+            final qty = int.tryParse(item['qty']?.toString() ?? '1') ?? 1;
+            final unitPrice = double.tryParse(item['unitPrice']?.toString() ?? '0') ?? 0.0;
+            
+            final expenseItem = ExpenseItem(
+              transactionId: transactionId,
+              itemId: i + 1,
+              itemName: item['name'] ?? '',
+              quantity: qty,
+              unitPrice: unitPrice,
+              price: qty * unitPrice,
+            );
+            await _upsertExpenseItem(expenseItem);
+          }
+        }
+      } else {
+        // Income
+        final String? category = result['category'];
+        debugPrint('Creating Income: transactionId=$transactionId, amount=$amount, category=$category');
+        
+        final income = Income(
+          transactionId: transactionId,
+          amount: amount as double,
+          category: category?.toUpperCase(), // Ensure uppercase for database constraint
+          isRecurrent: result['isRecurrent'] ?? false,
+        );
+        debugPrint('Income object created, calling _upsertIncome()');
+        await _upsertIncome(income);
+        debugPrint('Income saved successfully');
+      }
+      
+      // 2. Update local state after successful database save
+      setState(() {
       final double rawAmount = result['amount'];
       final String displayAmount =
           (isExpense ? '- \$' : '+ \$') + rawAmount.toStringAsFixed(2);
@@ -532,15 +744,58 @@ class _AccountPageState extends State<AccountPage> {
           _myAccounts[targetIndex]['current'] += rawAmount;
         }
       }
-    });
+      });
 
-    // Save changes to cache
-    CacheService.save('transactions', _allTransactions);
-    CacheService.save('accounts', _myAccounts);
+      // 3. Update account balances in database
+      final updatedSenderAccount = Account(
+        id: currentAccount['id'] ?? currentAccount['account_id'],
+        userId: currentAccount['user_id'] ?? '',
+        name: currentAccount['name'],
+        type: currentAccount['type'],
+        initialBalance: (currentAccount['initial'] ?? 0.0).toDouble(),
+        currentBalance: _myAccounts[_currentCardIndex]['current'].toDouble(),
+        description: currentAccount['description'],
+      );
+      await _upsertAccount(updatedSenderAccount);
+      
+      // Update receiver account balance if transfer
+      if (isTransfer && result['toAccount'] != null) {
+        final targetIndex = _myAccounts.indexWhere(
+          (acc) => acc['name'] == result['toAccount'],
+        );
+        if (targetIndex != -1) {
+          final receiverAccount = _myAccounts[targetIndex];
+          final updatedReceiverAccount = Account(
+            id: receiverAccount['id'] ?? receiverAccount['account_id'],
+            userId: receiverAccount['user_id'] ?? '',
+            name: receiverAccount['name'],
+            type: receiverAccount['type'],
+            initialBalance: (receiverAccount['initial'] ?? 0.0).toDouble(),
+            currentBalance: _myAccounts[targetIndex]['current'].toDouble(),
+            description: receiverAccount['description'],
+          );
+          await _upsertAccount(updatedReceiverAccount);
+        }
+      }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Transaction saved successfully!")),
-    );
+      // Save changes to cache
+      CacheService.save('transactions', _allTransactions);
+      CacheService.save('accounts', _myAccounts);
+
+      // Rebuild UI with new transactions
+      if (mounted) {
+        setState(() {});
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Transaction saved successfully!")),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to save transaction: $e")),
+        );
+      }
+    }
   }
 
   // --- UI COMPONENTS ---

@@ -19,6 +19,8 @@ class AddTransferPage extends StatefulWidget {
 
 class _AddTransferPageState extends State<AddTransferPage> {
   final TextEditingController _amountController = TextEditingController();
+  final TextEditingController _transactionNameController =
+      TextEditingController();
 
   String? _selectedToAccount;
   late List<String> _validToAccounts;
@@ -53,6 +55,9 @@ class _AddTransferPageState extends State<AddTransferPage> {
     if (amount <= 0) return;
 
     final transferData = {
+      'title': _transactionNameController.text.trim().isNotEmpty
+          ? _transactionNameController.text.trim()
+          : 'Transfer',
       'amount': amount,
       'fromAccount': widget.fromAccountName,
       'toAccount': _selectedToAccount,
@@ -185,7 +190,7 @@ class _AddTransferPageState extends State<AddTransferPage> {
                     ),
             ),
 
-            const SizedBox(height: 20),            
+            const SizedBox(height: 20),
             Divider(color: AppColors.greyText.withValues(alpha: 0.3)),
             const SizedBox(height: 20),
 
