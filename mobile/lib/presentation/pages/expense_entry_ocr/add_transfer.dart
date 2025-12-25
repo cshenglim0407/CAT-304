@@ -6,11 +6,14 @@ import 'package:cashlytics/presentation/themes/typography.dart';
 class AddTransferPage extends StatefulWidget {
   final String fromAccountName;
   final List<String> availableAccounts;
+  // Optional initial data to prefill when used for editing/duplication
+  final Map<String, dynamic>? initialData;
 
   const AddTransferPage({
     super.key,
     required this.fromAccountName,
     required this.availableAccounts,
+    this.initialData,
   });
 
   @override
@@ -37,6 +40,36 @@ class _AddTransferPageState extends State<AddTransferPage> {
     // Default to the first available account if possible
     if (_validToAccounts.isNotEmpty) {
       _selectedToAccount = _validToAccounts[0];
+    }
+
+    // Prefill from initialData if provided
+    final init = widget.initialData;
+    if (init != null) {
+      // Title
+      final String? title = init['title']?.toString();
+      if (title != null) {
+        _transactionNameController.text = title;
+      }
+      // Description
+      final String? desc = init['description']?.toString();
+      if (desc != null) {
+        _descriptionController.text = desc;
+      }
+      // Amount
+      final dynamic rawAmt = init['rawAmount'] ?? init['amount'];
+      if (rawAmt != null) {
+        final double amt = (rawAmt is num)
+            ? rawAmt.toDouble()
+            : double.tryParse(rawAmt.toString()) ?? 0.0;
+        if (amt > 0) {
+          _amountController.text = amt.toStringAsFixed(2);
+        }
+      }
+      // To account if valid
+      final String? toAcct = init['toAccount']?.toString();
+      if (toAcct != null && _validToAccounts.contains(toAcct)) {
+        _selectedToAccount = toAcct;
+      }
     }
   }
 

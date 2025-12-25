@@ -10,6 +10,7 @@ class AccountTransactionView {
     required this.isExpense,
     this.icon,
     this.category,
+    this.description,
   });
 
   final String transactionId;
@@ -19,6 +20,7 @@ class AccountTransactionView {
   final bool isExpense;
   final IconData? icon;
   final String? category;
+  final String? description;
 
   @override
   bool operator ==(Object other) {
@@ -30,12 +32,13 @@ class AccountTransactionView {
         other.amount == amount &&
         other.isExpense == isExpense &&
         other.icon == icon &&
-        other.category == category;
+        other.category == category &&
+        other.description == description;
   }
 
   @override
   int get hashCode {
-    return Object.hash(transactionId, title, date, amount, isExpense, icon, category);
+    return Object.hash(transactionId, title, date, amount, isExpense, icon, category, description);
   }
 
   @override

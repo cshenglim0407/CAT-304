@@ -50,7 +50,8 @@ import 'package:cashlytics/presentation/pages/expense_entry_ocr/add_income.dart'
 import 'package:cashlytics/presentation/pages/expense_entry_ocr/add_transfer.dart';
 import 'package:cashlytics/presentation/pages/expense_entry_ocr/add_expense.dart';
 import 'package:cashlytics/presentation/pages/income_expense_management/transaction_history.dart';
-import 'package:cashlytics/presentation/pages/income_expense_management/edit_transaction.dart';
+
+// ignore_for_file: use_build_context_synchronously
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -337,6 +338,7 @@ class _AccountPageState extends State<AccountPage> {
               'category': tx.category,
               'toAccount': toAccountName,
               'fromAccount': fromAccountName,
+              'description': tx.description,
             });
           }
         }
@@ -592,7 +594,7 @@ class _AccountPageState extends State<AccountPage> {
     return null;
   }
 
-  // --- LOGIC: EDIT (FIXED ICON ISSUE HERE) ---
+  // --- LOGIC: EDIT (now routes to Add* pages with context) ---
   Future<void> _editTransaction(Map<String, dynamic> oldTx) async {
     final List<String> allAccountNames = _myAccounts
         .map((acc) => acc['name'] as String)
@@ -603,40 +605,136 @@ class _AccountPageState extends State<AccountPage> {
       oldTx['rawAmount'] = _parseAmount(oldTx);
     }
 
+    // Ensure we have a transactionId for backend updates
+    if ((oldTx['transactionId'] == null ||
+        (oldTx['transactionId'].toString().isEmpty))) {
+      try {
+        final resolvedSender = await _resolveAccountIdentifiers(
+          account: _myAccounts[_currentCardIndex],
+          fallbackName: currentAccountName,
+        );
+        final String? accountId = resolvedSender['id']?.toString();
+        if (accountId != null) {
+          final resolvedId = await _resolveTransactionIdFromBackend(
+            oldTx,
+            accountId,
+          );
+          if (resolvedId != null) {
+            oldTx['transactionId'] = resolvedId;
+          }
+        }
+      } catch (e) {
+        debugPrint('Failed to resolve transactionId for edit: $e');
+      }
+    }
+
+    // Decide which page to open based on type
+    Widget page;
+    final String type = (oldTx['type'] ?? '').toString();
+    if (type == 'income') {
+      page = AddIncomePage(
+        accountName: currentAccountName,
+        availableAccounts: allAccountNames,
+        initialData: oldTx,
+      );
+    } else if (type == 'expense') {
+      // Use existing expense categories
+      page = AddExpensePage(
+        accountName: currentAccountName,
+        availableAccounts: allAccountNames,
+        category: (oldTx['category'] ?? 'OTHER').toString(),
+        availableCategories: _expenseCategories,
+        initialData: oldTx,
+      );
+    } else {
+      // transfer
+      page = AddTransferPage(
+        fromAccountName: currentAccountName,
+        availableAccounts: allAccountNames,
+        initialData: oldTx,
+      );
+    }
+
     final result = await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => EditTransactionPage(
-          transaction: oldTx,
-          availableAccounts: allAccountNames,
-          currentAccountName: currentAccountName,
-        ),
-      ),
+      MaterialPageRoute(builder: (context) => page),
     );
 
+    if (!mounted) return;
+
     if (result != null && result is Map<String, dynamic>) {
+      // Ensure type exists in result and sanitize for display
+      final String resolvedType = (type.isNotEmpty)
+          ? type
+          : ((result['type'] ?? '').toString());
+
+      final bool isExpenseForCurrent = oldTx['isExpense'] == true;
+
+      // Extract and format core fields
+      final dynamic amtDyn = result['amount'];
+      final double newRaw = (amtDyn is num)
+          ? amtDyn.toDouble()
+          : double.tryParse(amtDyn?.toString() ?? '0') ?? 0.0;
+      final String displayAmount =
+          (isExpenseForCurrent ? '- \$' : '+ \$') + newRaw.toStringAsFixed(2);
+
+      final dynamic dateDyn = result['date'];
+      final String displayDate = (dateDyn is DateTime)
+          ? "${dateDyn.day}/${dateDyn.month}"
+          : (dateDyn?.toString() ?? '');
+
+      // Title prioritization
+      String title =
+          result['itemName']?.toString() ??
+          result['title']?.toString() ??
+          'Transaction';
+      if (resolvedType == 'transfer' &&
+          result['toAccount'] != null &&
+          isExpenseForCurrent) {
+        // Show direction for sender
+        title = "To ${result['toAccount']}";
+      }
+
+      // Icon
+      IconData icon;
+      if (resolvedType == 'expense') {
+        icon = getExpenseIcon(result['category']);
+      } else if (resolvedType == 'income') {
+        icon = getIncomeIcon(result['category']);
+      } else {
+        icon = Icons.north_east_rounded;
+      }
+
+      // Build sanitized display map
+      final Map<String, dynamic> sanitized = {
+        'type': resolvedType,
+        'title': title,
+        'date': displayDate,
+        'amount': displayAmount,
+        'rawAmount': newRaw,
+        'isExpense': isExpenseForCurrent,
+        'icon': icon,
+        'isRecurrent': result['isRecurrent'] ?? false,
+        'category': result['category'],
+        'transactionId': result['transactionId'] ?? oldTx['transactionId'],
+        'fromAccount': result['fromAccount'] ?? oldTx['fromAccount'],
+        'toAccount': result['toAccount'] ?? oldTx['toAccount'],
+        'qty': result['quantity'] ?? oldTx['qty'],
+        'unitPrice': result['unitPrice'] ?? oldTx['unitPrice'],
+        'items': result['items'] ?? oldTx['items'],
+        'description': result['description'] ?? oldTx['description'],
+      };
+
       setState(() {
-        // 1. Update List
+        // 1. Update List with sanitized data
         final index = _allTransactions[_currentCardIndex].indexOf(oldTx);
         if (index != -1) {
-          // --- FIX: Force Icon Refresh based on new Category ---
-          if (result['type'] == 'expense' && result['category'] != null) {
-            result['icon'] = getExpenseIcon(result['category']);
-          } else if (result['type'] == 'income' && result['category'] != null) {
-            result['icon'] = getIncomeIcon(result['category']);
-          } else if (result['type'] == 'transfer') {
-            result['icon'] = Icons.north_east_rounded;
-          }
-
-          _allTransactions[_currentCardIndex][index] = result;
+          _allTransactions[_currentCardIndex][index] = sanitized;
         }
 
-        // 2. Adjust Balance
+        // 2. Adjust Balance using numeric raw values
         double oldRaw = _parseAmount(oldTx);
-        double newRaw = _parseAmount(result);
-        bool isExpense = oldTx['isExpense'];
-
-        if (isExpense) {
+        if (isExpenseForCurrent) {
           _myAccounts[_currentCardIndex]['current'] += oldRaw;
           _myAccounts[_currentCardIndex]['current'] -= newRaw;
         } else {
@@ -644,10 +742,26 @@ class _AccountPageState extends State<AccountPage> {
           _myAccounts[_currentCardIndex]['current'] += newRaw;
         }
       });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Transaction updated successfully")),
+
+      try {
+        await _persistEditedTransaction(
+          sanitized: sanitized,
+          oldTx: oldTx,
+          isExpenseForCurrent: isExpenseForCurrent,
+          isTransferType: resolvedType == 'transfer',
+          newRawAmount: newRaw,
         );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Transaction updated successfully")),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text("Backend update failed: $e")));
+        }
       }
     }
   }
@@ -1049,6 +1163,149 @@ class _AccountPageState extends State<AccountPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Failed to save transaction: $e")),
         );
+      }
+    }
+  }
+
+  Future<void> _persistEditedTransaction({
+    required Map<String, dynamic> sanitized,
+    required Map<String, dynamic> oldTx,
+    required bool isExpenseForCurrent,
+    required bool isTransferType,
+    required double newRawAmount,
+  }) async {
+    final currentAccount = _myAccounts[_currentCardIndex];
+    final resolvedSender = await _resolveAccountIdentifiers(
+      account: currentAccount,
+    );
+
+    final String? transactionId =
+        sanitized['transactionId']?.toString() ?? oldTx['transactionId'];
+    if (transactionId == null || transactionId.isEmpty) {
+      throw Exception('Missing transactionId for update');
+    }
+
+    final transactionRecord = TransactionRecord(
+      id: transactionId,
+      accountId: resolvedSender['id'],
+      name: sanitized['title']?.toString() ?? 'Transaction',
+      type: isTransferType ? 'T' : (isExpenseForCurrent ? 'E' : 'I'),
+      description: sanitized['description']?.toString(),
+      currency: 'MYR',
+    );
+
+    await _upsertTransaction(transactionRecord);
+
+    if (isTransferType) {
+      final String? toAccountName =
+          sanitized['toAccount']?.toString() ?? oldTx['toAccount']?.toString();
+      if (toAccountName != null) {
+        final toAccount = _myAccounts.firstWhere(
+          (acc) => acc['name'] == toAccountName,
+          orElse: () => {},
+        );
+        if (toAccount.isNotEmpty) {
+          final resolvedTo = await _resolveAccountIdentifiers(
+            account: toAccount,
+            fallbackName: toAccountName,
+          );
+          final transfer = Transfer(
+            transactionId: transactionId,
+            amount: newRawAmount,
+            fromAccountId: resolvedSender['id'],
+            toAccountId: resolvedTo['id'],
+          );
+          await _upsertTransfer(transfer);
+        }
+      }
+    } else if (isExpenseForCurrent) {
+      String? categoryId;
+      final String? categoryName = sanitized['category']?.toString();
+      if (categoryName != null && categoryName.isNotEmpty) {
+        try {
+          final categoryData = await _databaseService.fetchSingle(
+            'expense_category',
+            matchColumn: 'name',
+            matchValue: categoryName.toUpperCase(),
+          );
+          categoryId = categoryData?['expense_cat_id'] as String?;
+        } catch (e) {
+          debugPrint('Error fetching expense category ID during update: $e');
+        }
+      }
+
+      final expense = Expense(
+        transactionId: transactionId,
+        amount: newRawAmount,
+        expenseCategoryId: categoryId,
+      );
+      await _upsertExpense(expense);
+
+      final items = sanitized['items'];
+      if (items is List) {
+        for (int i = 0; i < items.length; i++) {
+          final item = items[i];
+          final qty = int.tryParse(item['qty']?.toString() ?? '1') ?? 1;
+          final unitPrice =
+              double.tryParse(item['unitPrice']?.toString() ?? '0') ?? 0.0;
+          final expenseItem = ExpenseItem(
+            transactionId: transactionId,
+            itemId: i + 1,
+            itemName: item['name']?.toString() ?? '',
+            quantity: qty,
+            unitPrice: unitPrice,
+            price: qty * unitPrice,
+          );
+          await _upsertExpenseItem(expenseItem);
+        }
+      }
+    } else {
+      final income = Income(
+        transactionId: transactionId,
+        amount: newRawAmount,
+        category: sanitized['category']?.toString().toUpperCase(),
+        isRecurrent: sanitized['isRecurrent'] == true,
+      );
+      await _upsertIncome(income);
+    }
+
+    // Persist updated balances
+    final updatedSenderAccount = Account(
+      id: resolvedSender['id'],
+      userId: resolvedSender['user_id'],
+      name: currentAccount['name'],
+      type: currentAccount['type'],
+      initialBalance: (currentAccount['initial'] ?? 0.0).toDouble(),
+      currentBalance: _myAccounts[_currentCardIndex]['current'].toDouble(),
+      description: currentAccount['description'] ?? currentAccount['desc'],
+    );
+    await _upsertAccount(updatedSenderAccount);
+
+    if (isTransferType) {
+      final String? toAccountName =
+          sanitized['toAccount']?.toString() ?? oldTx['toAccount']?.toString();
+      if (toAccountName != null) {
+        final targetIndex = _myAccounts.indexWhere(
+          (acc) => acc['name'] == toAccountName,
+        );
+        if (targetIndex != -1) {
+          final receiverAccount = _myAccounts[targetIndex];
+          final resolvedReceiver = await _resolveAccountIdentifiers(
+            account: receiverAccount,
+            fallbackName: receiverAccount['name'],
+          );
+          final updatedReceiverAccount = Account(
+            id: resolvedReceiver['id'],
+            userId: resolvedReceiver['user_id'],
+            name: receiverAccount['name'],
+            type: receiverAccount['type'],
+            initialBalance: (receiverAccount['initial'] ?? 0.0).toDouble(),
+            currentBalance: _myAccounts[targetIndex]['current'].toDouble(),
+            description:
+                receiverAccount['description'] ?? receiverAccount['desc'],
+          );
+          await _upsertAccount(updatedReceiverAccount);
+        }
       }
     }
   }

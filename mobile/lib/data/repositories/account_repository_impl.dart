@@ -82,6 +82,7 @@ class AccountRepositoryImpl implements AccountRepository {
                 isExpense: false,
                 category: category,
                 icon: getIncomeIcon(category),
+                description: incomeData['description'] as String?,
               ),
             );
           }
@@ -113,6 +114,7 @@ class AccountRepositoryImpl implements AccountRepository {
                 isExpense: true,
                 category: categoryName ?? category ?? 'Expense',
                 icon: getExpenseIcon(categoryName),
+                description: expenseData['description'] as String?,
               ),
             );
           }
@@ -142,6 +144,7 @@ class AccountRepositoryImpl implements AccountRepository {
                 isExpense: true, // Deducting from this account
                 category: 'Transfer',
                 icon: Icons.north_east_rounded,
+                description: transferData['description'] as String?,
               ),
             );
           }
@@ -181,6 +184,7 @@ class AccountRepositoryImpl implements AccountRepository {
               isExpense: false, // Adding to this account
               category: 'Transfer',
               icon: Icons.south_east_rounded,
+              description: transfer['description'] as String?,
             ),
           );
         }

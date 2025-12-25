@@ -12,6 +12,8 @@ class AddExpensePage extends StatefulWidget {
   final List<String> availableAccounts;
   final String category;
   final List<String> availableCategories;
+  // Optional initial data to prefill when used for editing/duplication
+  final Map<String, dynamic>? initialData;
 
   const AddExpensePage({
     super.key,
@@ -19,6 +21,7 @@ class AddExpensePage extends StatefulWidget {
     required this.availableAccounts,
     required this.category,
     required this.availableCategories,
+    this.initialData,
   });
 
   @override
@@ -45,7 +48,66 @@ class _AddExpensePageState extends State<AddExpensePage> {
     super.initState();
     _selectedAccount = widget.accountName;
     _selectedCategory = widget.category;
-    _addNewItem();
+    // Prefill from initialData if provided, otherwise start with an empty row
+    final init = widget.initialData;
+    if (init != null) {
+      // Transaction name
+      final String? title = init['title']?.toString();
+      if (title != null) {
+        _transactionNameController.text = title;
+      }
+      // Description
+      final String? desc = init['description']?.toString();
+      if (desc != null) {
+        _descriptionController.text = desc;
+      }
+      // Date
+      final dynamic date = init['date'];
+      if (date is DateTime) {
+        _selectedDate = date;
+      }
+      // Category (case-insensitive match)
+      final String? cat = init['category']?.toString();
+      if (cat != null && cat.isNotEmpty) {
+        final String match = widget.availableCategories.firstWhere(
+          (c) => c.toUpperCase() == cat.toUpperCase(),
+          orElse: () => widget.category,
+        );
+        _selectedCategory = match;
+      }
+      // Account override
+      final String? acct = init['fromAccount']?.toString() ?? init['accountName']?.toString();
+      if (acct != null && acct.isNotEmpty) {
+        _selectedAccount = acct;
+      }
+      // Items
+      final items = init['items'];
+      if (items is List && items.isNotEmpty) {
+        for (final item in items) {
+          final String name = item['name']?.toString() ?? '';
+          final String qty = item['qty']?.toString() ?? '1';
+          final String unitPrice = item['unitPrice']?.toString() ?? '0.00';
+          _addNewItem();
+          final idx = _items.length - 1;
+          _items[idx]['name']!.text = name;
+          _items[idx]['qty']!.text = qty;
+          _items[idx]['price']!.text = unitPrice;
+        }
+        _calculateTotal();
+      } else {
+        // Fallback single item from itemName/quantity/unitPrice
+        _addNewItem();
+        final String name = init['itemName']?.toString() ?? '';
+        final String qty = init['quantity']?.toString() ?? '1';
+        final String unitPrice = init['unitPrice']?.toString() ?? '0.00';
+        _items[0]['name']!.text = name;
+        _items[0]['qty']!.text = qty;
+        _items[0]['price']!.text = unitPrice;
+        _calculateTotal();
+      }
+    } else {
+      _addNewItem();
+    }
   }
 
   @override

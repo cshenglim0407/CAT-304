@@ -9,11 +9,14 @@ import 'package:cashlytics/presentation/widgets/index.dart';
 class AddIncomePage extends StatefulWidget {
   final String accountName;
   final List<String> availableAccounts;
+  // Optional initial data to prefill when used for editing/duplication
+  final Map<String, dynamic>? initialData;
 
   const AddIncomePage({
     super.key,
     required this.accountName,
     required this.availableAccounts,
+    this.initialData,
   });
 
   @override
@@ -47,6 +50,47 @@ class _AddIncomePageState extends State<AddIncomePage> {
   void initState() {
     super.initState();
     _selectedAccount = widget.accountName;
+    // Prefill from initialData if provided
+    final init = widget.initialData;
+    if (init != null) {
+      // Title
+      final String? title = init['title']?.toString();
+      if (title != null && title.isNotEmpty) {
+        _transactionNameController.text = title;
+      }
+      // Description
+      final String? desc = init['description']?.toString();
+      if (desc != null) {
+        _descriptionController.text = desc;
+      }
+      // Amount (prefer rawAmount, else parse amount string)
+      final dynamic rawAmt = init['rawAmount'] ?? init['amount'];
+      if (rawAmt != null) {
+        final double amt = (rawAmt is num)
+            ? rawAmt.toDouble()
+            : double.tryParse(rawAmt.toString()) ?? 0.0;
+        if (amt > 0) {
+          _totalIncomeController.text = amt.toStringAsFixed(2);
+        }
+      }
+      // Category match (case-insensitive)
+      final String? cat = init['category']?.toString();
+      if (cat != null && cat.isNotEmpty) {
+        final String match = _categories.firstWhere(
+          (c) => c.toUpperCase() == cat.toUpperCase(),
+          orElse: () => _selectedCategory,
+        );
+        _selectedCategory = match;
+      }
+      // Recurrent flag
+      final bool recur = init['isRecurrent'] == true;
+      _isRecurrent = recur;
+      // Account name override if present
+      final String? acct = init['accountName']?.toString();
+      if (acct != null && acct.isNotEmpty) {
+        _selectedAccount = acct;
+      }
+    }
   }
 
   @override
