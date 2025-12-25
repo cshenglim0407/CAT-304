@@ -1499,7 +1499,7 @@ class _AccountPageState extends State<AccountPage> {
                         ),
                         elevation: 0,
                       ),
-                      onPressed: () async {
+                      onPressed: _isLoading ? null : () async {
                         final userId = supabase.auth.currentUser?.id;
                         if (userId == null) {
                           Navigator.pop(ctx);
@@ -1510,6 +1510,9 @@ class _AccountPageState extends State<AccountPage> {
                           }
                           return;
                         }
+
+                        // Show loading state
+                        setSheetState(() => _isLoading = true);
 
                         final updated = Account(
                           id: account['id']?.toString(),
@@ -1547,10 +1550,7 @@ class _AccountPageState extends State<AccountPage> {
                           CacheService.save('transactions', _allTransactions);
 
                           if (ctx.mounted) {
-                            Navigator.pop(ctx); // Close bottom sheet
-                            Navigator.pop(
-                              context,
-                            ); // Return to account page (if needed)
+                            Navigator.pop(ctx); // Close bottom sheet only
                           }
 
                           if (ctx.mounted) {
@@ -1560,20 +1560,33 @@ class _AccountPageState extends State<AccountPage> {
                           }
                         } catch (e) {
                           if (ctx.mounted) {
-                            Navigator.pop(ctx);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text('Update failed: $e')),
                             );
                           }
+                        } finally {
+                          // Hide loading state
+                          setSheetState(() => _isLoading = false);
                         }
                       },
-                      child: const Text(
-                        'Save Changes',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
+                            )
+                          : const Text(
+                              'Save Changes',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                     ),
                   ],
                 ),
