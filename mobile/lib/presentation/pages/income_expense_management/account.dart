@@ -754,6 +754,7 @@ class _AccountPageState extends State<AccountPage> {
         'qty': result['quantity'],
         'unitPrice': result['unitPrice'],
         'items': result['items'],
+        'description': result['description'],
       };
 
       // Add to Sender (Current Card)

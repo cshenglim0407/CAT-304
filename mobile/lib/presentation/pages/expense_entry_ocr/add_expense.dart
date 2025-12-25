@@ -26,7 +26,8 @@ class AddExpensePage extends StatefulWidget {
 
 class _AddExpensePageState extends State<AddExpensePage> {
   // Controller for the overall Transaction Name (e.g. "Grocery Run")
-  final TextEditingController _transactionNameController = TextEditingController();
+  final TextEditingController _transactionNameController =
+      TextEditingController();
   final TextEditingController _totalPriceController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
 
@@ -179,6 +180,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
       'date': _selectedDate,
       'accountName': _selectedAccount ?? widget.accountName,
       'items': itemsList, // <--- CRITICAL FIX: Sending the list
+      'description': _descriptionController.text.trim(),
     };
 
     Navigator.pop(context, newTransaction);
@@ -328,7 +330,10 @@ class _AddExpensePageState extends State<AddExpensePage> {
             const SizedBox(height: 20),
 
             // --- 2b. Description (Optional) ---
-            const FormLabel(label: "Description (optional)", useGreyStyle: true),
+            const FormLabel(
+              label: "Description (optional)",
+              useGreyStyle: true,
+            ),
             TextField(
               controller: _descriptionController,
               decoration: CustomInputDecoration.simple(
