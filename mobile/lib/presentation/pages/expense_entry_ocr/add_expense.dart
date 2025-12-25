@@ -378,72 +378,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
             Divider(color: Colors.grey.shade200, thickness: 2),
             const SizedBox(height: 20),
 
-            // --- 4. TOTAL EXPENSE DISPLAY ---
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: primaryColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    "Total Expense",
-                    style: TextStyle(
-                      color: primaryColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: TextField(
-                      controller: _totalPriceController,
-                      onChanged: (value) {
-                        final cleanValue = value
-                            .replaceAll(r'$', '')
-                            .replaceAll(',', '');
-                        setState(() {
-                          _totalPrice = double.tryParse(cleanValue) ?? 0.0;
-                        });
-                      },
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: primaryColor,
-                        fontSize: 40,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      decoration: InputDecoration(
-                        border: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                        contentPadding: EdgeInsets.zero,
-                        hintText: r"$0.00",
-                        hintStyle: TextStyle(
-                          color: primaryColor.withValues(alpha: 0.5),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-            Divider(color: Colors.grey.shade200, thickness: 2),
-            const SizedBox(height: 20),
-
-            // --- 5. DYNAMIC ITEMS LIST ---
+            // --- 4. DYNAMIC ITEMS LIST ---
             Text(
               "Items",
               style: AppTypography.headline3.copyWith(fontSize: 18),
@@ -456,7 +391,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
               }),
             ),
 
-            // --- 6. Add Item Button ---
+            // --- 5. Add Item Button ---
             Center(
               child: TextButton.icon(
                 onPressed: _addNewItem,
@@ -477,6 +412,65 @@ class _AddExpensePageState extends State<AddExpensePage> {
               ),
             ),
 
+            const SizedBox(height: 20),
+
+            // --- 6. TOTAL EXPENSE DISPLAY ---
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: primaryColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    "Total Expense (Read-Only)",
+                    style: TextStyle(
+                      color: primaryColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: TextField(
+                      controller: _totalPriceController,
+                      enabled: false,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: primaryColor,
+                        fontSize: 40,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      decoration: InputDecoration(
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        disabledBorder: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
+                        hintText: r"$0.00",
+                        hintStyle: TextStyle(
+                          color: primaryColor.withValues(alpha: 0.5),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+            Divider(color: Colors.grey.shade200, thickness: 2),
             const SizedBox(height: 20),
 
             // --- 7. Save Button ---
