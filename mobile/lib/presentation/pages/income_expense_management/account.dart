@@ -6,7 +6,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:cashlytics/core/utils/math_formatter.dart';
 import 'package:cashlytics/core/utils/string_case_formatter.dart';
 import 'package:cashlytics/core/services/supabase/client.dart';
-import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_state_listener.dart';
 import 'package:cashlytics/core/services/supabase/database/database_service.dart';
 import 'package:cashlytics/core/services/cache/cache_service.dart';
@@ -70,7 +69,6 @@ class _AccountPageState extends State<AccountPage> {
 
   late final StreamSubscription<AuthState> _authStateSubscription;
   static const String _userProfileCacheKey = 'user_profile_cache';
-  late final AuthService _authService;
 
   // Database service
   final DatabaseService _databaseService = const DatabaseService();
@@ -221,17 +219,6 @@ class _AccountPageState extends State<AccountPage> {
     _upsertExpense = UpsertExpense(_expenseRepository);
     _upsertTransfer = UpsertTransfer(_transferRepository);
     _upsertExpenseItem = UpsertExpenseItem(_expenseItemRepository);
-  }
-
-  bool _isRepositoriesInitialized() {
-    try {
-      // Check if the critical repositories have been initialized
-      // by attempting to access them. If they haven't been initialized,
-      // this will throw a LateInitializationError.
-      return _transactionRepository != null && _upsertTransaction != null;
-    } catch (e) {
-      return false;
-    }
   }
 
   Future<void> _loadData() async {
@@ -393,7 +380,7 @@ class _AccountPageState extends State<AccountPage> {
         (tx['type'] == 'transfer') ||
         ((tx['category'] ?? '').toString().toUpperCase() == 'TRANSFER');
 
-    String? _extractName(String? title, String prefix) {
+    String? extractName(String? title, String prefix) {
       if (title == null) return null;
       if (title.toLowerCase().startsWith(prefix.toLowerCase()) &&
           title.length > prefix.length) {
@@ -409,7 +396,7 @@ class _AccountPageState extends State<AccountPage> {
       if (tx['isExpense'] == true) {
         senderIndex = accountIndex;
         final String? receiverName =
-            tx['toAccount'] ?? _extractName(tx['title']?.toString(), 'To ');
+            tx['toAccount'] ?? extractName(tx['title']?.toString(), 'To ');
         if (receiverName != null) {
           final idx = _myAccounts.indexWhere(
             (acc) => acc['name'] == receiverName,
@@ -419,7 +406,7 @@ class _AccountPageState extends State<AccountPage> {
       } else {
         receiverIndex = accountIndex;
         final String? senderName =
-            tx['fromAccount'] ?? _extractName(tx['title']?.toString(), 'From ');
+            tx['fromAccount'] ?? extractName(tx['title']?.toString(), 'From ');
         if (senderName != null) {
           final idx = _myAccounts.indexWhere(
             (acc) => acc['name'] == senderName,
@@ -432,7 +419,7 @@ class _AccountPageState extends State<AccountPage> {
       }
     }
 
-    bool _matchesTx(Map<String, dynamic> item) {
+    bool matchesTx(Map<String, dynamic> item) {
       final String? itemId = item['transactionId']?.toString();
       if (transactionId != null && itemId != null) {
         return itemId == transactionId;
@@ -481,7 +468,7 @@ class _AccountPageState extends State<AccountPage> {
 
           for (int i = 0; i < _allTransactions.length; i++) {
             final hasMatch = _allTransactions[i].any(
-              (item) => _matchesTx(item),
+              (item) => matchesTx(item),
             );
             if (hasMatch) affectedIndexes.add(i);
           }
@@ -497,11 +484,11 @@ class _AccountPageState extends State<AccountPage> {
             Map<String, dynamic>? matchedItem = _allTransactions[idx]
                 .cast<Map<String, dynamic>?>()
                 .firstWhere(
-                  (item) => item != null && _matchesTx(item),
+                  (item) => item != null && matchesTx(item),
                   orElse: () => null,
                 );
 
-            _allTransactions[idx].removeWhere((item) => _matchesTx(item));
+            _allTransactions[idx].removeWhere((item) => matchesTx(item));
 
             final accId = _myAccounts[idx]['id'];
             final updated = accountLookup[accId];
@@ -521,7 +508,7 @@ class _AccountPageState extends State<AccountPage> {
           }
         } else {
           _allTransactions[accountIndex].removeWhere(
-            (item) => _matchesTx(item),
+            (item) => matchesTx(item),
           );
 
           final updated = accountLookup[accountId];
@@ -716,18 +703,6 @@ class _AccountPageState extends State<AccountPage> {
     required bool isExpense,
     bool isTransfer = false,
   }) async {
-    // Ensure repositories are initialized before proceeding
-    if (!_isRepositoriesInitialized()) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Please wait for initialization to complete"),
-          ),
-        );
-      }
-      return;
-    }
-
     // Get account ID for current account
     final currentAccount = _myAccounts[_currentCardIndex];
     final String? accountId =

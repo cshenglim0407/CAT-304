@@ -26,8 +26,6 @@ class _AddTransferPageState extends State<AddTransferPage> {
   String? _selectedToAccount;
   late List<String> _validToAccounts;
 
-  double _amount = 0.0;
-
   @override
   void initState() {
     super.initState();
@@ -242,14 +240,6 @@ class _AddTransferPageState extends State<AddTransferPage> {
                     ),
                     child: TextField(
                       controller: _amountController,
-                      onChanged: (value) {
-                        final cleanValue = value
-                            .replaceAll(r'$', '')
-                            .replaceAll(',', '');
-                        setState(() {
-                          _amount = double.tryParse(cleanValue) ?? 0.0;
-                        });
-                      },
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),

@@ -21,11 +21,10 @@ class AddIncomePage extends StatefulWidget {
 }
 
 class _AddIncomePageState extends State<AddIncomePage> {
-  final TextEditingController _transactionNameController = TextEditingController();
+  final TextEditingController _transactionNameController =
+      TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _totalIncomeController = TextEditingController();
-
-  double _totalIncome = 0.0;
 
   // 1. New variable for the Recurrent feature
   bool _isRecurrent = false;
@@ -58,24 +57,6 @@ class _AddIncomePageState extends State<AddIncomePage> {
     super.dispose();
   }
 
-  // Resolve an icon for an account by its name
-  IconData _getAccountIcon(String name) {
-    final lower = name.toLowerCase();
-    if (lower.contains('wallet')) return Icons.account_balance_wallet_rounded;
-    if (lower.contains('ewallet') ||
-        lower.contains('tng') ||
-        lower.contains('touch')) {
-      return Icons.phone_iphone_rounded;
-    }
-    if (lower.contains('card')) return Icons.credit_card_rounded;
-    if (lower.contains('cash')) return Icons.payments_rounded;
-    if (lower.contains('saving')) return Icons.savings_rounded;
-    if (lower.contains('bank') || lower.contains('maybank')) {
-      return Icons.account_balance_rounded;
-    }
-    return Icons.account_balance_wallet_rounded;
-  }
-
   void _saveIncome() {
     final amountText = _totalIncomeController.text;
     if (amountText.isEmpty) return;
@@ -87,11 +68,12 @@ class _AddIncomePageState extends State<AddIncomePage> {
 
     // 2. Prepare the simplified data object
     final newTransaction = {
-      'title': _transactionNameController.text.trim().isNotEmpty 
-          ? _transactionNameController.text.trim() 
+      'title': _transactionNameController.text.trim().isNotEmpty
+          ? _transactionNameController.text.trim()
           : 'Income',
       'amount': amount,
-      'category': _selectedCategory.toUpperCase(), // Convert to uppercase for database
+      'category': _selectedCategory
+          .toUpperCase(), // Convert to uppercase for database
       'isRecurrent': _isRecurrent, // The new boolean flag
       'date': DateTime.now(), // defaulting to now
       'accountName': _selectedAccount ?? widget.accountName,
@@ -248,7 +230,10 @@ class _AddIncomePageState extends State<AddIncomePage> {
             const SizedBox(height: 16),
 
             // --- 2b. Description (Optional) ---
-            const FormLabel(label: "Description (optional)", useGreyStyle: true),
+            const FormLabel(
+              label: "Description (optional)",
+              useGreyStyle: true,
+            ),
             TextField(
               controller: _descriptionController,
               decoration: CustomInputDecoration.simple(
@@ -286,14 +271,6 @@ class _AddIncomePageState extends State<AddIncomePage> {
                     ),
                     child: TextField(
                       controller: _totalIncomeController,
-                      onChanged: (value) {
-                        final cleanValue = value
-                            .replaceAll(r'$', '')
-                            .replaceAll(',', '');
-                        setState(() {
-                          _totalIncome = double.tryParse(cleanValue) ?? 0.0;
-                        });
-                      },
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),

@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
-import 'package:cashlytics/core/utils/math_formatter.dart';
 import 'package:cashlytics/core/services/supabase/database/database_service.dart';
 
 import 'package:cashlytics/data/models/transaction_record_model.dart';
