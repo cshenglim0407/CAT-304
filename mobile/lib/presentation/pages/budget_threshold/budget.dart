@@ -112,47 +112,76 @@ class _BudgetPageState extends State<BudgetPage> {
     }
   }
 
-  Future<void> _saveBudget() async {
-    if (!_formKey.currentState!.validate()) return;
-    
-    // Check for date range
-    if (_selectedDateRange == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please select a date range")),
-      );
-      return;
-    }
-
-    // Parse safely
-    final cleanAmount = _amountController.text.replaceAll(',', '');
-    final threshold = double.tryParse(cleanAmount); 
-
-    if (threshold == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-         const SnackBar(content: Text("Invalid amount format")),
-      );
-      return;
-    }
-
-    // Prepare data based on selection
-    // In a real app, you would insert into DB here using 'threshold', '_selectedType', etc.
-    // Example:
-    // final budgetData = {
-    //   'type': _selectedType.code,
-    //   'date_from': _selectedDateRange!.start.toIso8601String(),
-    //   'date_to': _selectedDateRange!.end.toIso8601String(),
-    //   'amount': threshold,
-    //   if (_selectedType == BudgetType.category) 'category_id': _selectedCategoryId,
-    //   if (_selectedType == BudgetType.account) 'account_id': _selectedAccountId,
-    // };
-
+Future<void> _saveBudget() async {
+  if (!_formKey.currentState!.validate()) return;
+  
+  // Check if date range is selected
+  if (_selectedDateRange == null) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("Budget created for ${_selectedType.label}!"),
-        backgroundColor: Colors.green,
+      const SnackBar(content: Text("Please select a date range")),
+    );
+    return;
+  }
+
+  // Parse the amount safely
+  final cleanAmount = _amountController.text.replaceAll(',', '');
+  final threshold = double.tryParse(cleanAmount); 
+
+  if (threshold == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Invalid amount format")),
+    );
+    return;
+  }
+
+  // 1. Logic to get the correct Name and Icon
+  String budgetName = 'Overall Limit';
+  IconData budgetIcon = Icons.account_balance_wallet_rounded;
+  String typeLabel = _selectedType.label;
+
+  if (_selectedType == BudgetType.category) {
+    // Find the name of the selected category
+    final category = _categories.firstWhere(
+      (element) => element['id'] == _selectedCategoryId,
+      orElse: () => {'name': 'Unknown Category', 'icon': Icons.category},
+    );
+    budgetName = category['name'];
+    budgetIcon = category['icon'];
+  } else if (_selectedType == BudgetType.account) {
+    // Find the name of the selected account
+    final account = _accounts.firstWhere(
+      (element) => element['id'] == _selectedAccountId,
+      orElse: () => {'name': 'Unknown Account', 'icon': Icons.credit_card},
+    );
+    budgetName = account['name'];
+    budgetIcon = account['icon'];
+  }
+
+  // 2. Create the Budget Data Map
+  final newBudget = {
+    'id': DateTime.now().millisecondsSinceEpoch.toString(), // Unique ID
+    'name': budgetName,
+    'type': typeLabel,
+    'icon': budgetIcon,
+    'spent': 0.0, // Start with 0 spent
+    'amount': threshold,
+    'days_left': _selectedDateRange!.duration.inDays,
+  };
+
+  // 3. Show Success Message
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text("Budget created for $budgetName!"),
+      backgroundColor: Colors.green,
+    ),
+  );
+
+  Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BudgetOverviewPage(newBudget: newBudget),
       ),
     );
-    Navigator.pop(context);
   }
 
   @override
@@ -188,7 +217,7 @@ class _BudgetPageState extends State<BudgetPage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const BudgetOverviewPage(),
+                          builder: (context) => const BudgetOverviewPage(), // Passing empty map
                         ),
                       );
                     },
