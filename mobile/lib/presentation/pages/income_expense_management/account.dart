@@ -237,7 +237,28 @@ class _AccountPageState extends State<AccountPage> {
           _allTransactions = List<List<Map<String, dynamic>>>.from(
             cachedTransactions.map(
               (list) => List<Map<String, dynamic>>.from(
-                list.map((e) => Map<String, dynamic>.from(e)),
+                list.map((e) {
+                  final tx = Map<String, dynamic>.from(e);
+                  // Regenerate icon if missing
+                  if (tx['icon'] == null) {
+                    final isTransfer =
+                        (tx['type'] == 'transfer') ||
+                        ((tx['category'] ?? '').toString().toUpperCase() ==
+                            'TRANSFER');
+                    if (isTransfer) {
+                      tx['icon'] = tx['isExpense'] == true
+                          ? Icons.north_east_rounded
+                          : Icons.south_east_rounded;
+                    } else {
+                      final isExpense = tx['isExpense'] == true;
+                      tx['icon'] = _getTransactionIcon(
+                        isExpense,
+                        tx['category'],
+                      );
+                    }
+                  }
+                  return tx;
+                }),
               ),
             ),
           );
@@ -329,7 +350,7 @@ class _AccountPageState extends State<AccountPage> {
 
       // Save everything to cache for next time
       CacheService.save('accounts', _myAccounts);
-      CacheService.save('transactions', _allTransactions);
+      CacheService.save('transactions', _getSanitizedTransactions());
     } catch (e) {
       debugPrint('Error loading data: $e');
       setState(() => _isLoading = false);
@@ -366,6 +387,17 @@ class _AccountPageState extends State<AccountPage> {
     String amtString = tx['amount'].toString();
     String cleanString = amtString.replaceAll(RegExp(r'[^0-9.]'), '');
     return double.tryParse(cleanString) ?? 0.0;
+  }
+
+  /// Remove non-serializable fields (like IconData) before caching
+  List<List<Map<String, dynamic>>> _getSanitizedTransactions() {
+    return _allTransactions.map((txList) {
+      return txList.map((tx) {
+        final sanitized = Map<String, dynamic>.from(tx);
+        sanitized.remove('icon'); // Remove IconData which can't be serialized
+        return sanitized;
+      }).toList();
+    }).toList();
   }
 
   // --- LOGIC: DELETE ---
@@ -467,9 +499,7 @@ class _AccountPageState extends State<AccountPage> {
           final Set<int> affectedIndexes = {};
 
           for (int i = 0; i < _allTransactions.length; i++) {
-            final hasMatch = _allTransactions[i].any(
-              (item) => matchesTx(item),
-            );
+            final hasMatch = _allTransactions[i].any((item) => matchesTx(item));
             if (hasMatch) affectedIndexes.add(i);
           }
 
@@ -507,9 +537,7 @@ class _AccountPageState extends State<AccountPage> {
             }
           }
         } else {
-          _allTransactions[accountIndex].removeWhere(
-            (item) => matchesTx(item),
-          );
+          _allTransactions[accountIndex].removeWhere((item) => matchesTx(item));
 
           final updated = accountLookup[accountId];
           if (updated != null) {
@@ -526,7 +554,7 @@ class _AccountPageState extends State<AccountPage> {
 
       // Update caches to persist changes
       CacheService.save('accounts', _myAccounts);
-      CacheService.save('transactions', _allTransactions);
+      CacheService.save('transactions', _getSanitizedTransactions());
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1006,7 +1034,7 @@ class _AccountPageState extends State<AccountPage> {
       }
 
       // Save changes to cache
-      CacheService.save('transactions', _allTransactions);
+      CacheService.save('transactions', _getSanitizedTransactions());
       CacheService.save('accounts', _myAccounts);
 
       // Rebuild UI with new transactions
@@ -1501,7 +1529,10 @@ class _AccountPageState extends State<AccountPage> {
                           });
 
                           CacheService.save('accounts', _myAccounts);
-                          CacheService.save('transactions', _allTransactions);
+                          CacheService.save(
+                            'transactions',
+                            _getSanitizedTransactions(),
+                          );
 
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -1936,7 +1967,7 @@ class _AccountPageState extends State<AccountPage> {
           }
         });
         CacheService.save('accounts', _myAccounts);
-        CacheService.save('transactions', _allTransactions);
+        CacheService.save('transactions', _getSanitizedTransactions());
       }
 
       if (context.mounted) {
