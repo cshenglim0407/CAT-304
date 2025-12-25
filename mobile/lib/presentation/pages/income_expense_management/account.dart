@@ -260,9 +260,22 @@ class _AccountPageState extends State<AccountPage> {
             final amount = tx.amount.abs();
             final displayAmount =
                 (isExpense ? '- \$' : '+ \$') + amount.toStringAsFixed(2);
+            final bool isTransfer =
+                (tx.category ?? '').toString().toUpperCase() == 'TRANSFER';
+
+            final String? toAccountName = isTransfer &&
+                    (tx.title.toLowerCase().startsWith('to '))
+                ? tx.title.substring(3).trim()
+                : null;
+
+            final String? fromAccountName = isTransfer &&
+                    (tx.title.toLowerCase().startsWith('from '))
+                ? tx.title.substring(5).trim()
+                : null;
 
             txList.add({
-              'type': isExpense ? 'expense' : 'income',
+              'transactionId': tx.transactionId,
+              'type': isTransfer ? 'transfer' : (isExpense ? 'expense' : 'income'),
               'title': tx.title,
               'date': _formatDate(tx.date),
               'amount': displayAmount,
@@ -271,6 +284,8 @@ class _AccountPageState extends State<AccountPage> {
               'icon': tx.icon ?? _getTransactionIcon(isExpense, tx.category),
               'isRecurrent': false,
               'category': tx.category,
+              'toAccount': toAccountName,
+              'fromAccount': fromAccountName,
             });
           }
         }
@@ -329,7 +344,61 @@ class _AccountPageState extends State<AccountPage> {
     int accountIndex,
   ) async {
     String? transactionId = tx['transactionId']?.toString();
-    final String? accountId = _myAccounts[accountIndex]['id']?.toString();
+    String? accountId = _myAccounts[accountIndex]['id']?.toString();
+    final double amount = _parseAmount(tx);
+    final bool isTransfer = (tx['type'] == 'transfer') ||
+        ((tx['category'] ?? '').toString().toUpperCase() == 'TRANSFER');
+
+    String? _extractName(String? title, String prefix) {
+      if (title == null) return null;
+      if (title.toLowerCase().startsWith(prefix.toLowerCase()) &&
+          title.length > prefix.length) {
+        return title.substring(prefix.length).trim();
+      }
+      return null;
+    }
+
+    int? senderIndex;
+    int? receiverIndex;
+
+    if (isTransfer) {
+      if (tx['isExpense'] == true) {
+        senderIndex = accountIndex;
+        final String? receiverName = tx['toAccount'] ??
+            _extractName(tx['title']?.toString(), 'To ');
+        if (receiverName != null) {
+          final idx = _myAccounts.indexWhere(
+            (acc) => acc['name'] == receiverName,
+          );
+          receiverIndex = idx >= 0 ? idx : null;
+        }
+      } else {
+        receiverIndex = accountIndex;
+        final String? senderName = tx['fromAccount'] ??
+            _extractName(tx['title']?.toString(), 'From ');
+        if (senderName != null) {
+          final idx = _myAccounts.indexWhere(
+            (acc) => acc['name'] == senderName,
+          );
+          senderIndex = idx >= 0 ? idx : null;
+          if (senderIndex != null) {
+            accountId = _myAccounts[senderIndex]['id']?.toString();
+          }
+        }
+      }
+    }
+
+    bool _matchesTx(Map<String, dynamic> item) {
+      final String? itemId = item['transactionId']?.toString();
+      if (transactionId != null && itemId != null) {
+        return itemId == transactionId;
+      }
+      final bool sameTitle = (item['title'] ?? '') == (tx['title'] ?? '');
+      final bool sameDate = (item['date'] ?? '') == (tx['date'] ?? '');
+      final double itemAmount = _parseAmount(item);
+      final bool sameAmount = (itemAmount - amount).abs() < 0.01;
+      return sameTitle && sameDate && sameAmount;
+    }
 
     try {
       // If transactionId is missing, try to resolve it from backend
@@ -348,36 +417,78 @@ class _AccountPageState extends State<AccountPage> {
       if (transactionId != null && transactionId.isNotEmpty) {
         // Persist delete in backend
         await _deleteTransactionUseCase(transactionId);
+      }
 
-        // Reload account from DB to pick up trigger-updated balance
-        if (accountId != null && accountId.isNotEmpty) {
-          final userId = supabase.auth.currentUser?.id;
-          if (userId != null) {
-            final accounts = await _getAccounts(userId);
-            final updated = accounts.firstWhere(
-              (acc) => acc.id == accountId,
-              orElse: () => accounts.first,
-            );
-            if (!mounted) return;
-            setState(() {
-              _allTransactions[accountIndex].removeWhere((e) => e == tx);
-              _myAccounts[accountIndex]['current'] = updated.currentBalance;
-            });
+      // Reload accounts from DB to pick up trigger-updated balances
+      List<Account> refreshedAccounts = [];
+      final userId = supabase.auth.currentUser?.id;
+      if (userId != null) {
+        refreshedAccounts = await _getAccounts(userId);
+      }
+      final Map<String?, Account> accountLookup = {
+        for (final acc in refreshedAccounts) acc.id: acc,
+      };
+
+      if (!mounted) return;
+      setState(() {
+        if (isTransfer) {
+          // Find any accounts that contain this transfer (by id or fallback match)
+          final Set<int> affectedIndexes = {};
+
+          for (int i = 0; i < _allTransactions.length; i++) {
+            final hasMatch = _allTransactions[i].any((item) => _matchesTx(item));
+            if (hasMatch) affectedIndexes.add(i);
+          }
+
+          // Ensure sender/receiver indexes are also included (for cached legacy data)
+          if (senderIndex != null) affectedIndexes.add(senderIndex);
+          if (receiverIndex != null) affectedIndexes.add(receiverIndex);
+
+          for (final idx in affectedIndexes) {
+            if (idx < 0 || idx >= _allTransactions.length) continue;
+
+            // Capture one matched item to infer direction when DB data is missing
+            Map<String, dynamic>? matchedItem = _allTransactions[idx]
+                .cast<Map<String, dynamic>?>()
+                .firstWhere(
+                  (item) => item != null && _matchesTx(item),
+                  orElse: () => null,
+                );
+
+            _allTransactions[idx].removeWhere((item) => _matchesTx(item));
+
+            final accId = _myAccounts[idx]['id'];
+            final updated = accountLookup[accId];
+            if (updated != null) {
+              _myAccounts[idx]['current'] = updated.currentBalance;
+            } else if (matchedItem != null) {
+              // Fallback adjust when DB did not return balances
+              final bool wasExpense = matchedItem['isExpense'] == true;
+              if (wasExpense) {
+                _myAccounts[idx]['current'] =
+                    (_myAccounts[idx]['current'] ?? 0.0) + amount;
+              } else {
+                _myAccounts[idx]['current'] =
+                    (_myAccounts[idx]['current'] ?? 0.0) - amount;
+              }
+            }
+          }
+        } else {
+          _allTransactions[accountIndex]
+              .removeWhere((item) => _matchesTx(item));
+
+          final updated = accountLookup[accountId];
+          if (updated != null) {
+            _myAccounts[accountIndex]['current'] = updated.currentBalance;
+          } else {
+            if (tx['isExpense'] == true) {
+              _myAccounts[accountIndex]['current'] += amount;
+            } else {
+              _myAccounts[accountIndex]['current'] -= amount;
+            }
           }
         }
-      } else {
-        // Local-only: remove and adjust UI balance optimistically
-        if (!mounted) return;
-        setState(() {
-          _allTransactions[accountIndex].removeWhere((e) => e == tx);
-          final amount = _parseAmount(tx);
-          if (tx['isExpense'] == true) {
-            _myAccounts[accountIndex]['current'] += amount;
-          } else {
-            _myAccounts[accountIndex]['current'] -= amount;
-          }
-        });
-      }
+      });
 
       // Update caches to persist changes
       CacheService.save('accounts', _myAccounts);
@@ -771,6 +882,8 @@ class _AccountPageState extends State<AccountPage> {
           'icon': icon,
           'isRecurrent': result['isRecurrent'] ?? false,
           'category': result['category'],
+          'transactionId': transactionId,
+          'fromAccount': currentAccount['name'],
           'toAccount': result['toAccount'],
           'qty': result['quantity'],
           'unitPrice': result['unitPrice'],
@@ -815,7 +928,9 @@ class _AccountPageState extends State<AccountPage> {
                   .arrow_downward_rounded, // Icon pointing down for received money
               'isRecurrent': false,
               'category': 'Transfer',
-              'toAccount': null,
+              'transactionId': transactionId,
+              'fromAccount': senderName,
+              'toAccount': targetName,
             };
 
             // Add to Receiver
