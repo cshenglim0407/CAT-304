@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
-import 'package:cashlytics/presentation/widgets/index.dart'; 
+import 'package:cashlytics/presentation/widgets/index.dart';
+import 'package:cashlytics/presentation/pages/budget_threshold/budget_overview.dart';
 
 enum BudgetType {
   user('U', 'Overall', Icons.account_balance_wallet_rounded),
@@ -169,7 +170,10 @@ class _BudgetPageState extends State<BudgetPage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  AppBackButton(onPressed: () {  },), // Custom back button
+                  AppBackButton(
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  
                   Text(
                     "Create Goal",
                     style: AppTypography.headline3.copyWith(
@@ -177,7 +181,31 @@ class _BudgetPageState extends State<BudgetPage> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(width: 48), // Spacer for centering
+
+                  // 👇 CHANGED: Replaced SizedBox with an Icon Button
+                  IconButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const BudgetOverviewPage(),
+                        ),
+                      );
+                    },
+                    icon: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.getSurface(context),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.greyLight.withValues(alpha: 0.5)),
+                      ),
+                      child: Icon(
+                        Icons.list_alt_rounded, 
+                        color: AppColors.getTextPrimary(context),
+                        size: 20,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
