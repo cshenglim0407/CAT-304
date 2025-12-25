@@ -456,7 +456,7 @@ class _AccountPageState extends State<AccountPage> {
           } else if (result['type'] == 'income' && result['category'] != null) {
             result['icon'] = getIncomeIcon(result['category']);
           } else if (result['type'] == 'transfer') {
-            result['icon'] = Icons.arrow_outward_rounded;
+            result['icon'] = Icons.north_east_rounded;
           }
 
           _allTransactions[_currentCardIndex][index] = result;
@@ -729,7 +729,7 @@ class _AccountPageState extends State<AccountPage> {
       String title = result['itemName'] ?? result['title'] ?? 'Transaction';
 
       if (isTransfer) {
-        icon = Icons.arrow_outward_rounded;
+        icon = Icons.north_east_rounded;
         // FIX: Display "To [Receiver Name]" for the sender
         if (result['toAccount'] != null) {
           title = "To ${result['toAccount']}";

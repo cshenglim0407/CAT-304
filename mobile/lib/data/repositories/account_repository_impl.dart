@@ -136,12 +136,12 @@ class AccountRepositoryImpl implements AccountRepository {
             views.add(
               AccountTransactionView(
                 transactionId: transactionId,
-                title: 'Transfer to ${toAccount?['name'] ?? 'Account'}',
+                title: 'To ${toAccount?['name'] ?? 'Account'}',
                 date: createdAt,
                 amount: _parseAmount(transferData['amount']),
                 isExpense: true, // Deducting from this account
                 category: 'Transfer',
-                icon: Icons.arrow_upward,
+                icon: Icons.north_east_rounded,
               ),
             );
           }
@@ -175,12 +175,12 @@ class AccountRepositoryImpl implements AccountRepository {
           views.add(
             AccountTransactionView(
               transactionId: transactionId,
-              title: 'Transfer from ${fromAccount?['name'] ?? 'Account'}',
+              title: 'From ${fromAccount?['name'] ?? 'Account'}',
               date: createdAt,
               amount: _parseAmount(transfer['amount']),
               isExpense: false, // Adding to this account
               category: 'Transfer',
-              icon: Icons.arrow_downward,
+              icon: Icons.south_east_rounded,
             ),
           );
         }
