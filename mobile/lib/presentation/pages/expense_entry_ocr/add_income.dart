@@ -21,7 +21,8 @@ class AddIncomePage extends StatefulWidget {
 }
 
 class _AddIncomePageState extends State<AddIncomePage> {
-  final _transactionNameController = TextEditingController();
+  final TextEditingController _transactionNameController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _totalIncomeController = TextEditingController();
 
   double _totalIncome = 0.0;
@@ -51,6 +52,8 @@ class _AddIncomePageState extends State<AddIncomePage> {
 
   @override
   void dispose() {
+    _transactionNameController.dispose();
+    _descriptionController.dispose();
     _totalIncomeController.dispose();
     super.dispose();
   }
@@ -80,6 +83,8 @@ class _AddIncomePageState extends State<AddIncomePage> {
     final double amount = double.tryParse(amountText) ?? 0.0;
     if (amount <= 0) return;
 
+    final description = _descriptionController.text.trim();
+
     // 2. Prepare the simplified data object
     final newTransaction = {
       'title': _transactionNameController.text.trim().isNotEmpty 
@@ -90,6 +95,7 @@ class _AddIncomePageState extends State<AddIncomePage> {
       'isRecurrent': _isRecurrent, // The new boolean flag
       'date': DateTime.now(), // defaulting to now
       'accountName': _selectedAccount ?? widget.accountName,
+      'description': description.isNotEmpty ? description : null,
     };
 
     Navigator.pop(context, newTransaction);
@@ -236,6 +242,17 @@ class _AddIncomePageState extends State<AddIncomePage> {
               controller: _transactionNameController,
               decoration: CustomInputDecoration.simple(
                 "e.g. August Salary",
+                fieldColor,
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // --- 2b. Description (Optional) ---
+            const FormLabel(label: "Description (optional)", useGreyStyle: true),
+            TextField(
+              controller: _descriptionController,
+              decoration: CustomInputDecoration.simple(
+                "Add a description...",
                 fieldColor,
               ),
             ),

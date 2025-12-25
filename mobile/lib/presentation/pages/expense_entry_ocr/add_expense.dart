@@ -26,8 +26,9 @@ class AddExpensePage extends StatefulWidget {
 
 class _AddExpensePageState extends State<AddExpensePage> {
   // Controller for the overall Transaction Name (e.g. "Grocery Run")
-  final _transactionNameController = TextEditingController();
-  final _totalPriceController = TextEditingController();
+  final TextEditingController _transactionNameController = TextEditingController();
+  final TextEditingController _totalPriceController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
 
   // List of items
   final List<Map<String, TextEditingController>> _items = [];
@@ -49,6 +50,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
   void dispose() {
     _transactionNameController.dispose();
     _totalPriceController.dispose();
+    _descriptionController.dispose();
     for (var item in _items) {
       item['name']?.dispose();
       item['qty']?.dispose();
@@ -320,6 +322,17 @@ class _AddExpensePageState extends State<AddExpensePage> {
               controller: _transactionNameController,
               decoration: CustomInputDecoration.simple(
                 "e.g. Weekly Groceries",
+                fieldColor,
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // --- 2b. Description (Optional) ---
+            const FormLabel(label: "Description (optional)", useGreyStyle: true),
+            TextField(
+              controller: _descriptionController,
+              decoration: CustomInputDecoration.simple(
+                "Add a description...",
                 fieldColor,
               ),
             ),

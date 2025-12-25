@@ -21,6 +21,7 @@ class _AddTransferPageState extends State<AddTransferPage> {
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _transactionNameController =
       TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
 
   String? _selectedToAccount;
   late List<String> _validToAccounts;
@@ -44,6 +45,8 @@ class _AddTransferPageState extends State<AddTransferPage> {
   @override
   void dispose() {
     _amountController.dispose();
+    _transactionNameController.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 
@@ -54,6 +57,8 @@ class _AddTransferPageState extends State<AddTransferPage> {
     final double amount = double.tryParse(amountText) ?? 0.0;
     if (amount <= 0) return;
 
+    final description = _descriptionController.text.trim();
+
     final transferData = {
       'title': _transactionNameController.text.trim().isNotEmpty
           ? _transactionNameController.text.trim()
@@ -63,6 +68,7 @@ class _AddTransferPageState extends State<AddTransferPage> {
       'toAccount': _selectedToAccount,
       'date': DateTime.now(),
       'type': 'transfer',
+      'description': description.isNotEmpty ? description : null,
     };
 
     Navigator.pop(context, transferData);
@@ -193,6 +199,20 @@ class _AddTransferPageState extends State<AddTransferPage> {
             const SizedBox(height: 20),
             Divider(color: AppColors.greyText.withValues(alpha: 0.3)),
             const SizedBox(height: 20),
+
+            // --- 2b. Description (Optional) ---
+            const FormLabel(
+              label: "Description (optional)",
+              useGreyStyle: true,
+            ),
+            TextField(
+              controller: _descriptionController,
+              decoration: CustomInputDecoration.simple(
+                "Add a description...",
+                fieldColor,
+              ),
+            ),
+            const SizedBox(height: 30),
 
             // --- 3. Amount Input ---
             Container(
