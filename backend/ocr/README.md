@@ -1,25 +1,27 @@
-## OCR Backend
+## OCR API Contract
 
 ### Endpoint
 
 POST /ocr
 
-### Input
+### Request
 
-- Multipart form
+- Content-Type: multipart/form-data
 - Field: receipt (image file)
 
-### Output
+### Response (success)
 
-- merchant_name
-- total_amount
-- expense_date
-- confidence_score
-- scanned_at
-- ocr_raw_text
+{
+"success": true,
+"merchant_name": string | null,
+"total_amount": number | null,
+"expense_date": string | null,
+"confidence_score": number,
+"scanned_at": string (ISO),
+"ocr_raw_text": string
+}
 
 ### Notes
 
-- Uses OCR.space
-- Confidence is heuristic-based
-- Raw text is always preserved
+- Backend does NOT save data
+- Flutter should allow user to edit fields before saving
