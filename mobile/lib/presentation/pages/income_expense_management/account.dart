@@ -1,10 +1,15 @@
-import 'package:cashlytics/core/utils/string_case_formatter.dart';
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:cashlytics/core/utils/math_formatter.dart';
+import 'package:cashlytics/core/utils/string_case_formatter.dart';
 import 'package:cashlytics/core/services/supabase/client.dart';
-import 'package:cashlytics/core/services/cache/cache_service.dart';
+import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
+import 'package:cashlytics/core/services/supabase/auth/auth_state_listener.dart';
 import 'package:cashlytics/core/services/supabase/database/database_service.dart';
+import 'package:cashlytics/core/services/cache/cache_service.dart';
 
 import 'package:cashlytics/domain/repositories/account_repository.dart';
 import 'package:cashlytics/data/repositories/account_repository_impl.dart';
@@ -41,6 +46,7 @@ import 'package:cashlytics/presentation/themes/typography.dart';
 import 'package:cashlytics/presentation/widgets/index.dart';
 import 'package:cashlytics/presentation/widgets/account_card.dart';
 
+import 'package:cashlytics/presentation/pages/user_management/login.dart';
 import 'package:cashlytics/presentation/pages/expense_entry_ocr/add_income.dart';
 import 'package:cashlytics/presentation/pages/expense_entry_ocr/add_transfer.dart';
 import 'package:cashlytics/presentation/pages/expense_entry_ocr/add_expense.dart';
@@ -58,7 +64,13 @@ class _AccountPageState extends State<AccountPage> {
   int _selectedIndex = 1;
   int _currentCardIndex = 0;
   late PageController _pageController;
+
   bool _isLoading = true;
+  bool _redirecting = false;
+
+  late final StreamSubscription<AuthState> _authStateSubscription;
+  static const String _userProfileCacheKey = 'user_profile_cache';
+  late final AuthService _authService;
 
   // Database service
   final DatabaseService _databaseService = const DatabaseService();
@@ -101,8 +113,43 @@ class _AccountPageState extends State<AccountPage> {
   @override
   void initState() {
     super.initState();
+
+    // Check if user is signed in at startup
+    final user = supabase.auth.currentUser;
+    if (user == null) {
+      // User not signed in, redirect immediately
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+        );
+      }
+      return;
+    }
+
     _initializeRepositories();
     _loadData();
+
+    _authStateSubscription = listenForSignedOutRedirect(
+      shouldRedirect: () => !_redirecting,
+      onRedirect: () {
+        if (!mounted) return;
+        setState(() => _redirecting = true);
+        CacheService.remove(_userProfileCacheKey);
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+        );
+      },
+      onError: (error) {
+        debugPrint('Auth State Listener Error: $error');
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    _authStateSubscription.cancel();
+    super.dispose();
   }
 
   /// Ensure account map has valid UUIDs for id and user_id.
@@ -187,12 +234,6 @@ class _AccountPageState extends State<AccountPage> {
     }
   }
 
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
 
@@ -263,19 +304,21 @@ class _AccountPageState extends State<AccountPage> {
             final bool isTransfer =
                 (tx.category ?? '').toString().toUpperCase() == 'TRANSFER';
 
-            final String? toAccountName = isTransfer &&
-                    (tx.title.toLowerCase().startsWith('to '))
+            final String? toAccountName =
+                isTransfer && (tx.title.toLowerCase().startsWith('to '))
                 ? tx.title.substring(3).trim()
                 : null;
 
-            final String? fromAccountName = isTransfer &&
-                    (tx.title.toLowerCase().startsWith('from '))
+            final String? fromAccountName =
+                isTransfer && (tx.title.toLowerCase().startsWith('from '))
                 ? tx.title.substring(5).trim()
                 : null;
 
             txList.add({
               'transactionId': tx.transactionId,
-              'type': isTransfer ? 'transfer' : (isExpense ? 'expense' : 'income'),
+              'type': isTransfer
+                  ? 'transfer'
+                  : (isExpense ? 'expense' : 'income'),
               'title': tx.title,
               'date': _formatDate(tx.date),
               'amount': displayAmount,
@@ -346,7 +389,8 @@ class _AccountPageState extends State<AccountPage> {
     String? transactionId = tx['transactionId']?.toString();
     String? accountId = _myAccounts[accountIndex]['id']?.toString();
     final double amount = _parseAmount(tx);
-    final bool isTransfer = (tx['type'] == 'transfer') ||
+    final bool isTransfer =
+        (tx['type'] == 'transfer') ||
         ((tx['category'] ?? '').toString().toUpperCase() == 'TRANSFER');
 
     String? _extractName(String? title, String prefix) {
@@ -364,8 +408,8 @@ class _AccountPageState extends State<AccountPage> {
     if (isTransfer) {
       if (tx['isExpense'] == true) {
         senderIndex = accountIndex;
-        final String? receiverName = tx['toAccount'] ??
-            _extractName(tx['title']?.toString(), 'To ');
+        final String? receiverName =
+            tx['toAccount'] ?? _extractName(tx['title']?.toString(), 'To ');
         if (receiverName != null) {
           final idx = _myAccounts.indexWhere(
             (acc) => acc['name'] == receiverName,
@@ -374,8 +418,8 @@ class _AccountPageState extends State<AccountPage> {
         }
       } else {
         receiverIndex = accountIndex;
-        final String? senderName = tx['fromAccount'] ??
-            _extractName(tx['title']?.toString(), 'From ');
+        final String? senderName =
+            tx['fromAccount'] ?? _extractName(tx['title']?.toString(), 'From ');
         if (senderName != null) {
           final idx = _myAccounts.indexWhere(
             (acc) => acc['name'] == senderName,
@@ -436,7 +480,9 @@ class _AccountPageState extends State<AccountPage> {
           final Set<int> affectedIndexes = {};
 
           for (int i = 0; i < _allTransactions.length; i++) {
-            final hasMatch = _allTransactions[i].any((item) => _matchesTx(item));
+            final hasMatch = _allTransactions[i].any(
+              (item) => _matchesTx(item),
+            );
             if (hasMatch) affectedIndexes.add(i);
           }
 
@@ -474,8 +520,9 @@ class _AccountPageState extends State<AccountPage> {
             }
           }
         } else {
-          _allTransactions[accountIndex]
-              .removeWhere((item) => _matchesTx(item));
+          _allTransactions[accountIndex].removeWhere(
+            (item) => _matchesTx(item),
+          );
 
           final updated = accountLookup[accountId];
           if (updated != null) {
