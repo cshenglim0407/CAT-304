@@ -2716,7 +2716,13 @@ class _AccountPageState extends State<AccountPage> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(
+              textStyle: const TextStyle(fontSize: 16),
+              foregroundColor: Colors.red,
+              elevation: 0,
+              shadowColor: Colors.transparent,
+              side: BorderSide.none,
+            ),
             onPressed: () async {
               Navigator.pop(ctx);
               await _deleteAccount(context, account);
