@@ -300,9 +300,28 @@ class _ProfilePageState extends State<ProfilePage> {
           currentUserProfile = null;
           await CacheService.remove('user_profile_cache');
           if (mounted) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const LoginPage()),
-            );
+            // Use addPostFrameCallback to delay navigation until after frame is complete
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                // Show loading dialog while initializing
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                );
+                // Delay navigation to allow UI to render
+                Future.delayed(const Duration(milliseconds: 300), () {
+                  if (mounted) {
+                    Navigator.of(context).pop(); // Close loading dialog
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(builder: (context) => const LoginPage()),
+                    );
+                  }
+                });
+              }
+            });
           } else {
             debugPrint('User logged out but cache available');
           }
@@ -377,9 +396,28 @@ class _ProfilePageState extends State<ProfilePage> {
         if (!mounted) return;
         setState(() => _redirecting = true);
         CacheService.remove('user_profile_cache');
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const LoginPage()),
-        );
+        // Use addPostFrameCallback to delay navigation until after frame is complete
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            // Show loading dialog while initializing
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) => const Center(
+                child: CircularProgressIndicator(),
+              ),
+            );
+            // Delay navigation to allow UI to render
+            Future.delayed(const Duration(milliseconds: 300), () {
+              if (mounted) {
+                Navigator.of(context).pop(); // Close loading dialog
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                );
+              }
+            });
+          }
+        });
       },
       onError: (error) {
         debugPrint('Auth State Listener Error: $error');

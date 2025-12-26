@@ -118,9 +118,28 @@ class _AccountPageState extends State<AccountPage> {
     if (user == null) {
       // User not signed in, redirect immediately
       if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const LoginPage()),
-        );
+        // Use addPostFrameCallback to delay navigation until after frame is complete
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            // Show loading dialog while initializing
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) => const Center(
+                child: CircularProgressIndicator(),
+              ),
+            );
+            // Delay navigation to allow UI to render
+            Future.delayed(const Duration(milliseconds: 300), () {
+              if (mounted) {
+                Navigator.of(context).pop(); // Close loading dialog
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                );
+              }
+            });
+          }
+        });
       }
       return;
     }
@@ -134,9 +153,28 @@ class _AccountPageState extends State<AccountPage> {
         if (!mounted) return;
         setState(() => _redirecting = true);
         CacheService.remove(_userProfileCacheKey);
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const LoginPage()),
-        );
+        // Use addPostFrameCallback to delay navigation until after frame is complete
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            // Show loading dialog while initializing
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) => const Center(
+                child: CircularProgressIndicator(),
+              ),
+            );
+            // Delay navigation to allow UI to render
+            Future.delayed(const Duration(milliseconds: 300), () {
+              if (mounted) {
+                Navigator.of(context).pop(); // Close loading dialog
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                );
+              }
+            });
+          }
+        });
       },
       onError: (error) {
         debugPrint('Auth State Listener Error: $error');

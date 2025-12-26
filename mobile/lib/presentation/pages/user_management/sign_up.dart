@@ -140,9 +140,28 @@ class _SignUpPageState extends State<SignUpPage> {
       onRedirect: () {
         if (!mounted) return;
         setState(() => _redirecting = true);
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const HomePage()),
-        );
+        // Use addPostFrameCallback to delay navigation until after frame is complete
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            // Show loading dialog while initializing
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) => const Center(
+                child: CircularProgressIndicator(),
+              ),
+            );
+            // Delay navigation to allow UI to render
+            Future.delayed(const Duration(milliseconds: 300), () {
+              if (mounted) {
+                Navigator.of(context).pop(); // Close loading dialog
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (context) => const HomePage()),
+                );
+              }
+            });
+          }
+        });
       },
       onError: (error) {
         if (mounted) {
