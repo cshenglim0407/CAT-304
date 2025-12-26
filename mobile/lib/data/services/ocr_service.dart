@@ -3,12 +3,14 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../models/ocr_result.dart';
+import 'package:cashlytics/config/app_config.dart';
 
 class OCRService {
-  static const String ocrUrl = 'http://10.0.2.2:8000/ocr';
-
-  static Future<OcrResult> scanReceipt(File imageFile) async {
-    final request = http.MultipartRequest('POST', Uri.parse(ocrUrl));
+  Future<OcrResult> scanReceipt(File imageFile) async {
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse(AppConfig.ocrEndpoint),
+    );
 
     request.files.add(
       await http.MultipartFile.fromPath('receipt', imageFile.path),
@@ -21,7 +23,6 @@ class OCRService {
       throw Exception('OCR failed: ${response.body}');
     }
 
-    final Map<String, dynamic> jsonBody = json.decode(response.body);
-    return OcrResult.fromJson(jsonBody);
+    return OcrResult.fromJson(json.decode(response.body));
   }
 }

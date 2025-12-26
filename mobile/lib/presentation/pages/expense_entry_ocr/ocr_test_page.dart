@@ -12,6 +12,8 @@ class OCRTestPage extends StatefulWidget {
 }
 
 class _OCRTestPageState extends State<OCRTestPage> {
+  final OCRService _ocrService = OCRService();
+
   OcrResult? _ocrResult;
   bool _loading = false;
 
@@ -25,7 +27,7 @@ class _OCRTestPageState extends State<OCRTestPage> {
     });
 
     try {
-      final result = await OCRService.scanReceipt(image);
+      final result = await _ocrService.scanReceipt(image);
       if (!mounted) return;
       setState(() {
         _ocrResult = result;
