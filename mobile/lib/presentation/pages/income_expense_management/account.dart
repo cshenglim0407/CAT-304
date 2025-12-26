@@ -391,6 +391,22 @@ class _AccountPageState extends State<AccountPage> {
     return double.tryParse(cleanString) ?? 0.0;
   }
 
+  /// Parse amount from various types (double, int, String, Map)
+  double _parseAmountValue(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) {
+      String cleanString = value.replaceAll(RegExp(r'[^0-9.]'), '');
+      return double.tryParse(cleanString) ?? 0.0;
+    }
+    if (value is Map) {
+      // If it's a map, extract the amount field
+      return _parseAmount(value as Map<String, dynamic>);
+    }
+    return 0.0;
+  }
+
   /// Remove non-serializable fields (like IconData) before caching
   List<List<Map<String, dynamic>>> _getSanitizedTransactions() {
     return _allTransactions.map((txList) {
@@ -594,6 +610,161 @@ class _AccountPageState extends State<AccountPage> {
     return null;
   }
 
+  /// Fetch complete transaction details from database
+  Future<Map<String, dynamic>?> _fetchCompleteTransactionDetails(
+    String transactionId,
+  ) async {
+    try {
+      // Fetch transaction record
+      final txData = await _databaseService.fetchSingle(
+        'transaction',
+        matchColumn: 'transaction_id',
+        matchValue: transactionId,
+      );
+
+      if (txData == null) return null;
+
+      final type = txData['type'] as String;
+      final name = txData['name'] as String;
+      final description = txData['description'] as String?;
+      final accountId = txData['account_id'] as String;
+      final createdAt =
+          DateTime.tryParse(txData['created_at'] as String? ?? '') ??
+          DateTime.now();
+
+      Map<String, dynamic> completeData = {
+        'transactionId': transactionId,
+        'title': name,
+        'description': description,
+        'date': _formatDate(createdAt),
+        'rawDate': createdAt,
+      };
+
+      if (type == 'I') {
+        // Income
+        final incomeData = await _databaseService.fetchSingle(
+          'income',
+          matchColumn: 'transaction_id',
+          matchValue: transactionId,
+        );
+
+        if (incomeData != null) {
+          final amount = _parseAmountValue(incomeData['amount']);
+          completeData.addAll({
+            'type': 'income',
+            'rawAmount': amount,
+            'amount': '+ \$${amount.toStringAsFixed(2)}',
+            'isExpense': false,
+            'category': incomeData['category'] as String?,
+            'isRecurrent': incomeData['is_recurrent'] as bool? ?? false,
+            'icon': getIncomeIcon(incomeData['category'] as String?),
+          });
+        }
+      } else if (type == 'E') {
+        // Expense
+        final expenseData = await _databaseService.fetchSingle(
+          'expenses',
+          matchColumn: 'transaction_id',
+          matchValue: transactionId,
+        );
+
+        if (expenseData != null) {
+          final categoryId = expenseData['expense_cat_id'] as String?;
+          final categoryData = await _databaseService.fetchSingle(
+            'expense_category',
+            matchColumn: 'expense_cat_id',
+            matchValue: categoryId,
+          );
+          final categoryName = categoryData?['name'] as String?;
+          final amount = _parseAmountValue(expenseData['amount']);
+
+          // Fetch expense items
+          final expenseItems = await _databaseService.fetchAll(
+            'expense_items',
+            filters: {'transaction_id': transactionId},
+          );
+
+          // Format items for the edit page
+          final List<Map<String, dynamic>> items = expenseItems.map((item) {
+            return {
+              'name': item['item_name'] as String?,
+              'itemName': item['item_name'] as String?,
+              'qty': item['qty'] as int?,
+              'quantity': item['qty'] as int?,
+              'unitPrice': _parseAmountValue(item['unit_price']),
+              'unit_price': _parseAmountValue(item['unit_price']),
+              'price': _parseAmountValue(item['price']),
+            };
+          }).toList();
+
+          completeData.addAll({
+            'type': 'expense',
+            'rawAmount': amount,
+            'amount': '- \$${amount.toStringAsFixed(2)}',
+            'isExpense': true,
+            'category': categoryName ?? 'OTHER',
+            'icon': getExpenseIcon(categoryName),
+            'items': items,
+            'itemName': items.isNotEmpty ? items[0]['name'] : null,
+          });
+        }
+      } else if (type == 'T') {
+        // Transfer
+        final transferData = await _databaseService.fetchSingle(
+          'transfer',
+          matchColumn: 'transaction_id',
+          matchValue: transactionId,
+        );
+
+        if (transferData != null) {
+          final fromAccountId = transferData['from_account_id'] as String;
+          final toAccountId = transferData['to_account_id'] as String;
+          final amount = _parseAmountValue(transferData['amount']);
+
+          // Fetch account names
+          final fromAccountData = await _databaseService.fetchSingle(
+            'accounts',
+            matchColumn: 'account_id',
+            matchValue: fromAccountId,
+            columns: 'name',
+          );
+          final toAccountData = await _databaseService.fetchSingle(
+            'accounts',
+            matchColumn: 'account_id',
+            matchValue: toAccountId,
+            columns: 'name',
+          );
+
+          final fromAccountName = fromAccountData?['name'] as String?;
+          final toAccountName = toAccountData?['name'] as String?;
+
+          // Determine if it's expense or income for current account
+          final isExpense = accountId == fromAccountId;
+
+          completeData.addAll({
+            'type': 'transfer',
+            'rawAmount': amount,
+            'amount': '${isExpense ? '-' : '+'} \$${amount.toStringAsFixed(2)}',
+            'isExpense': isExpense,
+            'category': 'TRANSFER',
+            'fromAccount': fromAccountName,
+            'toAccount': toAccountName,
+            'fromAccountId': fromAccountId,
+            'toAccountId': toAccountId,
+            'icon': isExpense
+                ? Icons.north_east_rounded
+                : Icons.south_east_rounded,
+          });
+        }
+      }
+
+      return completeData;
+    } catch (e) {
+      debugPrint('Error fetching complete transaction details: $e');
+      return null;
+    }
+  }
+
   // --- LOGIC: EDIT (now routes to Add* pages with context) ---
   Future<void> _editTransaction(Map<String, dynamic> oldTx) async {
     final List<String> allAccountNames = _myAccounts
@@ -628,30 +799,50 @@ class _AccountPageState extends State<AccountPage> {
       }
     }
 
+    // Fetch complete transaction details from database
+    Map<String, dynamic> completeData = oldTx;
+    if (oldTx['transactionId'] != null) {
+      final fetchedData = await _fetchCompleteTransactionDetails(
+        oldTx['transactionId'] as String,
+      );
+      if (fetchedData != null) {
+        completeData = fetchedData;
+      } else {
+        debugPrint(
+          'Failed to fetch complete transaction details, using cached data',
+        );
+      }
+    }
+
     // Decide which page to open based on type
     Widget page;
-    final String type = (oldTx['type'] ?? '').toString();
+    final String type = (completeData['type'] ?? '').toString();
     if (type == 'income') {
       page = AddIncomePage(
         accountName: currentAccountName,
         availableAccounts: allAccountNames,
-        initialData: oldTx,
+        initialData: completeData,
       );
     } else if (type == 'expense') {
       // Use existing expense categories
       page = AddExpensePage(
         accountName: currentAccountName,
         availableAccounts: allAccountNames,
-        category: (oldTx['category'] ?? 'OTHER').toString(),
+        category: (completeData['category'] ?? 'OTHER').toString(),
         availableCategories: _expenseCategories,
-        initialData: oldTx,
+        initialData: completeData,
       );
     } else {
-      // transfer
+      // transfer - determine if current account is sender or receiver
+      final bool isCurrentAccountSender = completeData['isExpense'] == true;
+      final String actualFromAccount = isCurrentAccountSender
+          ? currentAccountName
+          : (completeData['fromAccount']?.toString() ?? currentAccountName);
+
       page = AddTransferPage(
-        fromAccountName: currentAccountName,
+        fromAccountName: actualFromAccount,
         availableAccounts: allAccountNames,
-        initialData: oldTx,
+        initialData: completeData,
       );
     }
 
@@ -668,7 +859,7 @@ class _AccountPageState extends State<AccountPage> {
           ? type
           : ((result['type'] ?? '').toString());
 
-      final bool isExpenseForCurrent = oldTx['isExpense'] == true;
+      final bool isExpenseForCurrent = completeData['isExpense'] == true;
 
       // Extract and format core fields
       final dynamic amtDyn = result['amount'];
@@ -716,41 +907,226 @@ class _AccountPageState extends State<AccountPage> {
         'icon': icon,
         'isRecurrent': result['isRecurrent'] ?? false,
         'category': result['category'],
-        'transactionId': result['transactionId'] ?? oldTx['transactionId'],
-        'fromAccount': result['fromAccount'] ?? oldTx['fromAccount'],
-        'toAccount': result['toAccount'] ?? oldTx['toAccount'],
-        'qty': result['quantity'] ?? oldTx['qty'],
-        'unitPrice': result['unitPrice'] ?? oldTx['unitPrice'],
-        'items': result['items'] ?? oldTx['items'],
-        'description': result['description'] ?? oldTx['description'],
+        'transactionId':
+            result['transactionId'] ?? completeData['transactionId'],
+        'fromAccount': result['fromAccount'] ?? completeData['fromAccount'],
+        'toAccount': result['toAccount'] ?? completeData['toAccount'],
+        'qty': result['quantity'] ?? completeData['qty'],
+        'unitPrice': result['unitPrice'] ?? completeData['unitPrice'],
+        'items': result['items'] ?? completeData['items'],
+        'description': result['description'] ?? completeData['description'],
       };
 
       setState(() {
-        // 1. Update List with sanitized data
-        final index = _allTransactions[_currentCardIndex].indexOf(oldTx);
-        if (index != -1) {
-          _allTransactions[_currentCardIndex][index] = sanitized;
-        }
-
         // 2. Adjust Balance using numeric raw values
-        double oldRaw = _parseAmount(oldTx);
-        if (isExpenseForCurrent) {
-          _myAccounts[_currentCardIndex]['current'] += oldRaw;
-          _myAccounts[_currentCardIndex]['current'] -= newRaw;
+        double oldRaw = _parseAmount(completeData);
+
+        // Handle transfer: recalculate balance effects
+        if (resolvedType == 'transfer') {
+          final String? oldFromAccount = completeData['fromAccount']
+              ?.toString();
+          final String? oldToAccount = completeData['toAccount']?.toString();
+          final String? newFromAccount = result['fromAccount']?.toString();
+          final String? newToAccount = result['toAccount']?.toString();
+
+          // Determine if current account was sender or receiver in old transfer
+          final bool isCurrentOldSender = completeData['isExpense'] == true;
+
+          // Revert old transfer effects
+          if (isCurrentOldSender) {
+            // Current account was sender: add back the old amount (undo deduction)
+            _myAccounts[_currentCardIndex]['current'] =
+                (_myAccounts[_currentCardIndex]['current'] ?? 0.0) + oldRaw;
+          } else {
+            // Current account was receiver: subtract the old amount (undo addition)
+            _myAccounts[_currentCardIndex]['current'] =
+                (_myAccounts[_currentCardIndex]['current'] ?? 0.0) - oldRaw;
+          }
+
+          // Undo effects on the other account involved in old transfer
+          if (isCurrentOldSender && oldToAccount != null) {
+            // Was sender, so undo receiver's addition
+            final oldReceiverIndex = _myAccounts.indexWhere(
+              (acc) => acc['name'] == oldToAccount,
+            );
+            if (oldReceiverIndex != -1) {
+              _myAccounts[oldReceiverIndex]['current'] =
+                  (_myAccounts[oldReceiverIndex]['current'] ?? 0.0) - oldRaw;
+            }
+          } else if (!isCurrentOldSender && oldFromAccount != null) {
+            // Was receiver, so undo sender's deduction
+            final oldSenderIndex = _myAccounts.indexWhere(
+              (acc) => acc['name'] == oldFromAccount,
+            );
+            if (oldSenderIndex != -1) {
+              _myAccounts[oldSenderIndex]['current'] =
+                  (_myAccounts[oldSenderIndex]['current'] ?? 0.0) + oldRaw;
+            }
+          }
+
+          // Apply new transfer effects
+          // Find sender and receiver accounts
+          int? newSenderIndex;
+          int? newReceiverIndex;
+
+          if (newFromAccount != null) {
+            newSenderIndex = _myAccounts.indexWhere(
+              (acc) => acc['name'] == newFromAccount,
+            );
+          }
+
+          if (newToAccount != null) {
+            newReceiverIndex = _myAccounts.indexWhere(
+              (acc) => acc['name'] == newToAccount,
+            );
+          }
+
+          // Deduct from sender
+          if (newSenderIndex != null && newSenderIndex != -1) {
+            _myAccounts[newSenderIndex]['current'] =
+                (_myAccounts[newSenderIndex]['current'] ?? 0.0) - newRaw;
+
+            // Update or add new transfer to sender's transaction list (if sender is not current account)
+            if (newSenderIndex != _currentCardIndex) {
+              final senderTxIndex = _allTransactions[newSenderIndex].indexWhere(
+                (tx) => tx['transactionId'] == sanitized['transactionId'],
+              );
+              final newSenderTx = {
+                'transactionId': sanitized['transactionId'],
+                'type': 'transfer',
+                'title': 'To ${newToAccount ?? 'Unknown'}',
+                'date': sanitized['date'],
+                'amount': '- \$${newRaw.toStringAsFixed(2)}',
+                'rawAmount': newRaw,
+                'isExpense': true,
+                'icon': Icons.north_west_rounded,
+                'category': 'TRANSFER',
+                'fromAccount': newFromAccount,
+                'toAccount': newToAccount,
+              };
+              if (senderTxIndex != -1) {
+                // Update existing transaction
+                _allTransactions[newSenderIndex][senderTxIndex] = newSenderTx;
+              } else {
+                // Add new transaction if it doesn't exist
+                _allTransactions[newSenderIndex].add(newSenderTx);
+              }
+            } else {
+              // Current account is the sender: update transaction with sender perspective
+              final index = _allTransactions[_currentCardIndex].indexWhere(
+                (item) => item['transactionId'] == completeData['transactionId'],
+              );
+              if (index != -1) {
+                _allTransactions[_currentCardIndex][index] = {
+                  ...sanitized,
+                  'title': 'To ${newToAccount ?? 'Unknown'}',
+                  'amount': '- \$${newRaw.toStringAsFixed(2)}',
+                  'rawAmount': newRaw,
+                  'isExpense': true,
+                };
+              }
+            }
+          }
+
+          // Add to receiver
+          if (newReceiverIndex != null && newReceiverIndex != -1) {
+            _myAccounts[newReceiverIndex]['current'] =
+                (_myAccounts[newReceiverIndex]['current'] ?? 0.0) + newRaw;
+
+            // Update or add new transfer to receiver's transaction list
+            if (newReceiverIndex != _currentCardIndex) {
+              final receiverTxIndex = _allTransactions[newReceiverIndex].indexWhere(
+                (tx) => tx['transactionId'] == sanitized['transactionId'],
+              );
+              final newReceiverTx = {
+                'transactionId': sanitized['transactionId'],
+                'type': 'transfer',
+                'title': 'From ${newFromAccount ?? 'Unknown'}',
+                'date': sanitized['date'],
+                'amount': '+ \$${newRaw.toStringAsFixed(2)}',
+                'rawAmount': newRaw,
+                'isExpense': false,
+                'icon': Icons.south_east_rounded,
+                'category': 'TRANSFER',
+                'fromAccount': newFromAccount,
+                'toAccount': newToAccount,
+              };
+              if (receiverTxIndex != -1) {
+                // Update existing transaction
+                _allTransactions[newReceiverIndex][receiverTxIndex] = newReceiverTx;
+              } else {
+                // Add new transaction if it doesn't exist
+                _allTransactions[newReceiverIndex].add(newReceiverTx);
+              }
+            } else {
+              // Current account is the receiver: update transaction with receiver perspective
+              final index = _allTransactions[_currentCardIndex].indexWhere(
+                (item) => item['transactionId'] == completeData['transactionId'],
+              );
+              if (index != -1) {
+                _allTransactions[_currentCardIndex][index] = {
+                  ...sanitized,
+                  'title': 'From ${newFromAccount ?? 'Unknown'}',
+                  'amount': '+ \$${newRaw.toStringAsFixed(2)}',
+                  'rawAmount': newRaw,
+                  'isExpense': false,
+                };
+              }
+            }
+          }
         } else {
-          _myAccounts[_currentCardIndex]['current'] -= oldRaw;
-          _myAccounts[_currentCardIndex]['current'] += newRaw;
+          // Non-transfer transactions
+          if (isExpenseForCurrent) {
+            _myAccounts[_currentCardIndex]['current'] += oldRaw;
+            _myAccounts[_currentCardIndex]['current'] -= newRaw;
+          } else {
+            _myAccounts[_currentCardIndex]['current'] -= oldRaw;
+            _myAccounts[_currentCardIndex]['current'] += newRaw;
+          }
         }
       });
+
+      // Update caches to persist changes
+      CacheService.save('accounts', _myAccounts);
+      CacheService.save('transactions', _getSanitizedTransactions());
 
       try {
         await _persistEditedTransaction(
           sanitized: sanitized,
-          oldTx: oldTx,
+          oldTx: completeData,
           isExpenseForCurrent: isExpenseForCurrent,
           isTransferType: resolvedType == 'transfer',
           newRawAmount: newRaw,
         );
+
+        // Reload account balances from database for transfers to sync with trigger updates
+        if (resolvedType == 'transfer') {
+          List<Account> refreshedAccounts = [];
+          final userId = supabase.auth.currentUser?.id;
+          if (userId != null) {
+            refreshedAccounts = await _getAccounts(userId);
+          }
+          final Map<String?, Account> accountLookup = {
+            for (final acc in refreshedAccounts) acc.id: acc,
+          };
+
+          if (mounted) {
+            setState(() {
+              // Update all account balances from database
+              for (int i = 0; i < _myAccounts.length; i++) {
+                final accId = _myAccounts[i]['id'];
+                final updated = accountLookup[accId];
+                if (updated != null) {
+                  _myAccounts[i]['current'] = updated.currentBalance;
+                }
+              }
+            });
+
+            // Update caches again with refreshed balances
+            CacheService.save('accounts', _myAccounts);
+          }
+        }
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("Transaction updated successfully")),
@@ -881,9 +1257,6 @@ class _AccountPageState extends State<AccountPage> {
         currency: 'MYR',
       );
 
-      debugPrint(
-        'Saving transaction: accountId=$accountId, name=$transactionName, type=${transactionRecord.type}',
-      );
       final savedTransaction = await _upsertTransaction(transactionRecord);
       final String? transactionId = savedTransaction.id;
 
@@ -891,15 +1264,11 @@ class _AccountPageState extends State<AccountPage> {
         throw Exception('Transaction saved but ID is null or empty');
       }
 
-      debugPrint('Transaction saved with ID: $transactionId');
-
       // Validate amount
       final amount = result['amount'];
       if (amount == null) {
         throw Exception('Amount is required');
       }
-
-      debugPrint('Amount validated: $amount');
 
       // Save type-specific details
       if (isTransfer) {
@@ -932,9 +1301,7 @@ class _AccountPageState extends State<AccountPage> {
               fromAccountId: fromAccountId,
               toAccountId: toAccountId,
             );
-            debugPrint(
-              'Saving transfer with transactionId: $transactionId, from: $fromAccountId, to: $toAccountId',
-            );
+
             await _upsertTransfer(transfer);
           } else {
             debugPrint(
@@ -954,26 +1321,17 @@ class _AccountPageState extends State<AccountPage> {
               matchValue: categoryName.toUpperCase(),
             );
             categoryId = categoryData?['expense_cat_id'] as String?;
-            debugPrint(
-              'Fetched category ID: $categoryId for category: $categoryName',
-            );
           } catch (e) {
             debugPrint('Error fetching expense category ID: $e');
           }
         }
-
-        debugPrint(
-          'Creating expense with transactionId: $transactionId, amount: $amount, categoryId: $categoryId',
-        );
 
         final expense = Expense(
           transactionId: transactionId,
           amount: amount as double,
           expenseCategoryId: categoryId,
         );
-        debugPrint('Expense object created, calling _upsertExpense()');
         await _upsertExpense(expense);
-        debugPrint('Expense saved successfully');
 
         // Save expense items if present
         final items = result['items'] as List<Map<String, dynamic>>?;
@@ -998,9 +1356,6 @@ class _AccountPageState extends State<AccountPage> {
       } else {
         // Income
         final String? category = result['category'];
-        debugPrint(
-          'Creating Income: transactionId=$transactionId, amount=$amount, category=$category',
-        );
 
         final income = Income(
           transactionId: transactionId,
@@ -1009,9 +1364,7 @@ class _AccountPageState extends State<AccountPage> {
               ?.toUpperCase(), // Ensure uppercase for database constraint
           isRecurrent: result['isRecurrent'] ?? false,
         );
-        debugPrint('Income object created, calling _upsertIncome()');
         await _upsertIncome(income);
-        debugPrint('Income saved successfully');
       }
 
       // 2. Update local state after successful database save
@@ -1175,9 +1528,6 @@ class _AccountPageState extends State<AccountPage> {
     required double newRawAmount,
   }) async {
     final currentAccount = _myAccounts[_currentCardIndex];
-    final resolvedSender = await _resolveAccountIdentifiers(
-      account: currentAccount,
-    );
 
     final String? transactionId =
         sanitized['transactionId']?.toString() ?? oldTx['transactionId'];
@@ -1185,9 +1535,38 @@ class _AccountPageState extends State<AccountPage> {
       throw Exception('Missing transactionId for update');
     }
 
+    // For transfers, determine the actual sender account
+    String transactionAccountId;
+    if (isTransferType) {
+      final String? fromAccountName =
+          sanitized['fromAccount']?.toString() ??
+          oldTx['fromAccount']?.toString();
+      if (fromAccountName != null) {
+        final fromAccount = _myAccounts.firstWhere(
+          (acc) => acc['name'] == fromAccountName,
+          orElse: () => currentAccount,
+        );
+        final resolvedFrom = await _resolveAccountIdentifiers(
+          account: fromAccount,
+          fallbackName: fromAccountName,
+        );
+        transactionAccountId = resolvedFrom['id'];
+      } else {
+        final resolvedCurrent = await _resolveAccountIdentifiers(
+          account: currentAccount,
+        );
+        transactionAccountId = resolvedCurrent['id'];
+      }
+    } else {
+      final resolvedCurrent = await _resolveAccountIdentifiers(
+        account: currentAccount,
+      );
+      transactionAccountId = resolvedCurrent['id'];
+    }
+
     final transactionRecord = TransactionRecord(
       id: transactionId,
-      accountId: resolvedSender['id'],
+      accountId: transactionAccountId,
       name: sanitized['title']?.toString() ?? 'Transaction',
       type: isTransferType ? 'T' : (isExpenseForCurrent ? 'E' : 'I'),
       description: sanitized['description']?.toString(),
@@ -1197,14 +1576,27 @@ class _AccountPageState extends State<AccountPage> {
     await _upsertTransaction(transactionRecord);
 
     if (isTransferType) {
+      final String? fromAccountName =
+          sanitized['fromAccount']?.toString() ??
+          oldTx['fromAccount']?.toString();
       final String? toAccountName =
           sanitized['toAccount']?.toString() ?? oldTx['toAccount']?.toString();
-      if (toAccountName != null) {
+
+      if (fromAccountName != null && toAccountName != null) {
+        final fromAccount = _myAccounts.firstWhere(
+          (acc) => acc['name'] == fromAccountName,
+          orElse: () => {},
+        );
         final toAccount = _myAccounts.firstWhere(
           (acc) => acc['name'] == toAccountName,
           orElse: () => {},
         );
-        if (toAccount.isNotEmpty) {
+
+        if (fromAccount.isNotEmpty && toAccount.isNotEmpty) {
+          final resolvedFrom = await _resolveAccountIdentifiers(
+            account: fromAccount,
+            fallbackName: fromAccountName,
+          );
           final resolvedTo = await _resolveAccountIdentifiers(
             account: toAccount,
             fallbackName: toAccountName,
@@ -1212,7 +1604,7 @@ class _AccountPageState extends State<AccountPage> {
           final transfer = Transfer(
             transactionId: transactionId,
             amount: newRawAmount,
-            fromAccountId: resolvedSender['id'],
+            fromAccountId: resolvedFrom['id'],
             toAccountId: resolvedTo['id'],
           );
           await _upsertTransfer(transfer);
@@ -1240,6 +1632,17 @@ class _AccountPageState extends State<AccountPage> {
         expenseCategoryId: categoryId,
       );
       await _upsertExpense(expense);
+
+      // Delete existing expense items before inserting new ones
+      try {
+        await _databaseService.deleteById(
+          'expense_items',
+          matchColumn: 'transaction_id',
+          matchValue: transactionId,
+        );
+      } catch (e) {
+        debugPrint('Error deleting old expense items: $e');
+      }
 
       final items = sanitized['items'];
       if (items is List) {
@@ -1269,45 +1672,24 @@ class _AccountPageState extends State<AccountPage> {
       await _upsertIncome(income);
     }
 
-    // Persist updated balances
-    final updatedSenderAccount = Account(
-      id: resolvedSender['id'],
-      userId: resolvedSender['user_id'],
-      name: currentAccount['name'],
-      type: currentAccount['type'],
-      initialBalance: (currentAccount['initial'] ?? 0.0).toDouble(),
-      currentBalance: _myAccounts[_currentCardIndex]['current'].toDouble(),
-      description: currentAccount['description'] ?? currentAccount['desc'],
-    );
-    await _upsertAccount(updatedSenderAccount);
-
-    if (isTransferType) {
-      final String? toAccountName =
-          sanitized['toAccount']?.toString() ?? oldTx['toAccount']?.toString();
-      if (toAccountName != null) {
-        final targetIndex = _myAccounts.indexWhere(
-          (acc) => acc['name'] == toAccountName,
-        );
-        if (targetIndex != -1) {
-          final receiverAccount = _myAccounts[targetIndex];
-          final resolvedReceiver = await _resolveAccountIdentifiers(
-            account: receiverAccount,
-            fallbackName: receiverAccount['name'],
-          );
-          final updatedReceiverAccount = Account(
-            id: resolvedReceiver['id'],
-            userId: resolvedReceiver['user_id'],
-            name: receiverAccount['name'],
-            type: receiverAccount['type'],
-            initialBalance: (receiverAccount['initial'] ?? 0.0).toDouble(),
-            currentBalance: _myAccounts[targetIndex]['current'].toDouble(),
-            description:
-                receiverAccount['description'] ?? receiverAccount['desc'],
-          );
-          await _upsertAccount(updatedReceiverAccount);
-        }
-      }
+    // For non-transfer transactions, persist updated balance for current account
+    if (!isTransferType) {
+      final resolvedCurrent = await _resolveAccountIdentifiers(
+        account: currentAccount,
+      );
+      final updatedCurrentAccount = Account(
+        id: resolvedCurrent['id'],
+        userId: resolvedCurrent['user_id'],
+        name: currentAccount['name'],
+        type: currentAccount['type'],
+        initialBalance: (currentAccount['initial'] ?? 0.0).toDouble(),
+        currentBalance: _myAccounts[_currentCardIndex]['current'].toDouble(),
+        description: currentAccount['description'] ?? currentAccount['desc'],
+      );
+      await _upsertAccount(updatedCurrentAccount);
     }
+    // For transfer transactions, DON'T manually update account balances
+    // The database triggers will handle all balance adjustments automatically
   }
 
   // --- UI COMPONENTS ---

@@ -26,25 +26,24 @@ class _AddTransferPageState extends State<AddTransferPage> {
       TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
 
+  late String _fromAccount;
   String? _selectedToAccount;
   late List<String> _validToAccounts;
 
   @override
   void initState() {
     super.initState();
-    // Filter the list: You cannot transfer money to the same account you are taking it from
-    _validToAccounts = widget.availableAccounts
-        .where((name) => name != widget.fromAccountName)
-        .toList();
+    // Determine the correct from account
+    _fromAccount = widget.fromAccountName;
 
-    // Default to the first available account if possible
-    if (_validToAccounts.isNotEmpty) {
-      _selectedToAccount = _validToAccounts[0];
-    }
-
-    // Prefill from initialData if provided
+    // Prefill from initialData if provided (for editing/duplication)
     final init = widget.initialData;
     if (init != null) {
+      final String? initFrom = init['fromAccount']?.toString();
+      if (initFrom != null && widget.availableAccounts.contains(initFrom)) {
+        _fromAccount = initFrom;
+      }
+
       // Title
       final String? title = init['title']?.toString();
       if (title != null) {
@@ -65,7 +64,20 @@ class _AddTransferPageState extends State<AddTransferPage> {
           _amountController.text = amt.toStringAsFixed(2);
         }
       }
-      // To account if valid
+    }
+
+    // Filter the list: cannot transfer to the same account as from
+    _validToAccounts = widget.availableAccounts
+        .where((name) => name != _fromAccount)
+        .toList();
+
+    // Default To account
+    if (_validToAccounts.isNotEmpty) {
+      _selectedToAccount ??= _validToAccounts[0];
+    }
+
+    // If initialData provided a valid to account, apply it now (after filtering)
+    if (init != null) {
       final String? toAcct = init['toAccount']?.toString();
       if (toAcct != null && _validToAccounts.contains(toAcct)) {
         _selectedToAccount = toAcct;
@@ -95,7 +107,7 @@ class _AddTransferPageState extends State<AddTransferPage> {
           ? _transactionNameController.text.trim()
           : 'Transfer',
       'amount': amount,
-      'fromAccount': widget.fromAccountName,
+      'fromAccount': _fromAccount,
       'toAccount': _selectedToAccount,
       'date': DateTime.now(),
       'type': 'transfer',
@@ -145,7 +157,7 @@ class _AddTransferPageState extends State<AddTransferPage> {
                   const Icon(Icons.output_rounded, color: Colors.red),
                   const SizedBox(width: 12),
                   Text(
-                    widget.fromAccountName,
+                    _fromAccount,
                     style: AppTypography.bodySmall.copyWith(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
