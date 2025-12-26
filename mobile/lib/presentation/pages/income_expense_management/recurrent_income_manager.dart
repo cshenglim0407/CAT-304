@@ -176,6 +176,8 @@ class _RecurrentIncomeManagerPageState
 
     await Future.delayed(const Duration(milliseconds: 250));
 
+    if (!mounted) return;
+
     final bool? accept = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -224,7 +226,7 @@ class _RecurrentIncomeManagerPageState
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: active.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    separatorBuilder: (_, _) => const Divider(height: 1),
                     itemBuilder: (context, index) {
                       final item = active[index];
                       return ListTile(
@@ -383,15 +385,14 @@ class _RecurrentIncomeManagerPageState
     return '+ ${MathFormatter.formatCurrency(amount)}';
   }
 
-  Future<bool> _onWillPop() async {
-    await _persistToggleChanges();
-    return true;
-  }
-
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: _onWillPop,
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        await _persistToggleChanges();
+      },
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Recurrent Income'),
@@ -451,7 +452,7 @@ class _RecurrentIncomeManagerPageState
                     : ListView.separated(
                         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
                         itemCount: _incomes.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        separatorBuilder: (_, _) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
                           final item = _incomes[index];
                           return Container(
@@ -512,7 +513,7 @@ class _RecurrentIncomeManagerPageState
                                             item.transactionId,
                                             val,
                                           ),
-                                          activeColor: AppColors.primary,
+                                          activeThumbColor: AppColors.primary,
                                         ),
                                         Text(
                                           item.isRecurrent ? 'On' : 'Off',
