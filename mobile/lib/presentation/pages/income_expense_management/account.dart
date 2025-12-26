@@ -957,6 +957,7 @@ class _AccountPageState extends State<AccountPage> {
       );
     }
 
+    if (!mounted) return;
     final result = await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => page),
@@ -1271,6 +1272,7 @@ class _AccountPageState extends State<AccountPage> {
         ),
       ),
     );
+    if (!mounted) return;
     if (result != null && result is Map<String, dynamic>) {
       await _addTransactionToState(result, isExpense: false);
     }
@@ -1291,6 +1293,7 @@ class _AccountPageState extends State<AccountPage> {
         ),
       ),
     );
+    if (!mounted) return;
     if (result != null && result is Map<String, dynamic>) {
       await _addTransactionToState(result, isExpense: true, isTransfer: true);
     }
@@ -1326,6 +1329,7 @@ class _AccountPageState extends State<AccountPage> {
         ),
       ),
     );
+    if (!mounted) return;
     if (result != null && result is Map<String, dynamic>) {
       await _addTransactionToState(result, isExpense: true);
     }
@@ -1619,19 +1623,18 @@ class _AccountPageState extends State<AccountPage> {
       CacheService.save('transactions', _getSanitizedTransactions());
       CacheService.save('accounts', _myAccounts);
 
+      if (!mounted) return;
+
       // Rebuild UI with new transactions
-      if (mounted) {
-        setState(() {});
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Transaction saved successfully!")),
-        );
-      }
+      setState(() {});
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Transaction saved successfully!")),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Failed to save transaction: $e")),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Failed to save transaction: $e")));
     }
   }
 
