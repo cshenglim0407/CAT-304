@@ -53,6 +53,7 @@ import 'package:cashlytics/presentation/pages/expense_entry_ocr/add_income.dart'
 import 'package:cashlytics/presentation/pages/expense_entry_ocr/add_transfer.dart';
 import 'package:cashlytics/presentation/pages/expense_entry_ocr/add_expense.dart';
 import 'package:cashlytics/presentation/pages/income_expense_management/transaction_history.dart';
+import 'package:cashlytics/presentation/pages/income_expense_management/recurrent_income_manager.dart';
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -2925,6 +2926,15 @@ class _AccountPageState extends State<AccountPage> {
     }
   }
 
+  Future<void> _openRecurrentIncomeManager() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const RecurrentIncomeManagerPage()),
+    );
+    if (!mounted) return;
+    // Reload accounts and transactions to reflect any newly added recurrent items.
+    _loadData();
+  }
+
   @override
   Widget build(BuildContext context) {
     final fullTransactions =
@@ -3077,7 +3087,25 @@ class _AccountPageState extends State<AccountPage> {
                                 );
                               }),
                             ),
-                          const SizedBox(height: 30),
+                          const SizedBox(height: 16),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 22),
+                            child: GestureDetector(
+                              onTap: _openRecurrentIncomeManager,
+                              child: Center(
+                                child: Text(
+                                  'Manage Recurrent Income',
+                                  style: TextStyle(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height:16),
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 22),
                             child: Row(
