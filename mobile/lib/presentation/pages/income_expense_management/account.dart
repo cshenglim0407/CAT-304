@@ -40,6 +40,7 @@ import 'package:cashlytics/domain/usecases/expenses/upsert_expense.dart';
 import 'package:cashlytics/domain/usecases/transfers/upsert_transfer.dart';
 import 'package:cashlytics/domain/usecases/expense_items/upsert_expense_item.dart';
 import 'package:cashlytics/core/config/icons.dart';
+import 'package:cashlytics/data/repositories/receipt_repository.dart';
 
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
@@ -1365,6 +1366,19 @@ class _AccountPageState extends State<AccountPage> {
 
       if (transactionId == null || transactionId.isEmpty) {
         throw Exception('Transaction saved but ID is null or empty');
+      }
+
+      debugPrint('Transaction saved with ID: $transactionId');
+
+      // Link scanned receipt to this transaction (if exists)
+      final String? receiptId = result['receiptId'];
+
+      if (receiptId != null && receiptId.isNotEmpty) {
+        final receiptRepo = ReceiptRepository();
+        await receiptRepo.attachReceiptToTransaction(
+          receiptId: receiptId,
+          transactionId: transactionId,
+        );
       }
 
       // Validate amount

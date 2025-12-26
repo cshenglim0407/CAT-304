@@ -8,6 +8,12 @@ import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
 import 'package:cashlytics/presentation/widgets/index.dart';
 
+import 'package:cashlytics/data/services/ocr_service.dart';
+import 'package:cashlytics/data/services/receipt_picker.dart';
+import 'package:cashlytics/data/models/ocr_result.dart';
+
+import 'package:cashlytics/data/repositories/receipt_repository.dart';
+
 class AddExpensePage extends StatefulWidget {
   final String accountName;
   final List<String> availableAccounts;
@@ -36,6 +42,9 @@ class _AddExpensePageState extends State<AddExpensePage> {
   final TextEditingController _totalPriceController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
 
+  // OCR service
+  final OCRService _ocrService = OCRService();
+
   // List of items
   final List<Map<String, TextEditingController>> _items = [];
 
@@ -43,6 +52,12 @@ class _AddExpensePageState extends State<AddExpensePage> {
   String? _selectedCategory;
   double _totalPrice = 0.0;
   DateTime _selectedDate = DateTime.now();
+  bool _isScanning = false;
+  double? _lastOcrConfidence;
+  bool _nameEdited = false;
+  bool _dateEdited = false;
+  bool _itemEdited = false;
+  String? _draftReceiptId;
 
   @override
   void initState() {
@@ -142,6 +157,16 @@ class _AddExpensePageState extends State<AddExpensePage> {
     qtyParams.addListener(_calculateTotal);
     priceParams.addListener(_calculateTotal);
 
+    qtyParams.addListener(() {
+      final hasValue = qtyParams.text.trim().isNotEmpty;
+      _itemEdited = hasValue;
+    });
+
+    priceParams.addListener(() {
+      final hasValue = priceParams.text.trim().isNotEmpty;
+      _itemEdited = hasValue;
+    });
+
     setState(() {
       _items.add({'name': nameParams, 'qty': qtyParams, 'price': priceParams});
     });
@@ -202,7 +227,77 @@ class _AddExpensePageState extends State<AddExpensePage> {
       },
     );
     if (picked != null) {
-      setState(() => _selectedDate = picked);
+      setState(() {
+        _selectedDate = picked;
+        _dateEdited = true;
+      });
+    }
+  }
+
+  Future<void> _scanReceiptAndPrefill() async {
+    // Allow OCR to refill if fields are empty
+    if (_transactionNameController.text.trim().isEmpty) {
+      _nameEdited = false;
+    }
+
+    if (_items.isNotEmpty && _items[0]['price']!.text.trim().isEmpty) {
+      _itemEdited = false;
+    }
+
+    if (_isScanning) return;
+
+    final image = await ReceiptPicker.pickReceipt();
+    if (image == null) return;
+
+    setState(() {
+      _isScanning = true;
+      _lastOcrConfidence = null;
+    });
+
+    try {
+      final OcrResult result = await _ocrService.scanReceipt(image);
+
+      final receiptRepo = ReceiptRepository();
+
+      final receiptId = await receiptRepo.saveDraftReceipt(
+        imageFile: image,
+        ocr: result,
+        rawOcrText: result.rawText,
+      );
+
+      _draftReceiptId = receiptId;
+
+      setState(() {
+        // Transaction name
+        if (!_nameEdited &&
+            result.merchant != null &&
+            _transactionNameController.text.isEmpty) {
+          _transactionNameController.text = result.merchant!;
+        }
+
+        // Date
+        if (!_dateEdited && result.date != null) {
+          _selectedDate = result.date!;
+        }
+
+        // Item total → qty & price
+        if (!_itemEdited && result.total != null && _items.isNotEmpty) {
+          _items[0]['qty']?.text = '1';
+          _items[0]['price']?.text = result.total!.toStringAsFixed(2);
+        }
+
+        // Confidence (always update)
+        _lastOcrConfidence = result.confidence;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('OCR failed: $e')));
+    } finally {
+      if (mounted) {
+        setState(() => _isScanning = false);
+      }
     }
   }
 
@@ -256,6 +351,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
       'accountName': _selectedAccount ?? widget.accountName,
       'items': itemsList,
       'description': _descriptionController.text.trim(),
+      'receiptId': _draftReceiptId,
     };
 
     Navigator.pop(context, newTransaction);
@@ -393,10 +489,53 @@ class _AddExpensePageState extends State<AddExpensePage> {
             ),
             const SizedBox(height: 24),
 
+            // --- 1b. Scan Receipt Button ---
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                icon: _isScanning
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.document_scanner),
+                label: Text(_isScanning ? "Scanning..." : "Scan Receipt"),
+                onPressed: (_isScanning || _items.isEmpty)
+                    ? null
+                    : _scanReceiptAndPrefill,
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // --- 1c. OCR Confidence ---
+            if (_lastOcrConfidence != null)
+              Row(
+                children: [
+                  Icon(
+                    _lastOcrConfidence! >= 0.8
+                        ? Icons.check_circle
+                        : Icons.warning_amber_rounded,
+                    color: _lastOcrConfidence! >= 0.8
+                        ? Colors.green
+                        : Colors.orange,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    "OCR confidence: ${(_lastOcrConfidence! * 100).toStringAsFixed(0)}%",
+                    style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
+                  ),
+                ],
+              ),
+
             // --- 2. Transaction Name ---
             const FormLabel(label: "Name", useGreyStyle: true),
             TextField(
               controller: _transactionNameController,
+              onChanged: (value) {
+                _nameEdited = value.trim().isNotEmpty;
+              },
               decoration: CustomInputDecoration.simple(
                 "e.g. Weekly Groceries",
                 fieldColor,
