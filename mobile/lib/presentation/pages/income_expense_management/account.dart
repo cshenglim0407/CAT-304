@@ -1014,7 +1014,8 @@ class _AccountPageState extends State<AccountPage> {
             } else {
               // Current account is the sender: update transaction with sender perspective
               final index = _allTransactions[_currentCardIndex].indexWhere(
-                (item) => item['transactionId'] == completeData['transactionId'],
+                (item) =>
+                    item['transactionId'] == completeData['transactionId'],
               );
               if (index != -1) {
                 _allTransactions[_currentCardIndex][index] = {
@@ -1035,9 +1036,10 @@ class _AccountPageState extends State<AccountPage> {
 
             // Update or add new transfer to receiver's transaction list
             if (newReceiverIndex != _currentCardIndex) {
-              final receiverTxIndex = _allTransactions[newReceiverIndex].indexWhere(
-                (tx) => tx['transactionId'] == sanitized['transactionId'],
-              );
+              final receiverTxIndex = _allTransactions[newReceiverIndex]
+                  .indexWhere(
+                    (tx) => tx['transactionId'] == sanitized['transactionId'],
+                  );
               final newReceiverTx = {
                 'transactionId': sanitized['transactionId'],
                 'type': 'transfer',
@@ -1053,7 +1055,8 @@ class _AccountPageState extends State<AccountPage> {
               };
               if (receiverTxIndex != -1) {
                 // Update existing transaction
-                _allTransactions[newReceiverIndex][receiverTxIndex] = newReceiverTx;
+                _allTransactions[newReceiverIndex][receiverTxIndex] =
+                    newReceiverTx;
               } else {
                 // Add new transaction if it doesn't exist
                 _allTransactions[newReceiverIndex].add(newReceiverTx);
@@ -1061,7 +1064,8 @@ class _AccountPageState extends State<AccountPage> {
             } else {
               // Current account is the receiver: update transaction with receiver perspective
               final index = _allTransactions[_currentCardIndex].indexWhere(
-                (item) => item['transactionId'] == completeData['transactionId'],
+                (item) =>
+                    item['transactionId'] == completeData['transactionId'],
               );
               if (index != -1) {
                 _allTransactions[_currentCardIndex][index] = {
@@ -1801,6 +1805,11 @@ class _AccountPageState extends State<AccountPage> {
   }
 
   void _showTransactionActionSheet(Map<String, dynamic> tx) {
+    // Determine transaction type for labels
+    final String transactionType = StringCaseFormatter.toTitleCase(
+      (tx['type'] ?? 'Transaction').toString(),
+    );
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -1823,7 +1832,7 @@ class _AccountPageState extends State<AccountPage> {
               ),
               ListTile(
                 leading: const Icon(Icons.edit, color: Colors.blue),
-                title: const Text("Edit Transaction"),
+                title: Text("Edit $transactionType"),
                 onTap: () {
                   Navigator.pop(ctx);
                   _editTransaction(tx);
@@ -1831,7 +1840,7 @@ class _AccountPageState extends State<AccountPage> {
               ),
               ListTile(
                 leading: const Icon(Icons.delete, color: Colors.red),
-                title: const Text("Delete Transaction"),
+                title: Text("Delete $transactionType"),
                 onTap: () {
                   Navigator.pop(ctx);
                   _deleteTransaction(tx, _currentCardIndex);
