@@ -10,7 +10,13 @@ StreamSubscription<AuthState> listenForSignedInRedirect({
   void Function(Object error)? onError,
 }) {
   return supabase.auth.onAuthStateChange.listen((data) {
-    if (data.event == AuthChangeEvent.signedIn && shouldRedirect()) {
+    final hasSession = supabase.auth.currentSession != null;
+    final isSignInEvent = data.event == AuthChangeEvent.signedIn ||
+        data.event == AuthChangeEvent.initialSession ||
+        data.event == AuthChangeEvent.tokenRefreshed ||
+        data.event == AuthChangeEvent.userUpdated;
+
+    if (isSignInEvent && hasSession && shouldRedirect()) {
       onRedirect();
     }
   }, onError: onError);

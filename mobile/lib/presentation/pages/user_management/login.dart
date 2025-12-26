@@ -17,7 +17,7 @@ import 'package:cashlytics/presentation/widgets/index.dart';
 
 import 'package:cashlytics/presentation/pages/user_management/forgot_password.dart';
 import 'package:cashlytics/presentation/pages/income_expense_management/home_page.dart';
-import 'package:cashlytics/presentation/pages/user_management/sign_up.dart'; 
+import 'package:cashlytics/presentation/pages/user_management/sign_up.dart';
 import 'package:provider/provider.dart';
 
 class LoginPage extends StatefulWidget {
@@ -27,7 +27,7 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginPageState extends State<LoginPage> with WidgetsBindingObserver {
   // Logic Variables
   late final _email = TextEditingController();
   late final _password = TextEditingController();
@@ -66,6 +66,8 @@ class _LoginPageState extends State<LoginPage> {
         }
       },
     );
+    // After attempting sign-in, redirect if session exists
+    await _maybeRedirectIfSignedIn();
   }
 
   Future<String> _prefetchUserProfile() async {
@@ -78,8 +80,7 @@ class _LoginPageState extends State<LoginPage> {
           'email': user.email,
           'display_name': user.displayName,
           'gender': user.gender,
-          'date_of_birth':
-              user.dateOfBirth?.toIso8601String().split('T').first,
+          'date_of_birth': user.dateOfBirth?.toIso8601String().split('T').first,
           'timezone': user.timezone,
           'currency_pref': user.currencyPreference,
           'theme_pref': user.themePreference,
@@ -91,13 +92,17 @@ class _LoginPageState extends State<LoginPage> {
 
       // If profile fetch failed or returned null, try cached profile
       themePref ??=
-          CacheService.load<Map<String, dynamic>>(_userProfileCacheKey)?['theme_pref']
+          CacheService.load<Map<String, dynamic>>(
+                _userProfileCacheKey,
+              )?['theme_pref']
               as String?;
-
     } catch (error) {
       debugPrint('Prefetch user profile failed: $error');
-      themePref = CacheService.load<Map<String, dynamic>>(_userProfileCacheKey)?['theme_pref']
-          as String?;
+      themePref =
+          CacheService.load<Map<String, dynamic>>(
+                _userProfileCacheKey,
+              )?['theme_pref']
+              as String?;
     }
 
     return themePref?.isNotEmpty == true ? themePref! : 'system';
@@ -122,6 +127,8 @@ class _LoginPageState extends State<LoginPage> {
         }
       },
     );
+    // After OAuth completes, redirect if session exists
+    await _maybeRedirectIfSignedIn();
   }
 
   Future<void> _signInWithFacebook() async {
@@ -143,13 +150,82 @@ class _LoginPageState extends State<LoginPage> {
         }
       },
     );
+    // After OAuth completes, redirect if session exists
+    await _maybeRedirectIfSignedIn();
+  }
+
+  Future<void> _navigateToHomeWithSpinner() async {
+    if (!mounted) {
+      debugPrint(
+        '_navigateToHomeWithSpinner: Widget not mounted, skipping navigation',
+      );
+      return;
+    }
+
+    debugPrint('_navigateToHomeWithSpinner: Starting navigation to HomePage');
+
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      useRootNavigator: true,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    // Small delay to let dialog render, then navigate
+    await Future.delayed(const Duration(milliseconds: 200));
+
+    if (!mounted) {
+      debugPrint('_navigateToHomeWithSpinner: Widget unmounted during delay');
+      return;
+    }
+
+    debugPrint('_navigateToHomeWithSpinner: Executing navigation');
+    // Ensure we pop the dialog from the root navigator
+    Navigator.of(context, rootNavigator: true).pop();
+    // Replace entire stack to avoid nested navigator issues
+    Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const HomePage()),
+      (route) => false,
+    );
+  }
+
+  Future<void> _maybeRedirectIfSignedIn() async {
+    // Fallback: if session already exists (eg. after OAuth redirect), navigate.
+    final session = Supabase.instance.client.auth.currentSession;
+    debugPrint(
+      '_maybeRedirectIfSignedIn: session=${session != null}, redirecting=$_redirecting, mounted=$mounted',
+    );
+
+    if (session != null && !_redirecting) {
+      debugPrint('_maybeRedirectIfSignedIn: Session found, starting redirect');
+      if (mounted) setState(() => _redirecting = true);
+      final themePref = await _prefetchUserProfile();
+      debugPrint(
+        '_maybeRedirectIfSignedIn: Profile prefetched, theme=$themePref',
+      );
+      if (mounted) {
+        context.read<ThemeProvider>().setThemeFromPreference(themePref);
+        await _navigateToHomeWithSpinner();
+      } else {
+        debugPrint(
+          '_maybeRedirectIfSignedIn: Widget unmounted before navigation',
+        );
+      }
+    } else if (session == null) {
+      debugPrint('_maybeRedirectIfSignedIn: No session yet');
+    } else if (_redirecting) {
+      debugPrint('_maybeRedirectIfSignedIn: Already redirecting');
+    }
   }
 
   @override
   void initState() {
+    WidgetsBinding.instance.addObserver(this);
     _authStateSubscription = listenForSignedInRedirect(
       shouldRedirect: () => !_redirecting,
       onRedirect: () async {
+        debugPrint('Auth listener: onRedirect callback triggered');
         if (!mounted) return;
         setState(() => _redirecting = true);
         final themePref = await _prefetchUserProfile();
@@ -157,28 +233,7 @@ class _LoginPageState extends State<LoginPage> {
           context.read<ThemeProvider>().setThemeFromPreference(themePref);
         }
         if (!mounted) return;
-        // Use addPostFrameCallback to delay navigation until after frame is complete
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            // Show loading dialog while initializing
-            showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder: (context) => const Center(
-                child: CircularProgressIndicator(),
-              ),
-            );
-            // Delay navigation to allow UI to render
-            Future.delayed(const Duration(milliseconds: 300), () {
-              if (mounted) {
-                Navigator.of(context).pop(); // Close loading dialog
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => const HomePage()),
-                );
-              }
-            });
-          }
-        });
+        await _navigateToHomeWithSpinner();
       },
       onError: (error) {
         if (mounted) {
@@ -186,11 +241,26 @@ class _LoginPageState extends State<LoginPage> {
         }
       },
     );
+    // Post-frame: handle case where session exists before listener attaches.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _maybeRedirectIfSignedIn();
+    });
     super.initState();
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    debugPrint('App lifecycle state changed: $state');
+    // When returning from browser during OAuth, app resumes.
+    if (state == AppLifecycleState.resumed) {
+      debugPrint('App resumed, checking for redirect');
+      _maybeRedirectIfSignedIn();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _authStateSubscription.cancel();
     _email.dispose();
     _password.dispose();
@@ -203,7 +273,7 @@ class _LoginPageState extends State<LoginPage> {
       backgroundColor: AppColors.getSurface(context),
       body: SafeArea(
         child: Align(
-          alignment: const Alignment(0, -0.3), 
+          alignment: const Alignment(0, -0.3),
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
             child: Form(
@@ -216,7 +286,10 @@ class _LoginPageState extends State<LoginPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Image.asset('assets/logo/logo_without_word.webp', height: 75),
+                      Image.asset(
+                        'assets/logo/logo_without_word.webp',
+                        height: 75,
+                      ),
                       const SizedBox(width: 10),
                     ],
                   ),
@@ -225,7 +298,9 @@ class _LoginPageState extends State<LoginPage> {
                   // --- Header ---
                   const SectionTitle(title: "Welcome Back!"),
                   const SizedBox(height: 6),
-                  const SectionSubtitle(subtitle: "Enter your login information"),
+                  const SectionSubtitle(
+                    subtitle: "Enter your login information",
+                  ),
 
                   const SizedBox(height: 26),
 
@@ -236,7 +311,8 @@ class _LoginPageState extends State<LoginPage> {
                     hint: "Email Address",
                     keyboardType: TextInputType.emailAddress,
                     validator: (value) {
-                      if (value == null || value.isEmpty) return 'Email is required';
+                      if (value == null || value.isEmpty)
+                        return 'Email is required';
                       if (!value.contains('@')) return 'Invalid email address';
                       return null;
                     },
@@ -253,13 +329,17 @@ class _LoginPageState extends State<LoginPage> {
                     suffixIcon: IconButton(
                       onPressed: () => setState(() => _obscure = !_obscure),
                       icon: Icon(
-                        _obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        _obscure
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
                         color: AppColors.greyText,
                       ),
                     ),
                     validator: (value) {
-                      if (value == null || value.isEmpty) return 'Password is required';
-                      if (value.length < 6) return 'Password must be at least 6 characters';
+                      if (value == null || value.isEmpty)
+                        return 'Password is required';
+                      if (value.length < 6)
+                        return 'Password must be at least 6 characters';
                       return null;
                     },
                   ),
@@ -274,7 +354,8 @@ class _LoginPageState extends State<LoginPage> {
                         height: 20,
                         child: Checkbox(
                           value: _rememberMe,
-                          onChanged: (v) => setState(() => _rememberMe = v ?? false),
+                          onChanged: (v) =>
+                              setState(() => _rememberMe = v ?? false),
                           activeColor: AppColors.primary,
                           side: const BorderSide(color: AppColors.greyHint),
                           shape: RoundedRectangleBorder(
@@ -285,19 +366,26 @@ class _LoginPageState extends State<LoginPage> {
                       const SizedBox(width: 10),
                       GestureDetector(
                         onTap: () => setState(() => _rememberMe = !_rememberMe),
-                        child: Text("Remember me", style: AppTypography.bodyMedium),
+                        child: Text(
+                          "Remember me",
+                          style: AppTypography.bodyMedium,
+                        ),
                       ),
                       const Spacer(),
                       GestureDetector(
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const ForgotPasswordPage()),
+                            MaterialPageRoute(
+                              builder: (context) => const ForgotPasswordPage(),
+                            ),
                           );
                         },
                         child: Text(
                           "Forgot Password?",
-                          style: AppTypography.labelLarge.copyWith(color: AppColors.primary),
+                          style: AppTypography.labelLarge.copyWith(
+                            color: AppColors.primary,
+                          ),
                         ),
                       ),
                     ],
@@ -317,12 +405,27 @@ class _LoginPageState extends State<LoginPage> {
                   // --- Divider ---
                   Row(
                     children: [
-                      const Expanded(child: Divider(color: AppColors.greyLight, thickness: 1)),
+                      const Expanded(
+                        child: Divider(
+                          color: AppColors.greyLight,
+                          thickness: 1,
+                        ),
+                      ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 10),
-                        child: Text("Or", style: AppTypography.bodySmall.copyWith(color: AppColors.greyText)),
+                        child: Text(
+                          "Or",
+                          style: AppTypography.bodySmall.copyWith(
+                            color: AppColors.greyText,
+                          ),
+                        ),
                       ),
-                      const Expanded(child: Divider(color: AppColors.greyLight, thickness: 1)),
+                      const Expanded(
+                        child: Divider(
+                          color: AppColors.greyLight,
+                          thickness: 1,
+                        ),
+                      ),
                     ],
                   ),
 
@@ -333,13 +436,23 @@ class _LoginPageState extends State<LoginPage> {
                     children: [
                       SocialAuthButton(
                         // No Label = Minimalist Mode
-                        icon: const Text("G", style: TextStyle(fontWeight: FontWeight.w800, fontSize: 24)),
+                        icon: const Text(
+                          "G",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 24,
+                          ),
+                        ),
                         onPressed: _signInWithGoogle,
                       ),
                       const SizedBox(width: 14),
                       SocialAuthButton(
                         // No Label = Minimalist Mode
-                        icon: const Icon(Icons.facebook, color: AppColors.facebook, size: 28),
+                        icon: const Icon(
+                          Icons.facebook,
+                          color: AppColors.facebook,
+                          size: 28,
+                        ),
                         onPressed: _signInWithFacebook,
                       ),
                     ],
@@ -351,7 +464,9 @@ class _LoginPageState extends State<LoginPage> {
                   Center(
                     child: RichText(
                       text: TextSpan(
-                        style: AppTypography.bodyMedium.copyWith(color: Colors.black87),
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: Colors.black87,
+                        ),
                         children: [
                           const TextSpan(text: "Don't have an account? "),
                           WidgetSpan(
@@ -359,8 +474,10 @@ class _LoginPageState extends State<LoginPage> {
                             child: GestureDetector(
                               onTap: () {
                                 Navigator.push(
-                                  context, 
-                                  MaterialPageRoute(builder: (context) => const SignUpPage())
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const SignUpPage(),
+                                  ),
                                 );
                               },
                               child: Text(
