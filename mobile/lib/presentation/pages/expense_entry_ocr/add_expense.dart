@@ -185,7 +185,11 @@ class _AddExpensePageState extends State<AddExpensePage> {
 
       final receiptRepo = ReceiptRepository();
 
-      await receiptRepo.saveDraftReceipt(imageFile: image, ocr: result);
+      await receiptRepo.saveDraftReceipt(
+        imageFile: image,
+        ocr: result,
+        rawOcrText: result.rawText,
+      );
 
       setState(() {
         // 1️⃣ Transaction name
