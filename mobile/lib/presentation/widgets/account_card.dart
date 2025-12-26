@@ -161,7 +161,9 @@ class AccountCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  MathFormatter.formatCurrency(currentBalance),
+                  currentBalance == 0 && initialBalance == 0
+                      ? '\$0.00'
+                      : MathFormatter.formatCurrency(currentBalance),
                   style: AppTypography.headline2.copyWith(
                     fontSize: 24,
                     color: textColor,
@@ -173,7 +175,9 @@ class AccountCard extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
-                    "Initial: ${MathFormatter.formatCurrency(initialBalance)}",
+                    initialBalance == 0
+                        ? "Initial: \$0.00"
+                        : "Initial: ${MathFormatter.formatCurrency(initialBalance)}",
                     style: AppTypography.caption.copyWith(
                       color: subTextColor,
                       fontWeight: FontWeight.w500,

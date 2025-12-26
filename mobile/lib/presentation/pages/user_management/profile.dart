@@ -651,7 +651,9 @@ class _ProfilePageState extends State<ProfilePage> {
                           const SizedBox(height: 10),
                           InfoRow(
                             label: "Education Level",
-                            value: _educationLevel,
+                            value: _educationLevel.isNotEmpty
+                                ? _educationLevel
+                                : 'No record found',
                             icon: Icons.school_rounded,
                           ),
                           InfoRow(

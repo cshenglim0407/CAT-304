@@ -2885,30 +2885,41 @@ class _AccountPageState extends State<AccountPage> {
                               ),
                             )
                           else
-                            ListView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 22,
-                              ),
-                              itemCount: displayTransactions.length,
-                              itemBuilder: (context, index) {
-                                final tx = displayTransactions[index];
-                                // HITTEST BEHAVIOR OPAQUE is key for clickable whitespace
-                                return GestureDetector(
-                                  behavior: HitTestBehavior.opaque,
-                                  onTap: () => _showTransactionActionSheet(tx),
-                                  child: _TransactionTile(
-                                    title: tx['title'],
-                                    subtitle: tx['date'],
-                                    amount: tx['amount'],
-                                    icon: tx['icon'] ?? Icons.error,
-                                    isExpense: tx['isExpense'] ?? false,
-                                    isRecurrent: tx['isRecurrent'] ?? false,
+                            displayTransactions.isEmpty
+                                ? const Padding(
+                                    padding: EdgeInsets.all(22),
+                                    child: Center(
+                                      child: Text("No record found"),
+                                    ),
+                                  )
+                                : ListView.builder(
+                                    shrinkWrap: true,
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 22,
+                                    ),
+                                    itemCount: displayTransactions.length,
+                                    itemBuilder: (context, index) {
+                                      final tx = displayTransactions[index];
+                                      // HITTEST BEHAVIOR OPAQUE is key for clickable whitespace
+                                      return GestureDetector(
+                                        behavior: HitTestBehavior.opaque,
+                                        onTap: () =>
+                                            _showTransactionActionSheet(tx),
+                                        child: _TransactionTile(
+                                          title: tx['title'] ?? 'N/A',
+                                          subtitle: tx['date'] ?? 'N/A',
+                                          amount: tx['amount'] ?? '\$0.00',
+                                          icon: tx['icon'] ?? Icons.error,
+                                          isExpense:
+                                              tx['isExpense'] ?? false,
+                                          isRecurrent:
+                                              tx['isRecurrent'] ?? false,
+                                        ),
+                                      );
+                                    },
                                   ),
-                                );
-                              },
-                            ),
                         ],
                       ),
                     ),
