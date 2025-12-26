@@ -127,23 +127,31 @@ class AccountRepositoryImpl implements AccountRepository {
           );
 
           if (transferData != null) {
-            // Get destination account name
-            final toAccount = await _databaseService.fetchSingle(
-              'accounts',
-              matchColumn: 'account_id',
-              matchValue: transferData['to_account_id'],
-              columns: 'name',
-            );
+            // Get destination account name (nullable after ON DELETE SET NULL)
+            final String? toAccountId = transferData['to_account_id'] as String?;
+            String toAccountName = 'Account';
+            if (toAccountId != null && toAccountId.isNotEmpty) {
+              final toAccount = await _databaseService.fetchSingle(
+                'accounts',
+                matchColumn: 'account_id',
+                matchValue: toAccountId,
+                columns: 'name',
+              );
+              toAccountName = (toAccount?['name'] as String?) ?? 'Account';
+            } else {
+              toAccountName = 'Deleted account';
+            }
 
             views.add(
               AccountTransactionView(
                 transactionId: transactionId,
-                title: 'To ${toAccount?['name'] ?? 'Account'}',
+                title: 'To $toAccountName',
                 date: createdAt,
                 amount: _parseAmount(transferData['amount']),
                 isExpense: true, // Deducting from this account
                 category: 'Transfer',
                 icon: Icons.north_east_rounded,
+                // description is stored on TRANSACTION, not TRANSFER; keep nullable
                 description: transferData['description'] as String?,
               ),
             );
@@ -167,23 +175,31 @@ class AccountRepositoryImpl implements AccountRepository {
               DateTime.tryParse(tx['created_at'] as String? ?? '') ??
               DateTime.now();
 
-          // Get source account name
-          final fromAccount = await _databaseService.fetchSingle(
-            'accounts',
-            matchColumn: 'account_id',
-            matchValue: transfer['from_account_id'],
-            columns: 'name',
-          );
+          // Get source account name (nullable after ON DELETE SET NULL)
+          final String? fromAccountId = transfer['from_account_id'] as String?;
+          String fromAccountName = 'Account';
+          if (fromAccountId != null && fromAccountId.isNotEmpty) {
+            final fromAccount = await _databaseService.fetchSingle(
+              'accounts',
+              matchColumn: 'account_id',
+              matchValue: fromAccountId,
+              columns: 'name',
+            );
+            fromAccountName = (fromAccount?['name'] as String?) ?? 'Account';
+          } else {
+            fromAccountName = 'Deleted account';
+          }
 
           views.add(
             AccountTransactionView(
               transactionId: transactionId,
-              title: 'From ${fromAccount?['name'] ?? 'Account'}',
+              title: 'From $fromAccountName',
               date: createdAt,
               amount: _parseAmount(transfer['amount']),
               isExpense: false, // Adding to this account
               category: 'Transfer',
               icon: Icons.south_east_rounded,
+              // description is stored on TRANSACTION, not TRANSFER; keep nullable
               description: transfer['description'] as String?,
             ),
           );

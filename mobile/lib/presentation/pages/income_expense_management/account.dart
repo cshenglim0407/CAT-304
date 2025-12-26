@@ -125,9 +125,8 @@ class _AccountPageState extends State<AccountPage> {
             showDialog(
               context: context,
               barrierDismissible: false,
-              builder: (context) => const Center(
-                child: CircularProgressIndicator(),
-              ),
+              builder: (context) =>
+                  const Center(child: CircularProgressIndicator()),
             );
             // Delay navigation to allow UI to render
             Future.delayed(const Duration(milliseconds: 300), () {
@@ -160,9 +159,8 @@ class _AccountPageState extends State<AccountPage> {
             showDialog(
               context: context,
               barrierDismissible: false,
-              builder: (context) => const Center(
-                child: CircularProgressIndicator(),
-              ),
+              builder: (context) =>
+                  const Center(child: CircularProgressIndicator()),
             );
             // Delay navigation to allow UI to render
             Future.delayed(const Duration(milliseconds: 300), () {
@@ -364,15 +362,41 @@ class _AccountPageState extends State<AccountPage> {
             final bool isTransfer =
                 (tx.category ?? '').toString().toUpperCase() == 'TRANSFER';
 
-            final String? toAccountName =
-                isTransfer && (tx.title.toLowerCase().startsWith('to '))
-                ? tx.title.substring(3).trim()
-                : null;
+            String? toAccountName;
+            String? fromAccountName;
+            if (isTransfer) {
+              final String title = tx.title ?? '';
+              final String titleLower = title.toLowerCase().trim();
 
-            final String? fromAccountName =
-                isTransfer && (tx.title.toLowerCase().startsWith('from '))
-                ? tx.title.substring(5).trim()
-                : null;
+              // Support multiple title formats: "Transfer to X", "to X", "Transfer from Y", "from Y"
+              const toPrefixes = ['transfer to ', 'to '];
+              for (final prefix in toPrefixes) {
+                if (titleLower.startsWith(prefix)) {
+                  toAccountName = title.substring(prefix.length).trim();
+                  break;
+                }
+              }
+
+              const fromPrefixes = ['transfer from ', 'from '];
+              for (final prefix in fromPrefixes) {
+                if (titleLower.startsWith(prefix)) {
+                  fromAccountName = title.substring(prefix.length).trim();
+                  break;
+                }
+              }
+
+              // If counterpart name cannot be derived and one side was deleted, show a sensible fallback
+              if (toAccountName == null && fromAccountName == null) {
+                final String fallbackName = 'Deleted account';
+                if (isExpense) {
+                  toAccountName =
+                      fallbackName; // money moved out to a deleted account
+                } else {
+                  fromAccountName =
+                      fallbackName; // money came from a deleted account
+                }
+              }
+            }
 
             txList.add({
               'transactionId': tx.transactionId,
@@ -778,29 +802,37 @@ class _AccountPageState extends State<AccountPage> {
         );
 
         if (transferData != null) {
-          final fromAccountId = transferData['from_account_id'] as String;
-          final toAccountId = transferData['to_account_id'] as String;
+          final String? fromAccountId =
+              transferData['from_account_id'] as String?;
+          final String? toAccountId = transferData['to_account_id'] as String?;
           final amount = _parseAmountValue(transferData['amount']);
 
-          // Fetch account names
-          final fromAccountData = await _databaseService.fetchSingle(
-            'accounts',
-            matchColumn: 'account_id',
-            matchValue: fromAccountId,
-            columns: 'name',
-          );
-          final toAccountData = await _databaseService.fetchSingle(
-            'accounts',
-            matchColumn: 'account_id',
-            matchValue: toAccountId,
-            columns: 'name',
-          );
+          // Fetch account names (only when IDs are present)
+          String? fromAccountName;
+          if (fromAccountId != null && fromAccountId.isNotEmpty) {
+            final fromAccountData = await _databaseService.fetchSingle(
+              'accounts',
+              matchColumn: 'account_id',
+              matchValue: fromAccountId,
+              columns: 'name',
+            );
+            fromAccountName = fromAccountData?['name'] as String?;
+          }
 
-          final fromAccountName = fromAccountData?['name'] as String?;
-          final toAccountName = toAccountData?['name'] as String?;
+          String? toAccountName;
+          if (toAccountId != null && toAccountId.isNotEmpty) {
+            final toAccountData = await _databaseService.fetchSingle(
+              'accounts',
+              matchColumn: 'account_id',
+              matchValue: toAccountId,
+              columns: 'name',
+            );
+            toAccountName = toAccountData?['name'] as String?;
+          }
 
           // Determine if it's expense or income for current account
-          final isExpense = accountId == fromAccountId;
+          final bool isExpense =
+              (fromAccountId != null && accountId == fromAccountId);
 
           completeData.addAll({
             'type': 'transfer',
@@ -808,8 +840,12 @@ class _AccountPageState extends State<AccountPage> {
             'amount': '${isExpense ? '-' : '+'} \$${amount.toStringAsFixed(2)}',
             'isExpense': isExpense,
             'category': 'TRANSFER',
-            'fromAccount': fromAccountName,
-            'toAccount': toAccountName,
+            'fromAccount':
+                fromAccountName ??
+                (fromAccountId == null ? 'Deleted account' : null),
+            'toAccount':
+                toAccountName ??
+                (toAccountId == null ? 'Deleted account' : null),
             'fromAccountId': fromAccountId,
             'toAccountId': toAccountId,
             'icon': isExpense
@@ -2912,8 +2948,7 @@ class _AccountPageState extends State<AccountPage> {
                                           subtitle: tx['date'] ?? 'N/A',
                                           amount: tx['amount'] ?? '\$0.00',
                                           icon: tx['icon'] ?? Icons.error,
-                                          isExpense:
-                                              tx['isExpense'] ?? false,
+                                          isExpense: tx['isExpense'] ?? false,
                                           isRecurrent:
                                               tx['isRecurrent'] ?? false,
                                         ),
