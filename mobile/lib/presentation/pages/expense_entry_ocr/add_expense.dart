@@ -8,8 +8,8 @@ import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
 import 'package:cashlytics/presentation/widgets/index.dart';
 
-import 'package:cashlytics/data/services/ocr_service.dart';
-import 'package:cashlytics/data/services/receipt_picker.dart';
+import 'package:cashlytics/core/services/ocr/ocr_service.dart';
+import 'package:cashlytics/core/utils/budget_threshold/receipt_picker.dart';
 import 'package:cashlytics/data/models/ocr_result.dart';
 
 import 'package:cashlytics/data/repositories/receipt_repository.dart';

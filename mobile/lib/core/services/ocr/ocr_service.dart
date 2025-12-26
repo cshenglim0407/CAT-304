@@ -2,7 +2,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-import '../models/ocr_result.dart';
+import 'package:cashlytics/data/models/ocr_result.dart';
 import 'package:cashlytics/config/app_config.dart';
 
 class OCRService {
