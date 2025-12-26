@@ -2828,6 +2828,115 @@ class _AccountPageState extends State<AccountPage> {
     }
   }
 
+  void _jumpToAccount(int index) {
+    if (index < 0 || index >= _myAccounts.length) return;
+    setState(() => _currentCardIndex = index);
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _showAccountList(BuildContext context) {
+    if (_myAccounts.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No accounts to show.')),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      backgroundColor: AppColors.getSurface(context),
+      builder: (ctx) {
+        return SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(ctx).size.height * 0.6,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'All Accounts',
+                        style: AppTypography.headline3.copyWith(
+                          color: AppColors.getTextPrimary(ctx),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: _myAccounts.length,
+                    separatorBuilder: (_, index) => const Divider(height: 1),
+                    itemBuilder: (context, index) {
+                      final acc = _myAccounts[index];
+                      final double currentBalance =
+                          MathFormatter.parseDouble(acc['current']) ?? 0.0;
+                      final String typeLabel = StringCaseFormatter.toTitleCase(
+                        acc['type']?.toString() ?? 'Account',
+                      );
+
+                      return ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor:
+                              AppColors.primary.withValues(alpha: 0.1),
+                          child: Text(
+                            (acc['name']?.toString().isNotEmpty ?? false)
+                                ? acc['name']
+                                    .toString()
+                                    .trim()
+                                    .substring(0, 1)
+                                    .toUpperCase()
+                                : 'A',
+                            style: const TextStyle(color: AppColors.primary),
+                          ),
+                        ),
+                        title: Text(
+                          acc['name']?.toString() ?? 'Unnamed account',
+                          style: AppTypography.bodyLarge.copyWith(
+                            color: AppColors.getTextPrimary(ctx),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        subtitle: Text(
+                          '$typeLabel • ${MathFormatter.formatCurrency(currentBalance)}',
+                          style: AppTypography.bodySmall.copyWith(
+                            color: AppColors.getTextSecondary(ctx),
+                          ),
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          _jumpToAccount(index);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   void _onNavBarTap(int index) {
     setState(() => _selectedIndex = index);
     if (index == 0) {
@@ -2874,21 +2983,42 @@ class _AccountPageState extends State<AccountPage> {
                                     color: AppColors.getTextPrimary(context),
                                   ),
                                 ),
-                                GestureDetector(
-                                  onTap: () => _addAccount(context),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primary.withValues(
-                                        alpha: 0.1,
+                                Row(
+                                  children: [
+                                    GestureDetector(
+                                      onTap: () => _showAccountList(context),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primary.withValues(
+                                            alpha: 0.1,
+                                          ),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.menu,
+                                          color: AppColors.primary,
+                                        ),
                                       ),
-                                      shape: BoxShape.circle,
                                     ),
-                                    child: const Icon(
-                                      Icons.add,
-                                      color: AppColors.primary,
+                                    const SizedBox(width: 10),
+                                    GestureDetector(
+                                      onTap: () => _addAccount(context),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primary.withValues(
+                                            alpha: 0.1,
+                                          ),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.add,
+                                          color: AppColors.primary,
+                                        ),
+                                      ),
                                     ),
-                                  ),
+                                  ],
                                 ),
                               ],
                             ),
