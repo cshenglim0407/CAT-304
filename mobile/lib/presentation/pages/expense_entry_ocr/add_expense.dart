@@ -7,6 +7,10 @@ import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
 import 'package:cashlytics/presentation/widgets/index.dart';
 
+import 'package:cashlytics/data/services/ocr_service.dart';
+import 'package:cashlytics/data/services/receipt_picker.dart';
+import 'package:cashlytics/data/models/ocr_result.dart';
+
 class AddExpensePage extends StatefulWidget {
   final String accountName;
   final List<String> availableAccounts;
@@ -31,6 +35,9 @@ class _AddExpensePageState extends State<AddExpensePage> {
       TextEditingController();
   final TextEditingController _totalPriceController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
+
+  // OCR service
+  final OCRService _ocrService = OCRService();
 
   // List of items
   final List<Map<String, TextEditingController>> _items = [];
@@ -130,6 +137,36 @@ class _AddExpensePageState extends State<AddExpensePage> {
     );
     if (picked != null) {
       setState(() => _selectedDate = picked);
+    }
+  }
+
+  Future<void> _scanReceiptAndPrefill() async {
+    final image = await ReceiptPicker.pickReceipt();
+    if (image == null) return;
+
+    try {
+      final OcrResult result = await _ocrService.scanReceipt(image);
+
+      setState(() {
+        if (result.merchant != null &&
+            _transactionNameController.text.isEmpty) {
+          _transactionNameController.text = result.merchant!;
+        }
+
+        if (result.date != null) {
+          _selectedDate = result.date!;
+        }
+
+        if (result.total != null && _items.isNotEmpty) {
+          _items[0]['qty']?.text = '1';
+          _items[0]['price']?.text = result.total!.toStringAsFixed(2);
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('OCR failed: $e')));
     }
   }
 
@@ -316,6 +353,17 @@ class _AddExpensePageState extends State<AddExpensePage> {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 24),
+
+            // --- 1b. Scan Receipt Button ---
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.document_scanner),
+                label: const Text("Scan Receipt"),
+                onPressed: _scanReceiptAndPrefill,
+              ),
             ),
             const SizedBox(height: 24),
 
