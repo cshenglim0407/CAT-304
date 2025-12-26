@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:cashlytics/core/config/icons.dart';
 import 'package:cashlytics/core/utils/math_formatter.dart';
+import 'package:cashlytics/core/utils/income_expense_management/income_expense_helpers.dart';
 
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
@@ -51,38 +52,48 @@ class _AddExpensePageState extends State<AddExpensePage> {
     // Prefill from initialData if provided, otherwise start with an empty row
     final init = widget.initialData;
     if (init != null) {
-      // Transaction name
-      final String? title = init['title']?.toString();
+      // Use helper to extract title
+      final String? title = IncomeExpenseHelpers.getInitialString(
+        init,
+        'title',
+      );
       if (title != null) {
         _transactionNameController.text = title;
       }
-      // Description
-      final String? desc = init['description']?.toString();
+
+      // Use helper to extract description
+      final String? desc = IncomeExpenseHelpers.getInitialString(
+        init,
+        'description',
+      );
       if (desc != null) {
         _descriptionController.text = desc;
       }
-      // Date
-      final dynamic date = init['date'];
-      if (date is DateTime) {
+
+      // Use helper to extract date
+      final DateTime? date = IncomeExpenseHelpers.getInitialDate(init);
+      if (date != null) {
         _selectedDate = date;
       }
-      // Category (case-insensitive match)
-      final String? cat = init['category']?.toString();
-      if (cat != null && cat.isNotEmpty) {
-        final String match = widget.availableCategories.firstWhere(
-          (c) => c.toUpperCase() == cat.toUpperCase(),
-          orElse: () => widget.category,
-        );
-        _selectedCategory = match;
-      }
-      // Account override
-      final String? acct = init['fromAccount']?.toString() ?? init['accountName']?.toString();
+
+      // Use helper to match category
+      _selectedCategory =
+          IncomeExpenseHelpers.getInitialCategory(
+            init,
+            widget.availableCategories,
+            widget.category,
+          ) ??
+          widget.category;
+
+      // Use helper to extract account name
+      final String? acct = IncomeExpenseHelpers.getInitialAccount(init);
       if (acct != null && acct.isNotEmpty) {
         _selectedAccount = acct;
       }
+
       // Items
       final items = init['items'];
-      if (items is List && items.isNotEmpty) {
+      if (IncomeExpenseHelpers.hasItems(items)) {
         for (final item in items) {
           final String name = item['name']?.toString() ?? '';
           final String qty = item['qty']?.toString() ?? '1';
@@ -171,7 +182,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
   }
 
   String _formatDate(DateTime date) {
-    return "${date.day}/${date.month}/${date.year}";
+    return IncomeExpenseHelpers.formatDateForInput(date);
   }
 
   Future<void> _pickDate() async {
@@ -198,7 +209,8 @@ class _AddExpensePageState extends State<AddExpensePage> {
   // In AddExpensePage.dart
 
   void _saveExpense() {
-    if (_totalPrice <= 0 || _items.isEmpty) {
+    if (!IncomeExpenseHelpers.isValidAmount(_totalPrice) ||
+        !IncomeExpenseHelpers.hasItems(_items)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Please enter at least one item and price"),

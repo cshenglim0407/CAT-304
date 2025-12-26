@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:cashlytics/core/config/icons.dart';
+import 'package:cashlytics/core/utils/income_expense_management/income_expense_helpers.dart';
 
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
@@ -53,40 +54,50 @@ class _AddIncomePageState extends State<AddIncomePage> {
     // Prefill from initialData if provided
     final init = widget.initialData;
     if (init != null) {
-      // Title
-      final String? title = init['title']?.toString();
+      // Use helper to extract title
+      final String? title = IncomeExpenseHelpers.getInitialString(
+        init,
+        'title',
+      );
       if (title != null && title.isNotEmpty) {
         _transactionNameController.text = title;
       }
-      // Description
-      final String? desc = init['description']?.toString();
-      if (desc != null) {
+
+      // Use helper to extract description
+      final String? desc = IncomeExpenseHelpers.getInitialString(
+        init,
+        'description',
+      );
+      if (desc != null && desc.isNotEmpty) {
         _descriptionController.text = desc;
       }
-      // Amount (prefer rawAmount, else parse amount string)
-      final dynamic rawAmt = init['rawAmount'] ?? init['amount'];
-      if (rawAmt != null) {
-        final double amt = (rawAmt is num)
-            ? rawAmt.toDouble()
-            : double.tryParse(rawAmt.toString()) ?? 0.0;
-        if (amt > 0) {
-          _totalIncomeController.text = amt.toStringAsFixed(2);
-        }
+
+      // Use helper to parse amount
+      final double amt = IncomeExpenseHelpers.getInitialAmount(init);
+      if (IncomeExpenseHelpers.isValidAmount(amt)) {
+        _totalIncomeController.text = amt.toStringAsFixed(2);
       }
-      // Category match (case-insensitive)
-      final String? cat = init['category']?.toString();
-      if (cat != null && cat.isNotEmpty) {
-        final String match = _categories.firstWhere(
-          (c) => c.toUpperCase() == cat.toUpperCase(),
-          orElse: () => _selectedCategory,
-        );
-        _selectedCategory = match;
-      }
-      // Recurrent flag
-      final bool recur = init['isRecurrent'] == true;
-      _isRecurrent = recur;
-      // Account name override if present
-      final String? acct = init['accountName']?.toString();
+
+      // Use helper to match category
+      _selectedCategory =
+          IncomeExpenseHelpers.getInitialCategory(
+            init,
+            _categories,
+            _selectedCategory,
+          ) ??
+          _selectedCategory;
+
+      // Use helper to extract recurrent flag
+      _isRecurrent =
+          IncomeExpenseHelpers.getInitialValue<bool>(
+            init,
+            'isRecurrent',
+            defaultValue: false,
+          ) ??
+          false;
+
+      // Use helper to extract account name
+      final String? acct = IncomeExpenseHelpers.getInitialAccount(init);
       if (acct != null && acct.isNotEmpty) {
         _selectedAccount = acct;
       }
@@ -106,20 +117,19 @@ class _AddIncomePageState extends State<AddIncomePage> {
     if (amountText.isEmpty) return;
 
     final double amount = double.tryParse(amountText) ?? 0.0;
-    if (amount <= 0) return;
+    if (!IncomeExpenseHelpers.isValidAmount(amount)) return;
 
     final description = _descriptionController.text.trim();
 
-    // 2. Prepare the simplified data object
+    // Prepare the simplified data object
     final newTransaction = {
       'title': _transactionNameController.text.trim().isNotEmpty
           ? _transactionNameController.text.trim()
           : 'Income',
       'amount': amount,
-      'category': _selectedCategory
-          .toUpperCase(), // Convert to uppercase for database
-      'isRecurrent': _isRecurrent, // The new boolean flag
-      'date': DateTime.now(), // defaulting to now
+      'category': _selectedCategory.toUpperCase(),
+      'isRecurrent': _isRecurrent,
+      'date': DateTime.now(),
       'accountName': _selectedAccount ?? widget.accountName,
       'description': description.isNotEmpty ? description : null,
     };

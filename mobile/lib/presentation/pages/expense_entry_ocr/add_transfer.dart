@@ -2,6 +2,7 @@ import 'package:cashlytics/presentation/widgets/index.dart';
 import 'package:flutter/material.dart';
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
+import 'package:cashlytics/core/utils/income_expense_management/income_expense_helpers.dart';
 
 class AddTransferPage extends StatefulWidget {
   final String fromAccountName;
@@ -39,30 +40,37 @@ class _AddTransferPageState extends State<AddTransferPage> {
     // Prefill from initialData if provided (for editing/duplication)
     final init = widget.initialData;
     if (init != null) {
-      final String? initFrom = init['fromAccount']?.toString();
+      // Use helper to extract from account
+      final String? initFrom = IncomeExpenseHelpers.getInitialString(
+        init,
+        'fromAccount',
+      );
       if (initFrom != null && widget.availableAccounts.contains(initFrom)) {
         _fromAccount = initFrom;
       }
 
-      // Title
-      final String? title = init['title']?.toString();
+      // Use helper to extract title
+      final String? title = IncomeExpenseHelpers.getInitialString(
+        init,
+        'title',
+      );
       if (title != null) {
         _transactionNameController.text = title;
       }
-      // Description
-      final String? desc = init['description']?.toString();
+
+      // Use helper to extract description
+      final String? desc = IncomeExpenseHelpers.getInitialString(
+        init,
+        'description',
+      );
       if (desc != null) {
         _descriptionController.text = desc;
       }
-      // Amount
-      final dynamic rawAmt = init['rawAmount'] ?? init['amount'];
-      if (rawAmt != null) {
-        final double amt = (rawAmt is num)
-            ? rawAmt.toDouble()
-            : double.tryParse(rawAmt.toString()) ?? 0.0;
-        if (amt > 0) {
-          _amountController.text = amt.toStringAsFixed(2);
-        }
+
+      // Use helper to parse amount
+      final double amt = IncomeExpenseHelpers.getInitialAmount(init);
+      if (IncomeExpenseHelpers.isValidAmount(amt)) {
+        _amountController.text = amt.toStringAsFixed(2);
       }
     }
 
@@ -78,7 +86,10 @@ class _AddTransferPageState extends State<AddTransferPage> {
 
     // If initialData provided a valid to account, apply it now (after filtering)
     if (init != null) {
-      final String? toAcct = init['toAccount']?.toString();
+      final String? toAcct = IncomeExpenseHelpers.getInitialString(
+        init,
+        'toAccount',
+      );
       if (toAcct != null && _validToAccounts.contains(toAcct)) {
         _selectedToAccount = toAcct;
       }
@@ -98,7 +109,7 @@ class _AddTransferPageState extends State<AddTransferPage> {
     if (amountText.isEmpty || _selectedToAccount == null) return;
 
     final double amount = double.tryParse(amountText) ?? 0.0;
-    if (amount <= 0) return;
+    if (!IncomeExpenseHelpers.isValidAmount(amount)) return;
 
     final description = _descriptionController.text.trim();
 
