@@ -9,7 +9,7 @@ CREATE OR REPLACE PROCEDURE add_transfer(
     p_description TEXT DEFAULT NULL,
     p_currency TEXT DEFAULT 'MYR'
 )
-LANGUAGE plpgsql AS $$
+LANGUAGE plpgsql SET search_path = public AS $$
 DECLARE
     v_tx_id UUID;
 BEGIN
@@ -43,7 +43,7 @@ CREATE OR REPLACE PROCEDURE add_income(
     p_currency TEXT DEFAULT 'MYR',
     p_is_recurrent BOOLEAN DEFAULT FALSE
 )
-LANGUAGE plpgsql AS $$
+LANGUAGE plpgsql SET search_path = public AS $$
 DECLARE
     v_tx_id UUID;
 BEGIN
@@ -72,7 +72,7 @@ CREATE OR REPLACE PROCEDURE add_expense(
     p_items JSONB, -- Format: '[{"name": "Milk", "qty": 2, "unit_price": 5.50}, ...]'
     p_currency TEXT DEFAULT 'MYR'
 )
-LANGUAGE plpgsql AS $$
+LANGUAGE plpgsql SET search_path = public AS $$
 DECLARE
     v_cat_id UUID;
     v_tx_id UUID;
@@ -138,7 +138,7 @@ CREATE OR REPLACE PROCEDURE add_expense_with_receipt(
     p_receipt_confidence_score NUMERIC DEFAULT NULL,
     p_receipt_ocr_raw_text TEXT DEFAULT NULL
 )
-LANGUAGE plpgsql AS $$
+LANGUAGE plpgsql SET search_path = public AS $$
 DECLARE
     v_cat_id UUID;
     v_tx_id UUID;
@@ -202,7 +202,7 @@ CREATE OR REPLACE PROCEDURE add_user_budget(
     p_date_from DATE,
     p_date_to DATE
 )
-LANGUAGE plpgsql
+LANGUAGE plpgsql SET search_path = public
 AS $$
 DECLARE
     v_budget_id UUID;
@@ -226,7 +226,7 @@ CREATE OR REPLACE PROCEDURE add_account_budget(
     p_date_from DATE,
     p_date_to DATE
 )
-LANGUAGE plpgsql
+LANGUAGE plpgsql SET search_path = public
 AS $$
 DECLARE
     v_budget_id UUID;
@@ -250,7 +250,7 @@ CREATE OR REPLACE PROCEDURE add_category_budget(
     p_date_from DATE,
     p_date_to DATE
 )
-LANGUAGE plpgsql
+LANGUAGE plpgsql SET search_path = public
 AS $$
 DECLARE
     v_budget_id UUID;

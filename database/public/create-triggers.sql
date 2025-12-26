@@ -11,7 +11,7 @@ BEGIN
     NEW.ITEM_ID := (SELECT COALESCE(MAX(ITEM_ID), 0) + 1 FROM EXPENSE_ITEMS WHERE TRANSACTION_ID = NEW.TRANSACTION_ID);
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path = public;
 
 CREATE TRIGGER trg_set_expense_item_id
 BEFORE INSERT ON EXPENSE_ITEMS
@@ -35,7 +35,7 @@ BEGIN
 
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path = public;
 
 CREATE TRIGGER trigger_init_account_current_balance
     BEFORE INSERT ON ACCOUNTS
@@ -58,7 +58,7 @@ BEGIN
     NEW.UPDATED_AT = NOW();
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path = public;
 
 CREATE TRIGGER trg_update_biometrics_timestamp
 BEFORE UPDATE ON BIOMETRICS
@@ -115,7 +115,7 @@ BEGIN
 
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path = public;
 
 ---
 -- Update triggers for account balance management
@@ -172,7 +172,7 @@ BEGIN
 
     RETURN OLD;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path = public;
 
 CREATE TRIGGER trg_delete_income_balance
 AFTER DELETE ON INCOME
@@ -237,7 +237,7 @@ BEGIN
 
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path = public;
 
 CREATE TRIGGER trg_modify_income_balance
 AFTER UPDATE ON INCOME
@@ -298,7 +298,7 @@ BEGIN
 
     RETURN OLD;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path = public;
 
 CREATE TRIGGER trg_delete_transaction_balance
 BEFORE DELETE ON TRANSACTION

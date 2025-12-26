@@ -76,7 +76,7 @@ BEGIN
     WHERE EXTRACT(MONTH FROM wr.week_start)::INTEGER = p_month
     ORDER BY wr.week_num;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path = public;
 
 -- Function to calculate quarterly balances for a given year
 CREATE OR REPLACE FUNCTION get_yearly_quarterly_balances(
@@ -149,4 +149,4 @@ BEGIN
     WHERE qr.quarter_num <= p_current_quarter
     ORDER BY qr.quarter_num;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path = public;
