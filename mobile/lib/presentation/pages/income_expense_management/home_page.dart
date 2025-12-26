@@ -26,6 +26,11 @@ class _HomePageState extends State<HomePage> {
       onError: (msg) => context.showSnackBar(msg, isError: true),
     );
 
+    // Clear all user-related cache
+    await CacheService.remove('user_profile_cache');
+    await CacheService.remove('accounts');
+    await CacheService.remove('transactions');
+
     // Reset theme to system when user logs out
     if (mounted) {
       Provider.of<ThemeProvider>(context, listen: false)

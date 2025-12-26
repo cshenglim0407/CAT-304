@@ -167,7 +167,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 });
 
             // Update cache
-            CacheService.save(_userProfileCacheKey, currentUserProfile!);
+            CacheService.save('user_profile_cache', currentUserProfile!);
           }
         });
         context.showSnackBar('Profile photo updated successfully');
@@ -196,6 +196,11 @@ class _ProfilePageState extends State<ProfilePage> {
       onError: (msg) => context.showSnackBar(msg, isError: true),
     );
 
+    // Clear all user-related cache
+    await CacheService.remove('user_profile_cache');
+    await CacheService.remove('accounts');
+    await CacheService.remove('transactions');
+
     if (mounted) {
       Provider.of<ThemeProvider>(
         context,
@@ -205,8 +210,6 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   final int _selectedIndex = 2;
-
-  static const String _userProfileCacheKey = 'user_profile_cache';
 
   // --- Basic User Data ---
   late String _displayName = "";
@@ -284,18 +287,18 @@ class _ProfilePageState extends State<ProfilePage> {
           'currency_pref': _domainUser!.currencyPreference,
           'theme_pref': _domainUser!.themePreference,
         };
-        await CacheService.save(_userProfileCacheKey, currentUserProfile!);
+        await CacheService.save('user_profile_cache', currentUserProfile!);
       }
     } catch (e) {
       debugPrint('Error fetching profile: $e');
       currentUserProfile = CacheService.load<Map<String, dynamic>>(
-        _userProfileCacheKey,
+        'user_profile_cache',
       );
     } finally {
       if (_authService.currentUser == null) {
         if (currentUserProfile == null || currentUserProfile!.isEmpty) {
           currentUserProfile = null;
-          await CacheService.remove(_userProfileCacheKey);
+          await CacheService.remove('user_profile_cache');
           if (mounted) {
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(builder: (context) => const LoginPage()),
@@ -345,7 +348,7 @@ class _ProfilePageState extends State<ProfilePage> {
     super.initState();
 
     final cachedProfile = CacheService.load<Map<String, dynamic>>(
-      _userProfileCacheKey,
+      'user_profile_cache',
     );
     if (cachedProfile != null) {
       currentUserProfile = cachedProfile;
@@ -373,7 +376,7 @@ class _ProfilePageState extends State<ProfilePage> {
       onRedirect: () {
         if (!mounted) return;
         setState(() => _redirecting = true);
-        CacheService.remove(_userProfileCacheKey);
+        CacheService.remove('user_profile_cache');
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const LoginPage()),
         );
@@ -387,7 +390,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void dispose() {
     _authStateSubscription.cancel();
-    CacheService.remove(_userProfileCacheKey);
+    CacheService.remove('user_profile_cache');
     super.dispose();
   }
 
