@@ -11,6 +11,8 @@ import 'package:cashlytics/data/services/ocr_service.dart';
 import 'package:cashlytics/data/services/receipt_picker.dart';
 import 'package:cashlytics/data/models/ocr_result.dart';
 
+import 'package:cashlytics/data/repositories/receipt_repository.dart';
+
 class AddExpensePage extends StatefulWidget {
   final String accountName;
   final List<String> availableAccounts;
@@ -180,6 +182,10 @@ class _AddExpensePageState extends State<AddExpensePage> {
 
     try {
       final OcrResult result = await _ocrService.scanReceipt(image);
+
+      final receiptRepo = ReceiptRepository();
+
+      await receiptRepo.saveDraftReceipt(imageFile: image, ocr: result);
 
       setState(() {
         // 1️⃣ Transaction name
