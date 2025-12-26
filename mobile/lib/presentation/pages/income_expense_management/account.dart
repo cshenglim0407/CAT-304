@@ -2755,6 +2755,10 @@ class _AccountPageState extends State<AccountPage> {
         CacheService.save('transactions', _getSanitizedTransactions());
       }
 
+      // After deleting the account, remove any orphan transfer transactions
+      // where either FROM_ACCOUNT_ID or TO_ACCOUNT_ID is already NULL.
+      await _cleanupOrphanTransfers();
+
       if (context.mounted) {
         ScaffoldMessenger.of(
           context,
@@ -2766,6 +2770,43 @@ class _AccountPageState extends State<AccountPage> {
           context,
         ).showSnackBar(SnackBar(content: Text('Delete failed: $e')));
       }
+    }
+  }
+
+  Future<void> _cleanupOrphanTransfers() async {
+    try {
+      final List<dynamic> orphanRows = await supabase
+          .from('transfer')
+          .select('transaction_id')
+          .or('from_account_id.is.null,to_account_id.is.null');
+
+      final List<String> orphanTxIds = orphanRows
+          .map((e) => e['transaction_id']?.toString())
+          .whereType<String>()
+          .toList();
+
+      if (orphanTxIds.isEmpty) return;
+
+      // Delete each orphan transaction (TRANSFER will cascade by PK)
+      for (final txId in orphanTxIds) {
+        await _databaseService.deleteById(
+          'transaction',
+          matchColumn: 'transaction_id',
+          matchValue: txId,
+        );
+      }
+
+      // Remove from local state lists
+      setState(() {
+        for (final txList in _allTransactions) {
+          txList.removeWhere(
+            (tx) => orphanTxIds.contains(tx['transactionId']?.toString()),
+          );
+        }
+      });
+      CacheService.save('transactions', _getSanitizedTransactions());
+    } catch (e) {
+      debugPrint('Failed to cleanup orphan transfers: $e');
     }
   }
 
