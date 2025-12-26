@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:cashlytics/core/utils/math_formatter.dart';
 import 'package:cashlytics/core/utils/string_case_formatter.dart';
+import 'package:cashlytics/core/utils/income_expense_management/income_expense_helpers.dart';
 import 'package:cashlytics/core/services/supabase/client.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_state_listener.dart';
 import 'package:cashlytics/core/services/supabase/database/database_service.dart';
@@ -438,17 +439,7 @@ class _AccountPageState extends State<AccountPage> {
 
   String _formatDate(DateTime? dateTime) {
     if (dateTime == null) return 'Unknown';
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final txDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
-
-    if (txDate == today) {
-      return 'Today';
-    } else if (txDate == today.subtract(const Duration(days: 1))) {
-      return 'Yesterday';
-    } else {
-      return '\${dateTime.day}/\${dateTime.month}';
-    }
+    return IncomeExpenseHelpers.formatTransactionDate(dateTime);
   }
 
   IconData _getTransactionIcon(bool isExpense, String? category) {
@@ -479,18 +470,11 @@ class _AccountPageState extends State<AccountPage> {
 
   /// Parse amount from various types (double, int, String, Map)
   double _parseAmountValue(dynamic value) {
-    if (value == null) return 0.0;
-    if (value is double) return value;
-    if (value is int) return value.toDouble();
-    if (value is String) {
-      String cleanString = value.replaceAll(RegExp(r'[^0-9.]'), '');
-      return double.tryParse(cleanString) ?? 0.0;
-    }
     if (value is Map) {
       // If it's a map, extract the amount field
       return _parseAmount(value as Map<String, dynamic>);
     }
-    return 0.0;
+    return IncomeExpenseHelpers.parseAmount(value);
   }
 
   /// Remove non-serializable fields (like IconData) before caching
@@ -983,7 +967,7 @@ class _AccountPageState extends State<AccountPage> {
 
       final dynamic dateDyn = result['date'];
       final String displayDate = (dateDyn is DateTime)
-          ? "${dateDyn.day}/${dateDyn.month}"
+          ? IncomeExpenseHelpers.formatTransactionDate(dateDyn)
           : (dateDyn?.toString() ?? '');
 
       // Title prioritization
@@ -1388,6 +1372,11 @@ class _AccountPageState extends State<AccountPage> {
       if (amount == null) {
         throw Exception('Amount is required');
       }
+      
+      final double amountValue = IncomeExpenseHelpers.parseAmount(amount);
+      if (!IncomeExpenseHelpers.isValidAmount(amountValue)) {
+        throw Exception('Invalid amount: must be positive');
+      }
 
       // Save type-specific details
       if (isTransfer) {
@@ -1511,7 +1500,7 @@ class _AccountPageState extends State<AccountPage> {
         final newTxSender = {
           'type': isTransfer ? 'transfer' : (isExpense ? 'expense' : 'income'),
           'title': title,
-          'date': "${result['date'].day}/${result['date'].month}",
+          'date': IncomeExpenseHelpers.formatTransactionDate(result['date'] as DateTime),
           'amount': displayAmount,
           'rawAmount': rawAmount,
           'isExpense': isExpense,
@@ -1556,7 +1545,9 @@ class _AccountPageState extends State<AccountPage> {
             final newTxReceiver = {
               'type': 'transfer',
               'title': "From $senderName", // Display "From [Sender Name]"
-              'date': "${result['date'].day}/${result['date'].month}",
+              'date': IncomeExpenseHelpers.formatTransactionDate(
+                result['date'] as DateTime,
+              ),
               'amount': displayAmountReceiver,
               'rawAmount': rawAmount,
               'isExpense': false, // It's income for the receiver
