@@ -166,13 +166,27 @@ class _RecurrentIncomeManagerPageState
   Future<void> _maybePromptMonthlyAdditions() async {
     if (!mounted) return;
     final now = DateTime.now();
+    // TO DO: Remove for testing - change back to "if (now.day != 1) return;" for production
     if (now.day != 1) return;
 
     final active = _incomes.where((i) => i.isRecurrent).toList();
     if (active.isEmpty) return;
 
     final cacheKey = 'recurrent_income_prompt_${now.year}_${now.month}';
+    // TO DO: Remove for testing - add timestamp to bypass cache for testing
+    // final cacheKey =
+    //     'recurrent_income_prompt_${now.year}_${now.month}_${now.day}_${now.hour}_${now.minute}';
     if (CacheService.load<bool>(cacheKey) == true) return;
+
+    // Filter out incomes that were already added this month
+    final addedThisMonthKey =
+        'recurrent_incomes_added_${now.year}_${now.month}';
+    final addedIds = CacheService.load<List<dynamic>>(addedThisMonthKey) ?? [];
+    final addedIdSet = addedIds.cast<String>().toSet();
+    final toAdd = active
+        .where((i) => !addedIdSet.contains(i.transactionId))
+        .toList();
+    if (toAdd.isEmpty) return;
 
     await Future.delayed(const Duration(milliseconds: 250));
 
@@ -225,10 +239,10 @@ class _RecurrentIncomeManagerPageState
                   child: ListView.separated(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount: active.length,
+                    itemCount: toAdd.length,
                     separatorBuilder: (_, _) => const Divider(height: 1),
                     itemBuilder: (context, index) {
-                      final item = active[index];
+                      final item = toAdd[index];
                       return ListTile(
                         leading: const Icon(
                           Icons.repeat,
@@ -279,7 +293,7 @@ class _RecurrentIncomeManagerPageState
     await CacheService.save(cacheKey, true);
 
     if (accept == true) {
-      await _addRecurringIncomes(active);
+      await _addRecurringIncomes(toAdd);
     }
   }
 
@@ -288,6 +302,13 @@ class _RecurrentIncomeManagerPageState
     setState(() => _isSaving = true);
 
     try {
+      final now = DateTime.now();
+      final addedThisMonthKey =
+          'recurrent_incomes_added_${now.year}_${now.month}';
+      final addedIds =
+          CacheService.load<List<dynamic>>(addedThisMonthKey) ?? [];
+      final addedIdList = addedIds.cast<String>().toList();
+
       for (final item in items) {
         final txRecord = TransactionRecord(
           id: null,
@@ -311,7 +332,21 @@ class _RecurrentIncomeManagerPageState
           isRecurrent: true,
         );
         await _upsertIncome(income);
+
+        // Set original income's isRecurrent to false to avoid duplication next month
+        await _databaseService.updateById(
+          'income',
+          matchColumn: 'transaction_id',
+          matchValue: item.transactionId,
+          values: {'is_recurrent': false},
+        );
+
+        // Track this income as added for this month
+        addedIdList.add(item.transactionId);
       }
+
+      // Save updated list of added incomes for this month
+      await CacheService.save(addedThisMonthKey, addedIdList);
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
