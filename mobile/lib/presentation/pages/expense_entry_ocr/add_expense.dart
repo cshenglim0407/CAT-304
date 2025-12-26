@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:cashlytics/core/config/icons.dart';
 import 'package:cashlytics/core/utils/math_formatter.dart';
+import 'package:cashlytics/core/utils/currency_input_formatter.dart';
 import 'package:cashlytics/core/utils/income_expense_management/income_expense_helpers.dart';
 
 import 'package:cashlytics/presentation/themes/colors.dart';
@@ -791,9 +792,8 @@ class _AddExpensePageState extends State<AddExpensePage> {
                     const FormLabel(label: "Unit Price", useGreyStyle: true),
                     TextField(
                       controller: _items[index]['price'],
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [CurrencyInputFormatter()],
                       decoration: CustomInputDecoration.simple(
                         "0.00",
                         fieldColor,

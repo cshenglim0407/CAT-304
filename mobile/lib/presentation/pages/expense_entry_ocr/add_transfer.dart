@@ -1,8 +1,11 @@
-import 'package:cashlytics/presentation/widgets/index.dart';
 import 'package:flutter/material.dart';
+
+import 'package:cashlytics/core/utils/currency_input_formatter.dart';
+import 'package:cashlytics/core/utils/income_expense_management/income_expense_helpers.dart';
+
+import 'package:cashlytics/presentation/widgets/index.dart';
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
-import 'package:cashlytics/core/utils/income_expense_management/income_expense_helpers.dart';
 
 class AddTransferPage extends StatefulWidget {
   final String fromAccountName;
@@ -296,9 +299,8 @@ class _AddTransferPageState extends State<AddTransferPage> {
                     ),
                     child: TextField(
                       controller: _amountController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [CurrencyInputFormatter()],
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: primaryColor,

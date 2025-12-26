@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:cashlytics/core/config/icons.dart';
+import 'package:cashlytics/core/utils/currency_input_formatter.dart';
 import 'package:cashlytics/core/utils/income_expense_management/income_expense_helpers.dart';
 
 import 'package:cashlytics/presentation/themes/colors.dart';
@@ -325,9 +326,8 @@ class _AddIncomePageState extends State<AddIncomePage> {
                     ),
                     child: TextField(
                       controller: _totalIncomeController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [CurrencyInputFormatter()],
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: primaryColor,

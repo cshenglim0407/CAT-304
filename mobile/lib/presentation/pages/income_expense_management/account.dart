@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:cashlytics/core/utils/math_formatter.dart';
 import 'package:cashlytics/core/utils/string_case_formatter.dart';
+import 'package:cashlytics/core/utils/currency_input_formatter.dart';
 import 'package:cashlytics/core/utils/income_expense_management/income_expense_helpers.dart';
 import 'package:cashlytics/core/services/supabase/client.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_state_listener.dart';
@@ -2176,15 +2177,13 @@ class _AccountPageState extends State<AccountPage> {
                     ),
                     const SizedBox(height: 16),
 
-                    // --- Balance Input ---
+                    // --- Initial Balance Input ---
                     TextField(
                       controller: balanceController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [CurrencyInputFormatter()],
                       decoration: InputDecoration(
                         labelText: 'Initial Balance',
-                        // --- CHANGE HERE: Label color ---
                         labelStyle: const TextStyle(color: Colors.grey),
                         hintText: '0.00',
                         hintStyle: TextStyle(color: Colors.grey.shade400),
