@@ -59,6 +59,30 @@ class _ProfilePageState extends State<ProfilePage> {
 
   late final StreamSubscription<AuthState> _authStateSubscription;
 
+  void _redirectToLoginOnce() {
+    if (!mounted) return;
+    if (_redirecting) return;
+    setState(() => _redirecting = true);
+    CacheService.remove('user_profile_cache');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (!mounted) return;
+        Navigator.of(context).pop();
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+        );
+      });
+    });
+  }
+
   Future<void> _uploadProfilePhoto() async {
     try {
       final result = await FilePicker.platform.pickFiles(
@@ -299,32 +323,9 @@ class _ProfilePageState extends State<ProfilePage> {
         if (currentUserProfile == null || currentUserProfile!.isEmpty) {
           currentUserProfile = null;
           await CacheService.remove('user_profile_cache');
-          if (mounted) {
-            // Use addPostFrameCallback to delay navigation until after frame is complete
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                // Show loading dialog while initializing
-                showDialog(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (context) => const Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                );
-                // Delay navigation to allow UI to render
-                Future.delayed(const Duration(milliseconds: 300), () {
-                  if (mounted) {
-                    Navigator.of(context).pop(); // Close loading dialog
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(builder: (context) => const LoginPage()),
-                    );
-                  }
-                });
-              }
-            });
-          } else {
-            debugPrint('User logged out but cache available');
-          }
+          _redirectToLoginOnce();
+        } else {
+          debugPrint('User logged out but cache available');
         }
       }
     }
@@ -393,31 +394,7 @@ class _ProfilePageState extends State<ProfilePage> {
     _authStateSubscription = listenForSignedOutRedirect(
       shouldRedirect: () => !_redirecting,
       onRedirect: () {
-        if (!mounted) return;
-        setState(() => _redirecting = true);
-        CacheService.remove('user_profile_cache');
-        // Use addPostFrameCallback to delay navigation until after frame is complete
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            // Show loading dialog while initializing
-            showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder: (context) => const Center(
-                child: CircularProgressIndicator(),
-              ),
-            );
-            // Delay navigation to allow UI to render
-            Future.delayed(const Duration(milliseconds: 300), () {
-              if (mounted) {
-                Navigator.of(context).pop(); // Close loading dialog
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
-                );
-              }
-            });
-          }
-        });
+        _redirectToLoginOnce();
       },
       onError: (error) {
         debugPrint('Auth State Listener Error: $error');

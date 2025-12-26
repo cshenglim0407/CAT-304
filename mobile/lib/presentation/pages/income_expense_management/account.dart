@@ -71,6 +71,31 @@ class _AccountPageState extends State<AccountPage> {
   StreamSubscription<AuthState>? _authStateSubscription;
   static const String _userProfileCacheKey = 'user_profile_cache';
 
+  void _redirectToLoginOnce() {
+    if (!mounted) return;
+    if (_redirecting) return;
+    setState(() {
+      _redirecting = true;
+      _isLoading = false; // avoid stacked spinners while redirecting
+    });
+    CacheService.remove(_userProfileCacheKey);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (!mounted) return;
+        Navigator.of(context).pop();
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+        );
+      });
+    });
+  }
+
   // Database service
   final DatabaseService _databaseService = const DatabaseService();
 
@@ -119,30 +144,7 @@ class _AccountPageState extends State<AccountPage> {
     // Check if user is signed in at startup
     final user = supabase.auth.currentUser;
     if (user == null) {
-      // User not signed in, redirect immediately
-      if (mounted) {
-        // Use addPostFrameCallback to delay navigation until after frame is complete
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            // Show loading dialog while initializing
-            showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder: (context) =>
-                  const Center(child: CircularProgressIndicator()),
-            );
-            // Delay navigation to allow UI to render
-            Future.delayed(const Duration(milliseconds: 300), () {
-              if (mounted) {
-                Navigator.of(context).pop(); // Close loading dialog
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
-                );
-              }
-            });
-          }
-        });
-      }
+      _redirectToLoginOnce();
       return;
     }
 
@@ -152,30 +154,7 @@ class _AccountPageState extends State<AccountPage> {
     _authStateSubscription = listenForSignedOutRedirect(
       shouldRedirect: () => !_redirecting,
       onRedirect: () {
-        if (!mounted) return;
-        setState(() => _redirecting = true);
-        CacheService.remove(_userProfileCacheKey);
-        // Use addPostFrameCallback to delay navigation until after frame is complete
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            // Show loading dialog while initializing
-            showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder: (context) =>
-                  const Center(child: CircularProgressIndicator()),
-            );
-            // Delay navigation to allow UI to render
-            Future.delayed(const Duration(milliseconds: 300), () {
-              if (mounted) {
-                Navigator.of(context).pop(); // Close loading dialog
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
-                );
-              }
-            });
-          }
-        });
+        _redirectToLoginOnce();
       },
       onError: (error) {
         debugPrint('Auth State Listener Error: $error');
@@ -2840,9 +2819,9 @@ class _AccountPageState extends State<AccountPage> {
 
   void _showAccountList(BuildContext context) {
     if (_myAccounts.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No accounts to show.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('No accounts to show.')));
       return;
     }
 
@@ -2894,15 +2873,16 @@ class _AccountPageState extends State<AccountPage> {
 
                       return ListTile(
                         leading: CircleAvatar(
-                          backgroundColor:
-                              AppColors.primary.withValues(alpha: 0.1),
+                          backgroundColor: AppColors.primary.withValues(
+                            alpha: 0.1,
+                          ),
                           child: Text(
                             (acc['name']?.toString().isNotEmpty ?? false)
                                 ? acc['name']
-                                    .toString()
-                                    .trim()
-                                    .substring(0, 1)
-                                    .toUpperCase()
+                                      .toString()
+                                      .trim()
+                                      .substring(0, 1)
+                                      .toUpperCase()
                                 : 'A',
                             style: const TextStyle(color: AppColors.primary),
                           ),
