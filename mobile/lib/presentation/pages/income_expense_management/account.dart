@@ -2424,24 +2424,40 @@ class _AccountPageState extends State<AccountPage> {
                               // Show loading state
                               setSheetState(() => _isLoading = true);
 
+                              // Calculate the delta for initial balance change
+                              final oldInitialBalance =
+                                  (account['initial'] is num)
+                                  ? (account['initial'] as num).toDouble()
+                                  : double.tryParse(
+                                          account['initial']?.toString() ?? '0',
+                                        ) ??
+                                        0;
+                              final newInitialBalance =
+                                  double.tryParse(
+                                    initialController.text.trim(),
+                                  ) ??
+                                  0;
+                              final initialBalanceDelta =
+                                  newInitialBalance - oldInitialBalance;
+
+                              // Calculate the current balance
+                              final oldCurrentBalance =
+                                  (account['current'] is num)
+                                  ? (account['current'] as num).toDouble()
+                                  : double.tryParse(
+                                          account['current']?.toString() ?? '0',
+                                        ) ??
+                                        0;
+                              final newCurrentBalance =
+                                  oldCurrentBalance + initialBalanceDelta;
+
                               final updated = Account(
                                 id: account['id']?.toString(),
                                 userId: userId,
                                 name: nameController.text.trim(),
                                 type: type,
-                                initialBalance:
-                                    double.tryParse(
-                                      initialController.text.trim(),
-                                    ) ??
-                                    0,
-                                // Preserve current balance logic
-                                currentBalance: (account['current'] is num)
-                                    ? (account['current'] as num).toDouble()
-                                    : double.tryParse(
-                                            account['current']?.toString() ??
-                                                '',
-                                          ) ??
-                                          0,
+                                initialBalance: newInitialBalance,
+                                currentBalance: newCurrentBalance,
                                 description: descController.text.trim().isEmpty
                                     ? null
                                     : descController.text.trim(),
