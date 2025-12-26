@@ -191,7 +191,56 @@ class _TransactionsCalendarPageState extends State<TransactionsCalendarPage> {
                   ),
                   onDateSelected: (date) =>
                       setState(() => _selectedDate = date),
-                  eventListBuilder: (_, __) => const SizedBox.shrink(),
+                  eventListBuilder: (_, _) => const SizedBox.shrink(),
+                  dayBuilder: (BuildContext context, DateTime day) {
+                    final isSelected = _isSameDay(day, _selectedDate);
+                    final dayEvents = _events
+                        .where((event) => _isSameDay(event.startTime, day))
+                        .toList();
+                    return Container(
+                      height: 50,
+                      alignment: Alignment.center,
+                      decoration: isSelected
+                          ? BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                            )
+                          : null,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            day.day.toString(),
+                            style: TextStyle(
+                              color: isSelected
+                                  ? Colors.white
+                                  : AppColors.getTextPrimary(context),
+                            ),
+                          ),
+                          if (dayEvents.isNotEmpty) const SizedBox(height: 2.0),
+                          if (dayEvents.isNotEmpty)
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: dayEvents.take(4).map((event) {
+                                return Container(
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 1.5,
+                                  ),
+                                  width: 5.0,
+                                  height: 5.0,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: isSelected
+                                        ? Colors.white
+                                        : event.color,
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
