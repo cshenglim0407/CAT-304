@@ -42,4 +42,14 @@ class ReceiptRepository {
 
     return receiptId;
   }
+
+  Future<void> attachReceiptToTransaction({
+    required String receiptId,
+    required String transactionId,
+  }) async {
+    await _supabase
+        .from('receipt')
+        .update({'transaction_id': transactionId})
+        .eq('receipt_id', receiptId);
+  }
 }

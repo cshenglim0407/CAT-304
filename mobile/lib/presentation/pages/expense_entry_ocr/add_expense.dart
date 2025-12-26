@@ -53,6 +53,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
   bool _nameEdited = false;
   bool _dateEdited = false;
   bool _itemEdited = false;
+  String? _draftReceiptId;
 
   @override
   void initState() {
@@ -185,11 +186,13 @@ class _AddExpensePageState extends State<AddExpensePage> {
 
       final receiptRepo = ReceiptRepository();
 
-      await receiptRepo.saveDraftReceipt(
+      final receiptId = await receiptRepo.saveDraftReceipt(
         imageFile: image,
         ocr: result,
         rawOcrText: result.rawText,
       );
+
+      _draftReceiptId = receiptId;
 
       setState(() {
         // 1️⃣ Transaction name
@@ -274,6 +277,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
       'accountName': _selectedAccount ?? widget.accountName,
       'items': itemsList, // <--- CRITICAL FIX: Sending the list
       'description': _descriptionController.text.trim(),
+      'receiptId': _draftReceiptId,
     };
 
     Navigator.pop(context, newTransaction);
