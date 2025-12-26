@@ -242,7 +242,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
           : _items[0]['price']!.text,
       'date': _selectedDate,
       'accountName': _selectedAccount ?? widget.accountName,
-      'items': itemsList, // <--- CRITICAL FIX: Sending the list
+      'items': itemsList,
       'description': _descriptionController.text.trim(),
     };
 

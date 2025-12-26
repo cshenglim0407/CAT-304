@@ -2227,7 +2227,7 @@ class _ExpenseDistributionCardState extends State<_ExpenseDistributionCard> {
       context: context,
       firstDate: DateTime(2020),
       lastDate:
-          today, // FIX: Use 'today' (midnight), matching the initial range end
+          today, // Use 'today' (midnight), matching the initial range end
       initialDateRange: _selectedRange,
       builder: (context, child) {
         return Theme(

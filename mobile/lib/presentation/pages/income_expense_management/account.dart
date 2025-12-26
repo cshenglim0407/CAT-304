@@ -51,8 +51,6 @@ import 'package:cashlytics/presentation/pages/expense_entry_ocr/add_transfer.dar
 import 'package:cashlytics/presentation/pages/expense_entry_ocr/add_expense.dart';
 import 'package:cashlytics/presentation/pages/income_expense_management/transaction_history.dart';
 
-// ignore_for_file: use_build_context_synchronously
-
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
 
@@ -369,7 +367,7 @@ class _AccountPageState extends State<AccountPage> {
             String? toAccountName;
             String? fromAccountName;
             if (isTransfer) {
-              final String title = tx.title ?? '';
+              final String title = tx.title;
               final String titleLower = title.toLowerCase().trim();
 
               // Support multiple title formats: "Transfer to X", "to X", "Transfer from Y", "from Y"
@@ -1496,7 +1494,7 @@ class _AccountPageState extends State<AccountPage> {
 
         if (isTransfer) {
           icon = Icons.north_east_rounded;
-          // FIX: Display "To [Receiver Name]" for the sender
+          // Display "To [Receiver Name]" for the sender
           if (result['toAccount'] != null) {
             title = "To ${result['toAccount']}";
           }
@@ -1553,7 +1551,7 @@ class _AccountPageState extends State<AccountPage> {
 
             final newTxReceiver = {
               'type': 'transfer',
-              'title': "From $senderName", // FIX: Display "From [Sender Name]"
+              'title': "From $senderName", // Display "From [Sender Name]"
               'date': "${result['date'].day}/${result['date'].month}",
               'amount': displayAmountReceiver,
               'rawAmount': rawAmount,
