@@ -3140,34 +3140,40 @@ class _AccountPageState extends State<AccountPage> {
                                 ),
                                 Row(
                                   children: [
+                                    GestureDetector(
+                                      onTap: () => _navigateToCalendar(),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primary.withValues(
+                                            alpha: 0.1,
+                                          ),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.calendar_today,
+                                          color: AppColors.primary,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
                                     if (fullTransactions.length > 5)
                                       GestureDetector(
                                         onTap: _navigateToHistory,
-                                        child: Text(
-                                          "View All",
-                                          style: TextStyle(
+                                        child: Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.primary.withValues(
+                                              alpha: 0.1,
+                                            ),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.arrow_forward,
                                             color: AppColors.primary,
-                                            fontWeight: FontWeight.bold,
                                           ),
                                         ),
                                       ),
-                                    const SizedBox(width: 16),
-                                    GestureDetector(
-                                      onTap: _navigateToCalendar,
-                                      child: Row(
-                                        children: [
-                                          Icon(Icons.calendar_month, color: AppColors.primary, size: 18),
-                                          const SizedBox(width: 6),
-                                          Text(
-                                            "Calendar",
-                                            style: TextStyle(
-                                              color: AppColors.primary,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
                                   ],
                                 ),
                               ],
