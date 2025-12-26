@@ -68,7 +68,7 @@ class _AccountPageState extends State<AccountPage> {
   bool _isLoading = true;
   bool _redirecting = false;
 
-  late final StreamSubscription<AuthState> _authStateSubscription;
+  StreamSubscription<AuthState>? _authStateSubscription;
   static const String _userProfileCacheKey = 'user_profile_cache';
 
   // Database service
@@ -112,6 +112,9 @@ class _AccountPageState extends State<AccountPage> {
   @override
   void initState() {
     super.initState();
+
+    // Ensure page controller is always initialized, even if we redirect early
+    _pageController = PageController(viewportFraction: 0.85);
 
     // Check if user is signed in at startup
     final user = supabase.auth.currentUser;
@@ -182,8 +185,10 @@ class _AccountPageState extends State<AccountPage> {
 
   @override
   void dispose() {
-    _pageController.dispose();
-    _authStateSubscription.cancel();
+    try {
+      _pageController.dispose();
+    } catch (_) {}
+    _authStateSubscription?.cancel();
     super.dispose();
   }
 
@@ -239,7 +244,6 @@ class _AccountPageState extends State<AccountPage> {
   }
 
   void _initializeRepositories() {
-    _pageController = PageController(viewportFraction: 0.85);
     _accountRepository = AccountRepositoryImpl();
     _getAccounts = GetAccounts(_accountRepository);
     _getAccountTransactions = GetAccountTransactions(_accountRepository);
