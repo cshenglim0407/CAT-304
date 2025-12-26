@@ -263,7 +263,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
         elevation: 0,
         iconTheme: IconThemeData(color: primaryTextColor),
         title: Text(
-          "Add Expense",
+          widget.initialData != null ? "Edit Expense" : "Add Expense",
           style: AppTypography.headline3.copyWith(color: primaryTextColor),
         ),
         centerTitle: true,

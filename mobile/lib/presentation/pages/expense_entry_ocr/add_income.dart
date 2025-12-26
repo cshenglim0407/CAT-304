@@ -144,7 +144,7 @@ class _AddIncomePageState extends State<AddIncomePage> {
         elevation: 0,
         iconTheme: IconThemeData(color: primaryTextColor),
         title: Text(
-          "New Income",
+          widget.initialData != null ? "Edit Income" : "Add Income",
           style: AppTypography.headline3.copyWith(color: primaryTextColor),
         ),
         centerTitle: true,

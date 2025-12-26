@@ -133,7 +133,7 @@ class _AddTransferPageState extends State<AddTransferPage> {
         elevation: 0,
         iconTheme: IconThemeData(color: primaryTextColor),
         title: Text(
-          "Transfer Funds",
+          widget.initialData != null ? "Edit Transfer" : "Add Transfer",
           style: AppTypography.headline3.copyWith(color: primaryTextColor),
         ),
         centerTitle: true,
