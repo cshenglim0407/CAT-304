@@ -2992,6 +2992,24 @@ class _AccountPageState extends State<AccountPage> {
                                     ),
                                     const SizedBox(width: 10),
                                     GestureDetector(
+                                      onTap: () =>
+                                          _openRecurrentIncomeManager(),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primary.withValues(
+                                            alpha: 0.1,
+                                          ),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.repeat,
+                                          color: AppColors.primary,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    GestureDetector(
                                       onTap: () => _addAccount(context),
                                       child: Container(
                                         padding: const EdgeInsets.all(8),
@@ -3087,25 +3105,7 @@ class _AccountPageState extends State<AccountPage> {
                                 );
                               }),
                             ),
-                          const SizedBox(height: 16),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 22),
-                            child: GestureDetector(
-                              onTap: _openRecurrentIncomeManager,
-                              child: Center(
-                                child: Text(
-                                  'Manage Recurrent Income',
-                                  style: TextStyle(
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14,
-                                    decoration: TextDecoration.underline,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height:16),
+                          const SizedBox(height: 30),
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 22),
                             child: Row(
