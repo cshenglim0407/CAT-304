@@ -53,6 +53,7 @@ import 'package:cashlytics/presentation/pages/expense_entry_ocr/add_income.dart'
 import 'package:cashlytics/presentation/pages/expense_entry_ocr/add_transfer.dart';
 import 'package:cashlytics/presentation/pages/expense_entry_ocr/add_expense.dart';
 import 'package:cashlytics/presentation/pages/income_expense_management/transaction_history.dart';
+import 'package:cashlytics/presentation/pages/income_expense_management/transactions_calendar.dart';
 import 'package:cashlytics/presentation/pages/income_expense_management/recurrent_income_manager.dart';
 
 class AccountPage extends StatefulWidget {
@@ -1906,6 +1907,26 @@ class _AccountPageState extends State<AccountPage> {
     );
   }
 
+  void _navigateToCalendar() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TransactionsCalendarPage(
+          accounts: _myAccounts,
+          allTransactions: _allTransactions,
+          onDelete: (tx, accIndex) => _deleteTransaction(tx, accIndex),
+          onEdit: (tx, accIndex) {
+            // switch context to the transaction's account before editing
+            setState(() {
+              _currentCardIndex = accIndex;
+            });
+            _editTransaction(tx);
+          },
+        ),
+      ),
+    );
+  }
+
   bool _isTransferCounterpartDeleted(Map<String, dynamic> tx) {
     final String type = (tx['type'] ?? '').toString();
     if (type != 'transfer') return false;
@@ -3117,17 +3138,38 @@ class _AccountPageState extends State<AccountPage> {
                                     color: AppColors.getTextPrimary(context),
                                   ),
                                 ),
-                                if (fullTransactions.length > 5)
-                                  GestureDetector(
-                                    onTap: _navigateToHistory,
-                                    child: Text(
-                                      "View All",
-                                      style: TextStyle(
-                                        color: AppColors.primary,
-                                        fontWeight: FontWeight.bold,
+                                Row(
+                                  children: [
+                                    if (fullTransactions.length > 5)
+                                      GestureDetector(
+                                        onTap: _navigateToHistory,
+                                        child: Text(
+                                          "View All",
+                                          style: TextStyle(
+                                            color: AppColors.primary,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    const SizedBox(width: 16),
+                                    GestureDetector(
+                                      onTap: _navigateToCalendar,
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.calendar_month, color: AppColors.primary, size: 18),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            "Calendar",
+                                            style: TextStyle(
+                                              color: AppColors.primary,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                  ),
+                                  ],
+                                ),
                               ],
                             ),
                           ),
