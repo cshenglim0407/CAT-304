@@ -7,8 +7,11 @@ import 'package:provider/provider.dart';
 import 'package:cashlytics/core/services/supabase/init_service.dart';
 import 'package:cashlytics/core/services/supabase/client.dart';
 import 'package:cashlytics/core/services/cache/cache_service.dart';
+import 'package:cashlytics/core/services/ocr/ocr_service.dart';
+
 import 'package:cashlytics/presentation/providers/theme_provider.dart';
 import 'package:cashlytics/presentation/themes/app_themes.dart';
+
 import 'package:cashlytics/presentation/pages/income_expense_management/home_page.dart';
 import 'package:cashlytics/presentation/pages/income_expense_management/dashboard.dart';
 import 'package:cashlytics/presentation/pages/user_management/login.dart';
@@ -24,6 +27,9 @@ Future<void> main() async {
 
   // Initialize Supabase
   await SupabaseInitService.initialize();
+
+  // Initialize OCR Service
+  await OCRService.initialize();
 
   // Initialize Cache Service
   await CacheService.initialize();

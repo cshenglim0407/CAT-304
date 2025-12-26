@@ -42,9 +42,6 @@ class _AddExpensePageState extends State<AddExpensePage> {
   final TextEditingController _totalPriceController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
 
-  // OCR service
-  final OCRService _ocrService = OCRService();
-
   // List of items
   final List<Map<String, TextEditingController>> _items = [];
 
@@ -255,7 +252,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
     });
 
     try {
-      final OcrResult result = await _ocrService.scanReceipt(image);
+      final OcrResult result = await OCRService.instance.scanReceipt(image);
 
       final receiptRepo = ReceiptRepository();
 

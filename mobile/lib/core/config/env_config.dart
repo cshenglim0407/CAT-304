@@ -29,6 +29,7 @@ class EnvConfig {
       uri: _uri!,
       stage: _stage!,
       anonKey: dotenv.env['PUBLIC_SUPABASE_ANON_KEY'] ?? '',
+      ocrBaseUrl: dotenv.env['OCR_BASE_URL'] ?? 'http://10.0.2.2:8000',
     );
   }
 
@@ -55,10 +56,15 @@ class EnvConfigResult {
   final String uri;
   final String stage;
   final String anonKey;
+  final String ocrBaseUrl;
 
   const EnvConfigResult({
     required this.uri,
     required this.stage,
     required this.anonKey,
+    required this.ocrBaseUrl,
   });
+
+  /// Get OCR endpoint URL
+  String get ocrEndpoint => '$ocrBaseUrl/ocr';
 }
