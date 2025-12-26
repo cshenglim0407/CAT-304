@@ -19,7 +19,8 @@ class TransactionsCalendarPage extends StatefulWidget {
   });
 
   @override
-  State<TransactionsCalendarPage> createState() => _TransactionsCalendarPageState();
+  State<TransactionsCalendarPage> createState() =>
+      _TransactionsCalendarPageState();
 }
 
 class _TransactionsCalendarPageState extends State<TransactionsCalendarPage> {
@@ -47,7 +48,8 @@ class _TransactionsCalendarPageState extends State<TransactionsCalendarPage> {
 
   Color _colorForAccount(int index) => _palette[index % _palette.length];
 
-  DateTime _dateOnly(DateTime date) => DateTime(date.year, date.month, date.day);
+  DateTime _dateOnly(DateTime date) =>
+      DateTime(date.year, date.month, date.day);
 
   DateTime? _extractDate(Map<String, dynamic> tx) {
     final raw = tx['rawDate'];
@@ -78,7 +80,8 @@ class _TransactionsCalendarPageState extends State<TransactionsCalendarPage> {
     return null;
   }
 
-  bool _isSameDay(DateTime a, DateTime b) => a.year == b.year && a.month == b.month && a.day == b.day;
+  bool _isSameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
 
   List<Map<String, dynamic>> _transactionsForSelectedDate() {
     final DateTime target = _dateOnly(_selectedDate);
@@ -107,7 +110,9 @@ class _TransactionsCalendarPageState extends State<TransactionsCalendarPage> {
   }
 
   double _sumBy(bool isExpense) {
-    final items = _transactionsForSelectedDate().where((tx) => (tx['isExpense'] ?? false) == isExpense);
+    final items = _transactionsForSelectedDate().where(
+      (tx) => (tx['isExpense'] ?? false) == isExpense,
+    );
     double total = 0.0;
     for (final tx in items) {
       total += _parseAmount(tx);
@@ -166,7 +171,9 @@ class _TransactionsCalendarPageState extends State<TransactionsCalendarPage> {
             child: Card(
               elevation: 0,
               color: AppColors.greyLight.withValues(alpha: 0.2),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(8),
                 child: Calendar(
@@ -182,32 +189,13 @@ class _TransactionsCalendarPageState extends State<TransactionsCalendarPage> {
                     color: AppColors.getTextPrimary(context),
                     fontWeight: FontWeight.w600,
                   ),
-                  onDateSelected: (date) => setState(() => _selectedDate = date),
+                  onDateSelected: (date) =>
+                      setState(() => _selectedDate = date),
                   eventListBuilder: (_, __) => const SizedBox.shrink(),
                 ),
               ),
             ),
           ),
-          // Legend: account colors
-          if (widget.accounts.isNotEmpty)
-            SizedBox(
-              height: 40,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemBuilder: (context, i) {
-                  final name = widget.accounts[i]['name']?.toString() ?? 'Account';
-                  final color = _colorForAccount(i);
-                  return _SummaryChip(
-                    label: name,
-                    color: color.withValues(alpha: 0.12),
-                    textColor: color,
-                  );
-                },
-                separatorBuilder: (_, _) => const SizedBox(width: 8),
-                itemCount: widget.accounts.length,
-              ),
-            ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             child: Row(
@@ -243,7 +231,9 @@ class _TransactionsCalendarPageState extends State<TransactionsCalendarPage> {
                 ? Center(
                     child: Text(
                       "No transactions on this day",
-                      style: AppTypography.bodySmall.copyWith(color: AppColors.greyText),
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.greyText,
+                      ),
                     ),
                   )
                 : ListView.separated(
@@ -256,7 +246,8 @@ class _TransactionsCalendarPageState extends State<TransactionsCalendarPage> {
                       final isRecurrent = tx['isRecurrent'] ?? false;
                       final accIdx = tx['accountIndex'] as int? ?? 0;
                       final accColor = _colorForAccount(accIdx);
-                      final accName = tx['accountName']?.toString() ?? 'Account';
+                      final accName =
+                          tx['accountName']?.toString() ?? 'Account';
 
                       return ListTile(
                         contentPadding: EdgeInsets.zero,
@@ -285,11 +276,17 @@ class _TransactionsCalendarPageState extends State<TransactionsCalendarPage> {
                             ),
                             Text(
                               tx['title'],
-                              style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.bold),
+                              style: AppTypography.labelLarge.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             if (isRecurrent) ...[
                               const SizedBox(width: 6),
-                              Icon(Icons.repeat, size: 14, color: AppColors.greyText),
+                              Icon(
+                                Icons.repeat,
+                                size: 14,
+                                color: AppColors.greyText,
+                              ),
                             ],
                           ],
                         ),
@@ -297,7 +294,9 @@ class _TransactionsCalendarPageState extends State<TransactionsCalendarPage> {
                           children: [
                             Text(
                               tx['date'],
-                              style: AppTypography.bodySmall.copyWith(color: AppColors.greyText),
+                              style: AppTypography.bodySmall.copyWith(
+                                color: AppColors.greyText,
+                              ),
                             ),
                             const SizedBox(width: 10),
                             _SummaryChip(
@@ -387,10 +386,16 @@ class _SummaryChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(20),
+      ),
       child: Text(
         label,
-        style: AppTypography.bodySmall.copyWith(color: textColor, fontWeight: FontWeight.w600),
+        style: AppTypography.bodySmall.copyWith(
+          color: textColor,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
