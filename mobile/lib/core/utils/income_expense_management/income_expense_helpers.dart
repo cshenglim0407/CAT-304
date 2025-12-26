@@ -32,7 +32,7 @@ class IncomeExpenseHelpers {
 
   /// Parses amount from various types and returns as double.
   static double parseAmount(dynamic value) {
-    return MathFormatter.toDouble(value);
+    return MathFormatter.parseDouble(value) ?? 0.0;
   }
 
   /// Extracts initial data field with type coercion.

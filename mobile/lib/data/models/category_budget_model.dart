@@ -1,4 +1,5 @@
 import 'package:cashlytics/domain/entities/category_budget.dart';
+import 'package:cashlytics/core/utils/math_formatter.dart';
 
 /// Data model for category-specific budgets.
 class CategoryBudgetModel extends CategoryBudget {
@@ -20,7 +21,7 @@ class CategoryBudgetModel extends CategoryBudget {
     return CategoryBudgetModel(
       budgetId: map['budget_id'] as String? ?? '',
       expenseCategoryId: map['expense_cat_id'] as String? ?? '',
-      threshold: _parseDouble(map['threshold']),
+      threshold: MathFormatter.parseDouble(map['threshold']) ?? 0.0,
     );
   }
 
@@ -35,14 +36,4 @@ class CategoryBudgetModel extends CategoryBudget {
   Map<String, dynamic> toUpdate() => toInsert();
 
   Map<String, dynamic> toJson() => toUpdate();
-
-  static double _parseDouble(dynamic raw) {
-    if (raw == null) return 0;
-    if (raw is double) return raw;
-    if (raw is int) return raw.toDouble();
-    if (raw is String && raw.isNotEmpty) {
-      return double.tryParse(raw) ?? 0;
-    }
-    return 0;
-  }
 }

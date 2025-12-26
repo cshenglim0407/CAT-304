@@ -6,6 +6,7 @@ import 'package:cashlytics/domain/entities/account.dart';
 import 'package:cashlytics/domain/entities/account_transaction_view.dart';
 import 'package:cashlytics/domain/repositories/account_repository.dart';
 import 'package:cashlytics/core/config/icons.dart';
+import 'package:cashlytics/core/utils/math_formatter.dart';
 
 class AccountRepositoryImpl implements AccountRepository {
   AccountRepositoryImpl({DatabaseService? databaseService})
@@ -218,11 +219,7 @@ class AccountRepositoryImpl implements AccountRepository {
   }
 
   double _parseAmount(dynamic value) {
-    if (value == null) return 0.0;
-    if (value is double) return value;
-    if (value is int) return value.toDouble();
-    if (value is String) return double.tryParse(value) ?? 0.0;
-    return 0.0;
+    return MathFormatter.parseDouble(value) ?? 0.0;
   }
 
   // Icon mapping moved to config/icons.dart

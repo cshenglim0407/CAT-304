@@ -1,3 +1,4 @@
+import 'package:cashlytics/core/utils/math_formatter.dart';
 import 'package:cashlytics/domain/entities/income.dart';
 
 /// Data model for income transactions.
@@ -21,7 +22,7 @@ class IncomeModel extends Income {
   factory IncomeModel.fromMap(Map<String, dynamic> map) {
     return IncomeModel(
       transactionId: map['transaction_id'] as String? ?? '',
-      amount: _parseDouble(map['amount']),
+      amount: MathFormatter.parseDouble(map['amount']) ?? 0.0,
       category: map['category'] as String?,
       isRecurrent: map['is_recurrent'] as bool? ?? false,
     );
@@ -39,14 +40,4 @@ class IncomeModel extends Income {
   Map<String, dynamic> toUpdate() => toInsert();
 
   Map<String, dynamic> toJson() => toUpdate();
-
-  static double _parseDouble(dynamic raw) {
-    if (raw == null) return 0;
-    if (raw is double) return raw;
-    if (raw is int) return raw.toDouble();
-    if (raw is String && raw.isNotEmpty) {
-      return double.tryParse(raw) ?? 0;
-    }
-    return 0;
-  }
 }

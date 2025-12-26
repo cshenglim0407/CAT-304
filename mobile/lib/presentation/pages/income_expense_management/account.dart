@@ -461,19 +461,19 @@ class _AccountPageState extends State<AccountPage> {
 
   double _parseAmount(Map<String, dynamic> tx) {
     if (tx['rawAmount'] != null) {
-      return (tx['rawAmount'] as num).toDouble();
+      return MathFormatter.parseDouble(tx['rawAmount']) ?? 0.0;
     }
-    String amtString = tx['amount'].toString();
-    String cleanString = amtString.replaceAll(RegExp(r'[^0-9.]'), '');
-    return double.tryParse(cleanString) ?? 0.0;
+    // Handle formatted strings like "$45.00" using MathFormatter
+    return MathFormatter.parseFormattedAmount(tx['amount'].toString());
   }
 
   /// Parse amount from various types (double, int, String, Map)
   double _parseAmountValue(dynamic value) {
     if (value is Map) {
-      // If it's a map, extract the amount field
+      // If it's a map, use _parseAmount to handle formatted strings
       return _parseAmount(value as Map<String, dynamic>);
     }
+    // For primitives, use the standard helper
     return IncomeExpenseHelpers.parseAmount(value);
   }
 
@@ -1372,7 +1372,7 @@ class _AccountPageState extends State<AccountPage> {
       if (amount == null) {
         throw Exception('Amount is required');
       }
-      
+
       final double amountValue = IncomeExpenseHelpers.parseAmount(amount);
       if (!IncomeExpenseHelpers.isValidAmount(amountValue)) {
         throw Exception('Invalid amount: must be positive');
@@ -1500,7 +1500,9 @@ class _AccountPageState extends State<AccountPage> {
         final newTxSender = {
           'type': isTransfer ? 'transfer' : (isExpense ? 'expense' : 'income'),
           'title': title,
-          'date': IncomeExpenseHelpers.formatTransactionDate(result['date'] as DateTime),
+          'date': IncomeExpenseHelpers.formatTransactionDate(
+            result['date'] as DateTime,
+          ),
           'amount': displayAmount,
           'rawAmount': rawAmount,
           'isExpense': isExpense,

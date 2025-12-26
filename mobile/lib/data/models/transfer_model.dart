@@ -1,3 +1,4 @@
+import 'package:cashlytics/core/utils/math_formatter.dart';
 import 'package:cashlytics/domain/entities/transfer.dart';
 
 /// Data model for transfer transactions.
@@ -21,7 +22,7 @@ class TransferModel extends Transfer {
   factory TransferModel.fromMap(Map<String, dynamic> map) {
     return TransferModel(
       transactionId: map['transaction_id'] as String? ?? '',
-      amount: _parseDouble(map['amount']),
+      amount: MathFormatter.parseDouble(map['amount']) ?? 0.0,
       fromAccountId: map['from_account_id'] as String? ?? '',
       toAccountId: map['to_account_id'] as String? ?? '',
     );
@@ -39,14 +40,4 @@ class TransferModel extends Transfer {
   Map<String, dynamic> toUpdate() => toInsert();
 
   Map<String, dynamic> toJson() => toUpdate();
-
-  static double _parseDouble(dynamic raw) {
-    if (raw == null) return 0;
-    if (raw is double) return raw;
-    if (raw is int) return raw.toDouble();
-    if (raw is String && raw.isNotEmpty) {
-      return double.tryParse(raw) ?? 0;
-    }
-    return 0;
-  }
 }

@@ -1,3 +1,4 @@
+import 'package:cashlytics/core/utils/math_formatter.dart';
 import 'package:cashlytics/domain/entities/detailed.dart';
 
 /// Data model for detailed user information. Converts between Supabase rows and domain entity.
@@ -36,9 +37,9 @@ class DetailedModel extends Detailed {
       employmentStatus: map['employment_stat'] as String?,
       maritalStatus: map['marital_stat'] as String?,
       dependentNumber: map['dependent_num'] as int? ?? 0,
-      estimatedLoan: _parseNumeric(map['estimated_loan']),
-      createdAt: _parseDateTime(map['created_at']),
-      updatedAt: _parseDateTime(map['updated_at']),
+      estimatedLoan: MathFormatter.parseDouble(map['estimated_loan']) ?? 0.0,
+      createdAt: MathFormatter.parseDateTime(map['created_at']),
+      updatedAt: MathFormatter.parseDateTime(map['updated_at']),
     );
   }
 
@@ -69,22 +70,4 @@ class DetailedModel extends Detailed {
 
   Map<String, dynamic> toJson() => toUpdate();
 
-  static double _parseNumeric(dynamic raw) {
-    if (raw == null) return 0.0;
-    if (raw is double) return raw;
-    if (raw is int) return raw.toDouble();
-    if (raw is String && raw.isNotEmpty) {
-      return double.tryParse(raw) ?? 0.0;
-    }
-    return 0.0;
-  }
-
-  static DateTime _parseDateTime(dynamic raw) {
-    if (raw == null) return DateTime.now();
-    if (raw is DateTime) return raw;
-    if (raw is String && raw.isNotEmpty) {
-      return DateTime.tryParse(raw) ?? DateTime.now();
-    }
-    return DateTime.now();
-  }
 }

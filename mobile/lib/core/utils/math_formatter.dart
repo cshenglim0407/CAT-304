@@ -3,13 +3,45 @@ class MathFormatter {
     return '\$${amount.toStringAsFixed(2)}';
   }
 
-  static double toDouble(dynamic value) {
-    if (value == null) return 0.0;
+  /// Parse formatted amount strings (e.g., "$45.00", "45.00 USD") by removing
+  /// non-numeric characters except decimal points
+  static double parseFormattedAmount(String value) {
+    String cleanString = value.replaceAll(RegExp(r'[^0-9.]'), '');
+    return double.tryParse(cleanString) ?? 0.0;
+  }
+
+  /// Parse int from various types with null safety
+  static int? parseInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value);
+    if (value is double) return value.toInt();
+    return null;
+  }
+
+  /// Parse double from various types with null safety
+  static double? parseDouble(dynamic value) {
+    if (value == null) return null;
     if (value is double) return value;
     if (value is int) return value.toDouble();
-    if (value is String) {
-      return double.tryParse(value) ?? 0.0;
-    }
-    return 0.0;
+    if (value is String) return double.tryParse(value);
+    return null;
+  }
+
+  /// Parse DateTime from various types with null safety
+  static DateTime? parseDateTime(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    if (value is String) return DateTime.tryParse(value);
+    return null;
+  }
+
+  /// Parse bool from various types with null safety
+  static bool? parseBool(dynamic value) {
+    if (value == null) return null;
+    if (value is bool) return value;
+    if (value is int) return value == 1;
+    if (value is String) return value.toLowerCase() == 'true' || value == '1';
+    return null;
   }
 }

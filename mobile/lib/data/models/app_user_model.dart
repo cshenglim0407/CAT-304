@@ -1,4 +1,5 @@
 import 'package:cashlytics/domain/entities/app_user.dart';
+import 'package:cashlytics/core/utils/math_formatter.dart';
 
 /// Data model for app user. Converts between Supabase rows and domain entity.
 class AppUserModel extends AppUser {
@@ -34,7 +35,7 @@ class AppUserModel extends AppUser {
       email: map['email'] as String? ?? '',
       displayName: map['display_name'] as String? ?? '',
       gender: map['gender'] as String?,
-      dateOfBirth: _parseDate(map['date_of_birth']),
+      dateOfBirth: MathFormatter.parseDateTime(map['date_of_birth']),
       imagePath: map['image_path'] as String?,
       timezone: map['timezone'] as String? ?? '+08:00',
       currencyPreference: map['currency_pref'] as String? ?? 'MYR',
@@ -57,15 +58,6 @@ class AppUserModel extends AppUser {
   }
 
   Map<String, dynamic> toJson() => toMap();
-
-  static DateTime? _parseDate(dynamic raw) {
-    if (raw == null) return null;
-    if (raw is DateTime) return raw;
-    if (raw is String && raw.isNotEmpty) {
-      return DateTime.tryParse(raw);
-    }
-    return null;
-  }
 
   static String? _formatDate(DateTime? date) {
     if (date == null) return null;
