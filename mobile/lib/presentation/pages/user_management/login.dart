@@ -311,8 +311,9 @@ class _LoginPageState extends State<LoginPage> with WidgetsBindingObserver {
                     hint: "Email Address",
                     keyboardType: TextInputType.emailAddress,
                     validator: (value) {
-                      if (value == null || value.isEmpty)
+                      if (value == null || value.isEmpty) {
                         return 'Email is required';
+                      }
                       if (!value.contains('@')) return 'Invalid email address';
                       return null;
                     },
@@ -336,10 +337,12 @@ class _LoginPageState extends State<LoginPage> with WidgetsBindingObserver {
                       ),
                     ),
                     validator: (value) {
-                      if (value == null || value.isEmpty)
+                      if (value == null || value.isEmpty) {
                         return 'Password is required';
-                      if (value.length < 6)
+                      }
+                      if (value.length < 6) {
                         return 'Password must be at least 6 characters';
+                      }
                       return null;
                     },
                   ),
