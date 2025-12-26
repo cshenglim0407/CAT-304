@@ -864,6 +864,18 @@ class _AccountPageState extends State<AccountPage> {
 
   // --- LOGIC: EDIT (now routes to Add* pages with context) ---
   Future<void> _editTransaction(Map<String, dynamic> oldTx) async {
+    // Prevent editing transfers where the counterpart account was deleted
+    if (_isTransferCounterpartDeleted(oldTx)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Cannot edit transfer: counterpart account was deleted.',
+          ),
+        ),
+      );
+      return;
+    }
+
     final List<String> allAccountNames = _myAccounts
         .map((acc) => acc['name'] as String)
         .toList();
@@ -1901,11 +1913,20 @@ class _AccountPageState extends State<AccountPage> {
     );
   }
 
+  bool _isTransferCounterpartDeleted(Map<String, dynamic> tx) {
+    final String type = (tx['type'] ?? '').toString();
+    if (type != 'transfer') return false;
+    final String? toName = tx['toAccount']?.toString();
+    final String? fromName = tx['fromAccount']?.toString();
+    return toName == 'Deleted account' || fromName == 'Deleted account';
+  }
+
   void _showTransactionActionSheet(Map<String, dynamic> tx) {
     // Determine transaction type for labels
     final String transactionType = StringCaseFormatter.toTitleCase(
       (tx['type'] ?? 'Transaction').toString(),
     );
+    final bool disableEdit = _isTransferCounterpartDeleted(tx);
 
     showModalBottomSheet(
       context: context,
@@ -1930,10 +1951,13 @@ class _AccountPageState extends State<AccountPage> {
               ListTile(
                 leading: const Icon(Icons.edit, color: Colors.blue),
                 title: Text("Edit $transactionType"),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _editTransaction(tx);
-                },
+                enabled: !disableEdit,
+                onTap: disableEdit
+                    ? null
+                    : () {
+                        Navigator.pop(ctx);
+                        _editTransaction(tx);
+                      },
               ),
               ListTile(
                 leading: const Icon(Icons.delete, color: Colors.red),
