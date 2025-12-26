@@ -1155,6 +1155,7 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
   }
 
   Future<void> _loadData() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
 
     try {
@@ -1174,6 +1175,7 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
             user.id,
             lastMonth,
           );
+          if (!mounted) return;
           setState(() {
             _weeklyBalances = currentBalances;
             _previousWeeklyBalances = previousBalances;
@@ -1194,6 +1196,7 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
             user.id,
             prevMonth,
           );
+          if (!mounted) return;
           setState(() {
             _weeklyBalances = currentBalances;
             _previousWeeklyBalances = previousBalances;
@@ -1212,6 +1215,7 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
             user.id,
             now.year - 1,
           );
+          if (!mounted) return;
           setState(() {
             _quarterlyBalances = currentBalances;
             _previousQuarterlyBalances = previousBalances;
@@ -1230,6 +1234,7 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
             user.id,
             now.year - 2,
           );
+          if (!mounted) return;
           setState(() {
             _quarterlyBalances = currentBalances;
             _previousQuarterlyBalances = previousBalances;
@@ -1240,6 +1245,7 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
           break;
 
         default:
+          if (!mounted) return;
           setState(() {
             _isLoading = false;
             _weeklyBalances = [];
@@ -1250,6 +1256,7 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
       }
     } catch (e) {
       debugPrint('Error loading data: $e');
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
         _weeklyBalances = [];
