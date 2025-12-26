@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -10,6 +9,7 @@ import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_state_listener.dart';
 import 'package:cashlytics/core/services/cache/cache_service.dart';
 import 'package:cashlytics/core/utils/math_formatter.dart';
+import 'package:cashlytics/core/utils/json_utils.dart';
 import 'package:cashlytics/core/utils/ai_insights/ai_insights_service.dart';
 
 import 'package:cashlytics/domain/entities/ai_report.dart';
@@ -91,9 +91,8 @@ class _DashboardPageState extends State<DashboardPage> {
             showDialog(
               context: context,
               barrierDismissible: false,
-              builder: (context) => const Center(
-                child: CircularProgressIndicator(),
-              ),
+              builder: (context) =>
+                  const Center(child: CircularProgressIndicator()),
             );
             // Delay navigation to allow UI to render
             Future.delayed(const Duration(milliseconds: 300), () {
@@ -513,24 +512,9 @@ class _AISuggestionsModalContentState
   }
 
   Map<String, dynamic> _parseJsonFromBody(String body) {
-    try {
-      // Try direct parse
-      return Map<String, dynamic>.from(jsonDecode(body));
-    } catch (_) {
-      // Try extracting from markdown
-      final jsonMatch = RegExp(
-        r'```(?:json)?\s*(\{[\s\S]*?\})\s*```',
-      ).firstMatch(body);
-      if (jsonMatch != null) {
-        return Map<String, dynamic>.from(jsonDecode(jsonMatch.group(1)!));
-      }
-      // Try extracting raw JSON
-      final objectMatch = RegExp(r'\{[\s\S]*\}').firstMatch(body);
-      if (objectMatch != null) {
-        return Map<String, dynamic>.from(jsonDecode(objectMatch.group(0)!));
-      }
-      throw Exception('Could not parse JSON from body');
-    }
+    final map = JsonUtils.tryParseObject(body);
+    if (map != null) return map;
+    throw Exception('Could not parse JSON from body');
   }
 
   List<AiReport> _sortReportsDesc(List<AiReport> reports) {
@@ -2233,8 +2217,7 @@ class _ExpenseDistributionCardState extends State<_ExpenseDistributionCard> {
     final newRange = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2020),
-      lastDate:
-          today, // Use 'today' (midnight), matching the initial range end
+      lastDate: today, // Use 'today' (midnight), matching the initial range end
       initialDateRange: _selectedRange,
       builder: (context, child) {
         return Theme(

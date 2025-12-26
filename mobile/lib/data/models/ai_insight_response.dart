@@ -1,4 +1,4 @@
-import 'dart:convert';
+import 'package:cashlytics/core/utils/json_utils.dart';
 
 /// Request payload for Gemini AI to generate financial insights
 class AiInsightRequest {
@@ -54,36 +54,9 @@ class AiInsightResponse {
 
   /// Safely parse JSON from response text (may be wrapped in markdown)
   static Map<String, dynamic> _parseJson(String text) {
-    // Try direct parse first
-    try {
-      return _parseJsonString(text);
-    } catch (_) {
-      // Try extracting JSON from markdown code blocks
-      final jsonMatch = RegExp(
-        r'```(?:json)?\s*(\{[\s\S]*?\})\s*```',
-      ).firstMatch(text);
-      if (jsonMatch != null) {
-        return _parseJsonString(jsonMatch.group(1)!);
-      }
-
-      // Try extracting raw JSON object
-      final objectMatch = RegExp(r'\{[\s\S]*\}').firstMatch(text);
-      if (objectMatch != null) {
-        return _parseJsonString(objectMatch.group(0)!);
-      }
-
-      throw Exception('Could not extract JSON from response');
-    }
-  }
-
-  static Map<String, dynamic> _parseJsonString(String jsonString) {
-    return Map<String, dynamic>.from(_decodeJson(jsonString.trim()) as Map);
-  }
-
-  static dynamic _decodeJson(String json) {
-    // Remove any control characters
-    final cleaned = json.replaceAll(RegExp(r'[\x00-\x1F\x7F]'), '');
-    return Map.from(jsonDecode(cleaned) as Map<String, dynamic>);
+    final map = JsonUtils.tryParseObject(text);
+    if (map != null) return map;
+    throw Exception('Could not extract JSON from response');
   }
 
   static List<SuggestionItem> _parseSuggestions(dynamic raw) {
