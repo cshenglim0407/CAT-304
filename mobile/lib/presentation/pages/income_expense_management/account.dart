@@ -240,8 +240,21 @@ class _AccountPageState extends State<AccountPage> {
               (list) => List<Map<String, dynamic>>.from(
                 list.map((e) {
                   final tx = Map<String, dynamic>.from(e);
-                  // Regenerate icon if missing
-                  if (tx['icon'] == null) {
+                  // Regenerate icon from iconName if missing
+                  if (tx['icon'] == null && tx['iconName'] != null) {
+                    final iconName = tx['iconName'];
+                    IconData iconData;
+                    if (iconName == 'north_east_rounded') {
+                      iconData = Icons.north_east_rounded;
+                    } else if (iconName == 'south_east_rounded') {
+                      iconData = Icons.south_east_rounded;
+                    } else {
+                      final isExpense = tx['isExpense'] == true;
+                      iconData = _getTransactionIcon(isExpense, iconName);
+                    }
+                    tx['icon'] = iconData;
+                  } else if (tx['icon'] == null) {
+                    // Fallback: regenerate icon if no iconName
                     final isTransfer =
                         (tx['type'] == 'transfer') ||
                         ((tx['category'] ?? '').toString().toUpperCase() ==
@@ -333,7 +346,7 @@ class _AccountPageState extends State<AccountPage> {
               'amount': displayAmount,
               'rawAmount': amount,
               'isExpense': isExpense,
-              'icon': tx.icon ?? _getTransactionIcon(isExpense, tx.category),
+              'iconName': _getIconName(isExpense, tx.category, isTransfer),
               'isRecurrent': false,
               'category': tx.category,
               'toAccount': toAccountName,
@@ -382,6 +395,15 @@ class _AccountPageState extends State<AccountPage> {
     }
   }
 
+  String _getIconName(bool isExpense, String? category, bool isTransfer) {
+    if (isTransfer) {
+      return isExpense ? 'north_east_rounded' : 'south_east_rounded';
+    }
+    // Return the category name as the icon identifier
+    // This will be resolved to an actual IconData when rendering
+    return category ?? (isExpense ? 'expense' : 'income');
+  }
+
   double _parseAmount(Map<String, dynamic> tx) {
     if (tx['rawAmount'] != null) {
       return (tx['rawAmount'] as num).toDouble();
@@ -412,6 +434,7 @@ class _AccountPageState extends State<AccountPage> {
     return _allTransactions.map((txList) {
       return txList.map((tx) {
         final sanitized = Map<String, dynamic>.from(tx);
+        // Remove any non-serializable fields
         sanitized.remove('icon'); // Remove IconData which can't be serialized
         return sanitized;
       }).toList();
