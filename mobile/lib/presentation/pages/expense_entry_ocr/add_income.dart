@@ -52,6 +52,9 @@ class _AddIncomePageState extends State<AddIncomePage> {
   @override
   void initState() {
     super.initState();
+    _totalIncomeController.addListener(() {
+      setState(() {});
+    });
     _selectedAccount = widget.accountName;
     // Prefill from initialData if provided
     final init = widget.initialData;
@@ -339,12 +342,17 @@ class _AddIncomePageState extends State<AddIncomePage> {
                         border: InputBorder.none,
                         enabledBorder: InputBorder.none,
                         focusedBorder: InputBorder.none,
-                        contentPadding: EdgeInsets.zero,
-                        hintText: 0.toStringAsFixed(2),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16.0,
+                        ),
+                        hintText:
+                            "${ProfileHelpers.getUserCurrencyPref()} ${1.23.toStringAsFixed(2)}",
                         hintStyle: TextStyle(
                           color: primaryColor.withValues(alpha: 0.5),
                         ),
-                        prefixText: ProfileHelpers.getUserCurrencyPref() + ' ',
+                        prefixText: _totalIncomeController.text.isEmpty
+                            ? null
+                            : ProfileHelpers.getUserCurrencyPref() + ' ',
                       ),
                     ),
                   ),

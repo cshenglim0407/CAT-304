@@ -38,6 +38,9 @@ class _AddTransferPageState extends State<AddTransferPage> {
   @override
   void initState() {
     super.initState();
+    _amountController.addListener(() {
+      setState(() {});
+    });
     // Determine the correct from account
     _fromAccount = widget.fromAccountName;
 
@@ -312,12 +315,17 @@ class _AddTransferPageState extends State<AddTransferPage> {
                         border: InputBorder.none,
                         enabledBorder: InputBorder.none,
                         focusedBorder: InputBorder.none,
-                        contentPadding: EdgeInsets.zero,
-                        hintText: 0.toStringAsFixed(2),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16.0,
+                        ),
+                        hintText:
+                            "${ProfileHelpers.getUserCurrencyPref()} ${1.23.toStringAsFixed(2)}",
                         hintStyle: TextStyle(
                           color: primaryColor.withValues(alpha: 0.5),
                         ),
-                        prefixText: ProfileHelpers.getUserCurrencyPref() + ' ',
+                        prefixText: _amountController.text.isEmpty
+                            ? null
+                            : ProfileHelpers.getUserCurrencyPref() + ' ',
                       ),
                     ),
                   ),
