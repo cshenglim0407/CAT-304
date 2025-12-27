@@ -31,7 +31,7 @@ import 'package:cashlytics/presentation/widgets/index.dart';
 import 'package:cashlytics/presentation/pages/user_management/edit_personal_info.dart';
 import 'package:cashlytics/presentation/pages/user_management/login.dart';
 import 'package:cashlytics/presentation/pages/user_management/edit_detail_information.dart';
-import 'package:cashlytics/presentation/pages/budget_threshold/my_budgets.dart';
+import 'package:cashlytics/presentation/pages/budget_threshold/budget.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -223,6 +223,7 @@ class _ProfilePageState extends State<ProfilePage> {
     await CacheService.remove('user_profile_cache');
     await CacheService.remove('accounts');
     await CacheService.remove('transactions');
+    await CacheService.remove('budgets_cache');
     await ImageCacheService.clearCachedImage();
 
     if (mounted) {

@@ -1,4 +1,5 @@
 import 'package:cashlytics/core/utils/math_formatter.dart';
+import 'package:cashlytics/core/utils/date_formatter.dart';
 import 'package:cashlytics/domain/entities/receipt.dart';
 
 /// Data model for uploaded receipts.
@@ -33,7 +34,7 @@ class ReceiptModel extends Receipt {
       merchantName: map['merchant_name'] as String?,
       confidenceScore: MathFormatter.parseDouble(map['confidence_score']),
       ocrRawText: map['ocr_raw_text'] as String?,
-      scannedAt: MathFormatter.parseDateTime(map['scanned_at']),
+      scannedAt: DateFormatter.parseDateTime(map['scanned_at']),
     );
   }
 

@@ -28,14 +28,6 @@ class MathFormatter {
     return null;
   }
 
-  /// Parse DateTime from various types with null safety
-  static DateTime? parseDateTime(dynamic value) {
-    if (value == null) return null;
-    if (value is DateTime) return value;
-    if (value is String) return DateTime.tryParse(value);
-    return null;
-  }
-
   /// Parse bool from various types with null safety
   static bool? parseBool(dynamic value) {
     if (value == null) return null;

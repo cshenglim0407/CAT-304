@@ -1,4 +1,5 @@
 import 'package:cashlytics/core/utils/math_formatter.dart';
+import 'package:cashlytics/core/utils/date_formatter.dart';
 import 'package:cashlytics/domain/entities/quarterly_balance.dart';
 
 class QuarterlyBalanceModel extends QuarterlyBalance {
@@ -15,8 +16,8 @@ class QuarterlyBalanceModel extends QuarterlyBalance {
   factory QuarterlyBalanceModel.fromMap(Map<String, dynamic> map) {
     return QuarterlyBalanceModel(
       quarterNumber: MathFormatter.parseInt(map['quarter_number']) ?? 0,
-      startDate: MathFormatter.parseDateTime(map['start_date']) ?? DateTime.now(),
-      endDate: MathFormatter.parseDateTime(map['end_date']) ?? DateTime.now(),
+      startDate: DateFormatter.parseDateTime(map['start_date']) ?? DateTime.now(),
+      endDate: DateFormatter.parseDateTime(map['end_date']) ?? DateTime.now(),
       totalIncome: MathFormatter.parseDouble(map['total_income']) ?? 0.0,
       totalExpense: MathFormatter.parseDouble(map['total_expense']) ?? 0.0,
       balance: MathFormatter.parseDouble(map['balance']) ?? 0.0,

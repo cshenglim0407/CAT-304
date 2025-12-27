@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:cashlytics/core/config/icons.dart';
+import 'package:cashlytics/core/services/cache/cache_service.dart';
 import 'package:cashlytics/core/services/supabase/client.dart';
 import 'package:cashlytics/core/services/supabase/database/database_service.dart';
 import 'package:cashlytics/core/utils/date_formatter.dart';
@@ -31,6 +32,7 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
 
   // SAME MARGIN AS BUDGET.DART
   static const double pageMargin = 22.0;
+  static const String _budgetsCacheKey = 'budgets_cache';
 
   final DatabaseService _databaseService = const DatabaseService();
   bool _isLoading = true;
@@ -51,8 +53,26 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
     _loadBudgets();
   }
 
-  Future<void> _loadBudgets() async {
+  Future<void> _loadBudgets({bool forceRefresh = false}) async {
     setState(() => _isLoading = true);
+
+    if (!forceRefresh) {
+      final cachedBudgets = CacheService.load<List>(_budgetsCacheKey);
+      if (cachedBudgets != null) {
+        setState(() {
+          _budgets = List<Map<String, dynamic>>.from(
+            cachedBudgets.map((e) {
+              final budget = Map<String, dynamic>.from(e);
+              budget['icon'] = _getIconFromBudget(budget);
+              return budget;
+            }),
+          );
+          _isLoading = false;
+        });
+        return;
+      }
+    }
+
     final userId = supabase.auth.currentUser?.id;
     if (userId == null) {
       setState(() => _isLoading = false);
@@ -215,10 +235,12 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
             'limit': limit,
             'spent': spent,
             'days_left': daysLeft,
+            'accountType': accountType,
           });
         }
       }
 
+      CacheService.save(_budgetsCacheKey, _getSanitizedBudgets(items));
       setState(() {
         _budgets = items;
         _isLoading = false;
@@ -227,6 +249,40 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
       debugPrint('Error loading budgets: $e');
       setState(() => _isLoading = false);
     }
+  }
+
+  List<Map<String, dynamic>> _getSanitizedBudgets(
+      List<Map<String, dynamic>> budgets) {
+    return budgets.map((budget) {
+      final sanitized = Map<String, dynamic>.from(budget);
+      sanitized.remove('icon'); // Remove IconData
+
+      final type = sanitized['type'];
+      if (type == 'U') {
+        sanitized['iconName'] = 'account_balance_wallet_rounded';
+      } else if (type == 'C') {
+        sanitized['iconName'] = sanitized['title']; // The category name
+      } else if (type == 'A') {
+        sanitized['iconName'] = sanitized['accountType']; // The account type
+      }
+      return sanitized;
+    }).toList();
+  }
+
+  IconData _getIconFromBudget(Map<String, dynamic> budget) {
+    final type = budget['type'];
+    final iconName = budget['iconName'] as String?;
+
+    if (iconName == null) return Icons.error; // Fallback
+
+    if (type == 'U') {
+      return Icons.account_balance_wallet_rounded;
+    } else if (type == 'C') {
+      return getExpenseIcon(iconName.toUpperCase());
+    } else if (type == 'A') {
+      return getAccountTypeIcon(iconName); // iconName is accountType
+    }
+    return Icons.error; // Fallback
   }
 
   double _sumSpent(
@@ -267,6 +323,7 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
       setState(() {
         _budgets.removeWhere((b) => b['id'] == budgetId);
       });
+      CacheService.save(_budgetsCacheKey, _getSanitizedBudgets(_budgets));
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
@@ -398,7 +455,7 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
               MaterialPageRoute(builder: (context) => const BudgetPage()),
             );
             if (mounted) {
-              _loadBudgets();
+              _loadBudgets(forceRefresh: true);
             }
           },
         ),

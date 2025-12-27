@@ -1,5 +1,5 @@
 import 'package:cashlytics/domain/entities/app_user.dart';
-import 'package:cashlytics/core/utils/math_formatter.dart';
+import 'package:cashlytics/core/utils/date_formatter.dart';
 
 /// Data model for app user. Converts between Supabase rows and domain entity.
 class AppUserModel extends AppUser {
@@ -35,7 +35,7 @@ class AppUserModel extends AppUser {
       email: map['email'] as String? ?? '',
       displayName: map['display_name'] as String? ?? '',
       gender: map['gender'] as String?,
-      dateOfBirth: MathFormatter.parseDateTime(map['date_of_birth']),
+      dateOfBirth: DateFormatter.parseDateTime(map['date_of_birth']),
       imagePath: map['image_path'] as String?,
       timezone: map['timezone'] as String? ?? '+08:00',
       currencyPreference: map['currency_pref'] as String? ?? 'MYR',

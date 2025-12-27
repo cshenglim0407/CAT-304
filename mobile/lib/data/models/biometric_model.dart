@@ -1,4 +1,4 @@
-import 'package:cashlytics/core/utils/math_formatter.dart';
+import 'package:cashlytics/core/utils/date_formatter.dart';
 import 'package:cashlytics/domain/entities/biometric.dart';
 
 /// Data model for biometric templates.
@@ -43,9 +43,9 @@ class BiometricModel extends Biometric {
       deviceName: map['device_name'] as String?,
       type: map['type'] as String?,
       isActive: map['is_active'] as bool? ?? true,
-      lastUsedAt: MathFormatter.parseDateTime(map['last_used_at']),
-      createdAt: MathFormatter.parseDateTime(map['created_at']),
-      updatedAt: MathFormatter.parseDateTime(map['updated_at']),
+      lastUsedAt: DateFormatter.parseDateTime(map['last_used_at']),
+      createdAt: DateFormatter.parseDateTime(map['created_at']),
+      updatedAt: DateFormatter.parseDateTime(map['updated_at']),
     );
   }
 
