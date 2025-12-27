@@ -15,6 +15,7 @@ import 'package:cashlytics/core/services/supabase/storage/storage_service.dart';
 import 'package:cashlytics/core/utils/context_extensions.dart';
 import 'package:cashlytics/core/utils/date_formatter.dart';
 import 'package:cashlytics/core/services/cache/image_cache_service.dart';
+import 'package:cashlytics/core/services/timezone_service.dart';
 
 import 'package:cashlytics/domain/repositories/app_user_repository.dart';
 import 'package:cashlytics/domain/repositories/detailed_repository.dart';
@@ -200,7 +201,8 @@ class _ProfilePageState extends State<ProfilePage> {
       if (mounted) {
         setState(() => _isUploadingPhoto = false);
       }
-    } catch (e) {
+    }
+    catch (e) {
       debugPrint('Photo upload error: $e');
       if (mounted) {
         context.showSnackBar('Error uploading photo: $e', isError: true);
@@ -300,6 +302,7 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       _domainUser = await _getCurrentAppUser();
       if (_domainUser != null) {
+        TimezoneService.updateTimezoneFromOffset(_domainUser!.timezone);
         currentUserProfile = {
           'user_id': _domainUser!.id,
           'email': _domainUser!.email,

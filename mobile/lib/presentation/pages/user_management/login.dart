@@ -20,6 +20,8 @@ import 'package:cashlytics/presentation/pages/income_expense_management/home_pag
 import 'package:cashlytics/presentation/pages/user_management/sign_up.dart';
 import 'package:provider/provider.dart';
 
+import 'package:cashlytics/core/services/timezone_service.dart';
+
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -75,6 +77,7 @@ class _LoginPageState extends State<LoginPage> with WidgetsBindingObserver {
     try {
       final user = await _getCurrentAppUser();
       if (user != null) {
+        TimezoneService.updateTimezoneFromOffset(user.timezone);
         final profile = {
           'user_id': user.id,
           'email': user.email,

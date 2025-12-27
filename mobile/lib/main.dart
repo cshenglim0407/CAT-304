@@ -21,22 +21,21 @@ import 'package:cashlytics/presentation/pages/user_management/otp_verification.d
 import 'package:cashlytics/presentation/pages/user_management/reset_password.dart';
 import 'package:cashlytics/presentation/pages/user_management/profile.dart';
 import 'package:cashlytics/presentation/pages/income_expense_management/account.dart';
+import 'package:cashlytics/core/services/timezone_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Supabase
+  // Initialize services
+  TimezoneService.initialize();
   await SupabaseInitService.initialize();
-
-  // Initialize OCR Service
   await OCRService.initialize();
-
-  // Initialize Cache Service
   await CacheService.initialize();
 
   // Load saved theme preference
   final cachedProfile = CacheService.load<Map<String, dynamic>>('user_profile_cache');
   final savedTheme = cachedProfile?['theme_pref'] as String? ?? 'system';
+
 
   // Use path URL strategy for web
   usePathUrlStrategy();

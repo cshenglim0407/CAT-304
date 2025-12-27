@@ -1,3 +1,5 @@
+import 'package:timezone/timezone.dart' as tz;
+
 class DateFormatter {
   /// Formats a date string with age calculation
   /// Returns the date with age in parentheses (e.g., "1990-01-15 (34)")
@@ -7,11 +9,13 @@ class DateFormatter {
 
     try {
       DateTime birthDate = DateTime.parse(dateStr);
-      DateTime today = DateTime.now();
-      int age = today.year - birthDate.year;
+      final birthDateInLocal = tz.TZDateTime.from(birthDate, tz.local);
+      final today = tz.TZDateTime.now(tz.local);
+      int age = today.year - birthDateInLocal.year;
 
-      if (today.month < birthDate.month ||
-          (today.month == birthDate.month && today.day < birthDate.day)) {
+      if (today.month < birthDateInLocal.month ||
+          (today.month == birthDateInLocal.month &&
+              today.day < birthDateInLocal.day)) {
         age--;
       }
 
@@ -25,33 +29,37 @@ class DateFormatter {
   /// Returns 'Today' for today's date, 'Yesterday' for yesterday,
   /// or 'DD MMM' format for other dates.
   static String formatDate(DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+    final now = tz.TZDateTime.now(tz.local);
+    final today = tz.TZDateTime(tz.local, now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
-    final dateOnly = DateTime(date.year, date.month, date.day);
+    
+    final dateInLocal = tz.TZDateTime.from(date, tz.local);
+    final dateOnly = tz.TZDateTime(tz.local, dateInLocal.year, dateInLocal.month, dateInLocal.day);
 
-    if (dateOnly == today) {
+    if (dateOnly.isAtSameMomentAs(today)) {
       return 'Today';
-    } else if (dateOnly == yesterday) {
+    } else if (dateOnly.isAtSameMomentAs(yesterday)) {
       return 'Yesterday';
     } else {
-      return '${date.day} ${_monthName(date.month)}';
+      return '${dateInLocal.day} ${_monthName(dateInLocal.month)}';
     }
   }
 
   /// Formats a DateTime into 'DD MMM' or 'DD MMM YYYY'
   static String formatDateSimple(DateTime date, {bool showYear = false}) {
-    final day = date.day;
-    final month = _monthName(date.month);
+    final dateInLocal = tz.TZDateTime.from(date, tz.local);
+    final day = dateInLocal.day;
+    final month = _monthName(dateInLocal.month);
     if (showYear) {
-      return '$day $month ${date.year}';
+      return '$day $month ${dateInLocal.year}';
     }
     return '$day $month';
   }
 
   /// Formats a date in DD/MM/YYYY format for display in input fields.
   static String formatDateDDMMYYYY(DateTime date) {
-    return "${date.day}/${date.month}/${date.year}";
+    final dateInLocal = tz.TZDateTime.from(date, tz.local);
+    return "${dateInLocal.day}/${dateInLocal.month}/${dateInLocal.year}";
   }
 
   /// Returns the abbreviated month name (e.g., 'Jan', 'Feb', etc.)
@@ -74,12 +82,14 @@ class DateFormatter {
   }
 
   /// Returns only the date part of a DateTime
-  static DateTime dateOnly(DateTime value) =>
-      DateTime(value.year, value.month, value.day);
+  static DateTime dateOnly(DateTime value) {
+    final dateInLocal = tz.TZDateTime.from(value, tz.local);
+    return tz.TZDateTime(tz.local, dateInLocal.year, dateInLocal.month, dateInLocal.day);
+  }
 
   /// Calculates the number of days left until endDate
   static int daysLeft(DateTime endDate) {
-    final today = dateOnly(DateTime.now());
+    final today = dateOnly(tz.TZDateTime.now(tz.local));
     final end = dateOnly(endDate);
     final diff = end.difference(today).inDays;
     return diff < 0 ? 0 : diff;
@@ -102,7 +112,7 @@ class DateFormatter {
       final parsed = DateTime.tryParse(raw);
       if (parsed != null) return dateOnly(parsed);
     }
-    return dateOnly(DateTime.now());
+    return dateOnly(tz.TZDateTime.now(tz.local));
   }
 
   /// Parse DateTime from various types with null safety
