@@ -223,6 +223,7 @@ class _ProfilePageState extends State<ProfilePage> {
     await CacheService.remove('user_profile_cache');
     await CacheService.remove('accounts');
     await CacheService.remove('transactions');
+    await ImageCacheService.clearCachedImage();
 
     if (mounted) {
       Provider.of<ThemeProvider>(
@@ -421,9 +422,14 @@ class _ProfilePageState extends State<ProfilePage> {
 
     // If it's a storage path (doesn't start with http), construct the public URL
     if (!_imagePath.startsWith('http')) {
+      // Defensively remove the bucket name from the path to avoid URL duplication
+      final correctedPath = _imagePath.startsWith('profile-pictures/')
+          ? _imagePath.replaceFirst('profile-pictures/', '')
+          : _imagePath;
+
       final publicUrl = _storageService.getPublicUrl(
         bucketId: 'profile-pictures',
-        filePath: _imagePath,
+        filePath: correctedPath,
       );
 
       if (publicUrl != null && publicUrl.isNotEmpty) {

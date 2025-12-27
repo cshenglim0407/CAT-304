@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
 import 'package:cashlytics/core/services/supabase/client.dart';
 import 'package:cashlytics/core/services/cache/cache_service.dart';
+import 'package:cashlytics/core/services/cache/image_cache_service.dart';
 import 'package:cashlytics/core/utils/context_extensions.dart';
 
 import 'package:cashlytics/presentation/providers/theme_provider.dart';
@@ -16,8 +17,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-
-  bool _isLoading = false; 
+  bool _isLoading = false;
 
   Future<void> _signOut() async {
     await AuthService().signOut(
@@ -30,11 +30,14 @@ class _HomePageState extends State<HomePage> {
     await CacheService.remove('user_profile_cache');
     await CacheService.remove('accounts');
     await CacheService.remove('transactions');
+    await ImageCacheService.clearCachedImage();
 
     // Reset theme to system when user logs out
     if (mounted) {
-      Provider.of<ThemeProvider>(context, listen: false)
-          .setThemeFromPreference('system');
+      Provider.of<ThemeProvider>(
+        context,
+        listen: false,
+      ).setThemeFromPreference('system');
     }
   }
 
@@ -108,9 +111,9 @@ class _HomePageState extends State<HomePage> {
 
             ElevatedButton(
               onPressed: () {
-                Navigator.pushNamed(context, '/account'); 
+                Navigator.pushNamed(context, '/account');
               },
-              child: const Text('Go to Account Page'),
+              child: const Text('Go to Account'),
             ),
           ],
         ),
