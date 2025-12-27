@@ -1392,6 +1392,7 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
   }
 
   final Map<String, dynamic> _data = {
+    // TODO: Remove dummy data @WenHao1223
     'This month': {
       'amount': '\$12,450.75',
       'pct': '+2.4%',
@@ -1726,9 +1727,9 @@ class _CashFlowCardState extends State<_CashFlowCard> {
 
   String _formatCurrency(double amount) {
     if (amount >= 1000) {
-      return '\$${(amount / 1000).toStringAsFixed(1)}K';
+      return '${MathFormatter.formatCurrency(amount / 1000)}K';
     }
-    return '\$${amount.toStringAsFixed(0)}';
+    return MathFormatter.formatCurrency(amount);
   }
 
   List<double> _getIncomeData() {
@@ -1805,7 +1806,7 @@ class _CashFlowCardState extends State<_CashFlowCard> {
       _formatCurrency(maxValue - step),
       _formatCurrency(maxValue - step * 2),
       _formatCurrency(maxValue - step * 3),
-      '\$0',
+      _formatCurrency(0),
     ];
   }
 
@@ -1859,7 +1860,13 @@ class _CashFlowCardState extends State<_CashFlowCard> {
     final labels = useRealData ? _getLabels() : currentData!['labels'];
     final yAxisLabels = useRealData
         ? _getYAxisLabels()
-        : ['\$8,000', '\$6,000', '\$4,000', '\$2,000', '\$0'];
+        : [
+            '\$8,000',
+            '\$6,000',
+            '\$4,000',
+            '\$2,000',
+            '\$0',
+          ]; // TODO: Remove dummy data @WenHao1223
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -2203,11 +2210,11 @@ class _ExpenseDistributionCardState extends State<_ExpenseDistributionCard> {
     return "$start - $end";
   }
 
-  String _formatCurrency(double value) {
+  String _formatCurrency(double value) { // TODO: Remove duplicate code @WenHao1223
     if (value >= 1000) {
-      return '\$${(value / 1000).toStringAsFixed(1)}K';
+      return '${MathFormatter.formatCurrency(value / 1000)}K';
     }
-    return '\$${value.toStringAsFixed(0)}';
+    return MathFormatter.formatCurrency(value);
   }
 
   Future<void> _pickDateRange() async {

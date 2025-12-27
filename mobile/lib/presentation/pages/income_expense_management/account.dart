@@ -713,7 +713,7 @@ class _AccountPageState extends State<AccountPage> {
           completeData.addAll({
             'type': 'income',
             'rawAmount': amount,
-            'amount': '+ \$${amount.toStringAsFixed(2)}',
+            'amount': '+ ${MathFormatter.formatCurrency(amount)}',
             'isExpense': false,
             'category': incomeData['category'] as String?,
             'isRecurrent': incomeData['is_recurrent'] as bool? ?? false,
@@ -760,7 +760,7 @@ class _AccountPageState extends State<AccountPage> {
           completeData.addAll({
             'type': 'expense',
             'rawAmount': amount,
-            'amount': '- \$${amount.toStringAsFixed(2)}',
+            'amount': '- ${MathFormatter.formatCurrency(amount)}',
             'isExpense': true,
             'category': categoryName ?? 'OTHER',
             'icon': getExpenseIcon(categoryName),
@@ -812,7 +812,8 @@ class _AccountPageState extends State<AccountPage> {
           completeData.addAll({
             'type': 'transfer',
             'rawAmount': amount,
-            'amount': '${isExpense ? '-' : '+'} \$${amount.toStringAsFixed(2)}',
+            'amount':
+                '${isExpense ? '-' : '+'} ${MathFormatter.formatCurrency(amount)}',
             'isExpense': isExpense,
             'category': 'TRANSFER',
             'fromAccount':
@@ -952,7 +953,8 @@ class _AccountPageState extends State<AccountPage> {
           ? amtDyn.toDouble()
           : double.tryParse(amtDyn?.toString() ?? '0') ?? 0.0;
       final String displayAmount =
-          (isExpenseForCurrent ? '- \$' : '+ \$') + newRaw.toStringAsFixed(2);
+          (isExpenseForCurrent ? '- ' : '+ ') +
+          MathFormatter.formatCurrency(newRaw);
 
       final dynamic dateDyn = result['date'];
       final String displayDate = (dateDyn is DateTime)
@@ -1081,7 +1083,7 @@ class _AccountPageState extends State<AccountPage> {
                 'type': 'transfer',
                 'title': 'To ${newToAccount ?? 'Unknown'}',
                 'date': sanitized['date'],
-                'amount': '- \$${newRaw.toStringAsFixed(2)}',
+                'amount': '- ${MathFormatter.formatCurrency(newRaw)}',
                 'rawAmount': newRaw,
                 'isExpense': true,
                 'icon': Icons.north_west_rounded,
@@ -1106,7 +1108,7 @@ class _AccountPageState extends State<AccountPage> {
                 _allTransactions[_currentCardIndex][index] = {
                   ...sanitized,
                   'title': 'To ${newToAccount ?? 'Unknown'}',
-                  'amount': '- \$${newRaw.toStringAsFixed(2)}',
+                  'amount': '- ${MathFormatter.formatCurrency(newRaw)}',
                   'rawAmount': newRaw,
                   'isExpense': true,
                 };
@@ -1130,7 +1132,7 @@ class _AccountPageState extends State<AccountPage> {
                 'type': 'transfer',
                 'title': 'From ${newFromAccount ?? 'Unknown'}',
                 'date': sanitized['date'],
-                'amount': '+ \$${newRaw.toStringAsFixed(2)}',
+                'amount': '+ ${MathFormatter.formatCurrency(newRaw)}',
                 'rawAmount': newRaw,
                 'isExpense': false,
                 'icon': Icons.south_east_rounded,
@@ -1156,7 +1158,7 @@ class _AccountPageState extends State<AccountPage> {
                 _allTransactions[_currentCardIndex][index] = {
                   ...sanitized,
                   'title': 'From ${newFromAccount ?? 'Unknown'}',
-                  'amount': '+ \$${newRaw.toStringAsFixed(2)}',
+                  'amount': '+ ${MathFormatter.formatCurrency(newRaw)}',
                   'rawAmount': newRaw,
                   'isExpense': false,
                 };
@@ -1484,7 +1486,7 @@ class _AccountPageState extends State<AccountPage> {
       setState(() {
         final double rawAmount = result['amount'];
         final String displayAmount =
-            (isExpense ? '- \$' : '+ \$') + rawAmount.toStringAsFixed(2);
+            (isExpense ? '- ' : '+ ') + MathFormatter.formatCurrency(rawAmount);
 
         // --- 1. SENDER LOGIC (Current Account) ---
         IconData icon;
@@ -2215,7 +2217,7 @@ class _AccountPageState extends State<AccountPage> {
                         labelStyle: const TextStyle(color: Colors.grey),
                         hintText: '0.00',
                         hintStyle: TextStyle(color: Colors.grey.shade400),
-                        prefixText: '\$ ',
+                        prefixText: '\$ ', // TODO: Localize currency symbol @WenHao1223
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -2481,7 +2483,7 @@ class _AccountPageState extends State<AccountPage> {
                       decoration: InputDecoration(
                         labelText: 'Initial Balance',
                         labelStyle: const TextStyle(color: Colors.grey),
-                        prefixText: '\$ ',
+                        prefixText: '\$ ', // TODO: Localize currency symbol @WenHao1223
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -2502,7 +2504,7 @@ class _AccountPageState extends State<AccountPage> {
                       decoration: InputDecoration(
                         labelText: 'Current Balance (Read-only)',
                         labelStyle: const TextStyle(color: Colors.grey),
-                        prefixText: '\$ ',
+                        prefixText: '\$ ', // TODO: Localize currency symbol @WenHao1223
                         filled: true,
                         fillColor: Colors.grey.shade50,
                         border: OutlineInputBorder(
@@ -3352,7 +3354,7 @@ class _AccountPageState extends State<AccountPage> {
                                         child: _TransactionTile(
                                           title: tx['title'] ?? 'N/A',
                                           subtitle: tx['date'] ?? 'N/A',
-                                          amount: tx['amount'] ?? '\$0.00',
+                                          amount: tx['amount'] ?? MathFormatter.formatCurrency(0.0),
                                           icon: tx['icon'] ?? Icons.error,
                                           isExpense: tx['isExpense'] ?? false,
                                           isRecurrent:
