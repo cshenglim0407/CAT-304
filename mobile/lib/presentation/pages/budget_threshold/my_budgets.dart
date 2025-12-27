@@ -17,7 +17,7 @@ import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/widgets/index.dart';
 import 'package:cashlytics/presentation/widgets/confirm_delete_dialog.dart';
 
-import 'package:cashlytics/presentation/pages/budget_threshold/budget.dart';
+import 'package:cashlytics/presentation/pages/budget_threshold/add_budget.dart';
 
 class BudgetOverviewPage extends StatefulWidget {
   const BudgetOverviewPage({super.key});
