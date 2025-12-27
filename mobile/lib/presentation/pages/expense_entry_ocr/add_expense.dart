@@ -4,16 +4,19 @@ import 'package:cashlytics/core/config/icons.dart';
 import 'package:cashlytics/core/utils/math_formatter.dart';
 import 'package:cashlytics/core/utils/currency_input_formatter.dart';
 import 'package:cashlytics/core/utils/income_expense_management/income_expense_helpers.dart';
+import 'package:cashlytics/core/services/ocr/ocr_service.dart';
+import 'package:cashlytics/core/utils/budget_threshold/receipt_picker.dart';
 
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
 import 'package:cashlytics/presentation/widgets/index.dart';
 
-import 'package:cashlytics/core/services/ocr/ocr_service.dart';
-import 'package:cashlytics/core/utils/budget_threshold/receipt_picker.dart';
 import 'package:cashlytics/data/models/ocr_result.dart';
+import 'package:cashlytics/domain/repositories/receipt_repository.dart';
+import 'package:cashlytics/domain/entities/receipt.dart';
+import 'package:cashlytics/data/repositories/receipt_repository_impl.dart';
 
-import 'package:cashlytics/data/repositories/receipt_repository.dart';
+import 'package:uuid/uuid.dart';
 
 class AddExpensePage extends StatefulWidget {
   final String accountName;
@@ -55,7 +58,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
   bool _nameEdited = false;
   bool _dateEdited = false;
   bool _itemEdited = false;
-  String? _draftReceiptId;
+  Receipt? _pendingReceipt;
 
   @override
   void initState() {
@@ -255,15 +258,28 @@ class _AddExpensePageState extends State<AddExpensePage> {
     try {
       final OcrResult result = await OCRService.instance.scanReceipt(image);
 
-      final receiptRepo = ReceiptRepository();
+      // 1️⃣ Create repository (interface type)
+      final ReceiptRepository receiptRepo = ReceiptRepositoryImpl();
 
-      final receiptId = await receiptRepo.saveDraftReceipt(
-        imageFile: image,
-        ocr: result,
-        rawOcrText: result.rawText,
+      // 2️⃣ Generate receiptId (UUID or null → insert)
+      final String receiptId = const Uuid().v4();
+
+      // 3️⃣ Upload image to storage
+      final String storagePath = await receiptRepo.uploadReceiptImage(
+        imageSource: image,
+        receiptId: receiptId,
       );
 
-      _draftReceiptId = receiptId;
+      // 4️⃣ Build pending domain entity
+      _pendingReceipt = Receipt(
+        id: null,
+        transactionId: '', // Placeholder
+        merchantName: result.merchant,
+        confidenceScore: result.confidence,
+        ocrRawText: result.rawText,
+        path: storagePath,
+        scannedAt: DateTime.now(),
+      );
 
       setState(() {
         // Transaction name
@@ -349,7 +365,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
       'accountName': _selectedAccount ?? widget.accountName,
       'items': itemsList,
       'description': _descriptionController.text.trim(),
-      'receiptId': _draftReceiptId,
+      'pendingReceipt': _pendingReceipt,
     };
 
     Navigator.pop(context, newTransaction);

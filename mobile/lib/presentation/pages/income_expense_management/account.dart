@@ -11,6 +11,7 @@ import 'package:cashlytics/core/services/supabase/client.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_state_listener.dart';
 import 'package:cashlytics/core/services/supabase/database/database_service.dart';
 import 'package:cashlytics/core/services/cache/cache_service.dart';
+import 'package:cashlytics/core/config/icons.dart';
 
 import 'package:cashlytics/domain/repositories/account_repository.dart';
 import 'package:cashlytics/data/repositories/account_repository_impl.dart';
@@ -40,8 +41,9 @@ import 'package:cashlytics/domain/usecases/income/upsert_income.dart';
 import 'package:cashlytics/domain/usecases/expenses/upsert_expense.dart';
 import 'package:cashlytics/domain/usecases/transfers/upsert_transfer.dart';
 import 'package:cashlytics/domain/usecases/expense_items/upsert_expense_item.dart';
-import 'package:cashlytics/core/config/icons.dart';
-import 'package:cashlytics/data/repositories/receipt_repository.dart';
+import 'package:cashlytics/domain/repositories/receipt_repository.dart';
+import 'package:cashlytics/data/repositories/receipt_repository_impl.dart';
+import 'package:cashlytics/domain/entities/receipt.dart';
 
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
@@ -1353,15 +1355,17 @@ class _AccountPageState extends State<AccountPage> {
 
       debugPrint('Transaction saved with ID: $transactionId');
 
-      // Link scanned receipt to this transaction (if exists)
-      final String? receiptId = result['receiptId'];
+      final Receipt? pendingReceipt = result['pendingReceipt'];
 
-      if (receiptId != null && receiptId.isNotEmpty) {
-        final receiptRepo = ReceiptRepository();
-        await receiptRepo.attachReceiptToTransaction(
-          receiptId: receiptId,
+      if (pendingReceipt != null) {
+        final ReceiptRepository receiptRepo = ReceiptRepositoryImpl();
+
+        final receiptToInsert = pendingReceipt.copyWith(
+          id: null,
           transactionId: transactionId,
         );
+
+        await receiptRepo.upsertReceipt(receiptToInsert);
       }
 
       // Validate amount
