@@ -201,8 +201,7 @@ class _ProfilePageState extends State<ProfilePage> {
       if (mounted) {
         setState(() => _isUploadingPhoto = false);
       }
-    }
-    catch (e) {
+    } catch (e) {
       debugPrint('Photo upload error: $e');
       if (mounted) {
         context.showSnackBar('Error uploading photo: $e', isError: true);
@@ -411,7 +410,6 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void dispose() {
     _authStateSubscription.cancel();
-    CacheService.remove('user_profile_cache');
     super.dispose();
   }
 
@@ -696,6 +694,16 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                       );
                   if (updatedProfile != null && mounted) {
+                    // Update user_profile_cache so new currency is available globally
+                    await CacheService.save(
+                      'user_profile_cache',
+                      updatedProfile,
+                    );
+
+                    // Remove accounts and transactions cache to force a reload with new currency formatting
+                    await CacheService.remove('accounts');
+                    await CacheService.remove('transactions');
+
                     setState(() {
                       currentUserProfile = updatedProfile;
                     });
