@@ -1,4 +1,5 @@
 import 'package:cashlytics/core/config/profile_constants.dart';
+import 'package:cashlytics/core/services/cache/cache_service.dart';
 import 'package:cashlytics/core/utils/string_case_formatter.dart';
 
 class ProfileHelpers {
@@ -71,5 +72,20 @@ class ProfileHelpers {
       return currency.split(' - ').first;
     }
     return currency;
+  }
+
+  /// Get current user currency preference from cached profile
+  static String getUserCurrencyPref() {
+    // Default currency symbol
+    String currencyPref = '\$';
+
+    // Attempt to load user's currency preference from cache
+    Map<String, dynamic>? currentUserProfile =
+        CacheService.load<Map<String, dynamic>>('user_profile_cache') ?? {};
+    if (currentUserProfile.containsKey('currency_pref')) {
+      currencyPref = currentUserProfile['currency_pref'] as String;
+    }
+
+    return currencyPref;
   }
 }

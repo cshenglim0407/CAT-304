@@ -1,6 +1,11 @@
+import 'package:cashlytics/core/utils/user_management/profile_helpers.dart';
+
 class MathFormatter {
-  static String formatCurrency(double amount) {
-    return 'RM${amount.toStringAsFixed(2)}';
+  static String formatCurrency(double amount, {String currencyPref = '\$'}) {
+    // Attempt to load user's currency preference from cache
+    currencyPref = ProfileHelpers.getUserCurrencyPref();
+    
+    return '$currencyPref${amount.toStringAsFixed(2)}';
   }
 
   /// Parse formatted amount strings (e.g., "RM45.00", "45.00 USD") by removing
