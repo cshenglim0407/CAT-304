@@ -65,32 +65,41 @@ class _EditPersonalInformationPageState
     _selectedCurrency = "MYR - Malaysian Ringgit";
     _selectedTheme = "Light";
 
-    _seedFromProfile();
+    _loadProfileAndSeedForm();
   }
 
-  void _seedFromProfile() {
-    final data = widget.profile;
-    if (data == null) return;
+  void _loadProfileAndSeedForm() async {
+    Map<String, dynamic>? data = widget.profile;
+    data ??= CacheService.load<Map<String, dynamic>>(_userProfileCacheKey);
 
-    _usernameController.text =
-        (data['display_name'] ?? _usernameController.text).toString();
-    _emailController.text = (data['email'] ?? _emailController.text).toString();
+    if (!mounted || data == null) return;
 
-    final dob = data['date_of_birth'] as String?;
-    if (dob != null && dob.isNotEmpty) {
-      _birthdateController.text = dob;
-    }
+    setState(() {
+      _usernameController.text =
+          (data!['display_name'] ?? _usernameController.text).toString();
+      _emailController.text = (data['email'] ?? _emailController.text)
+          .toString();
 
-    _selectedGender =
-        ProfileHelpers.normalizeGender(data['gender'] as String?) ?? _selectedGender;
-    _selectedTimezone =
-        ProfileHelpers.findTimezoneFromCode(data['timezone'] as String?) ??
-        _selectedTimezone;
-    _selectedCurrency =
-        ProfileHelpers.findCurrencyFromCode(data['currency_pref'] as String?) ??
-        _selectedCurrency;
-    _selectedTheme =
-        ProfileHelpers.normalizeTheme(data['theme_pref'] as String?) ?? _selectedTheme;
+      final dob = data['date_of_birth'] as String?;
+      if (dob != null && dob.isNotEmpty) {
+        _birthdateController.text = dob;
+      }
+
+      _selectedGender =
+          ProfileHelpers.normalizeGender(data['gender'] as String?) ??
+          _selectedGender;
+      _selectedTimezone =
+          ProfileHelpers.findTimezoneFromCode(data['timezone'] as String?) ??
+          _selectedTimezone;
+      _selectedCurrency =
+          ProfileHelpers.findCurrencyFromCode(
+            data['currency_pref'] as String?,
+          ) ??
+          _selectedCurrency;
+      _selectedTheme =
+          ProfileHelpers.normalizeTheme(data['theme_pref'] as String?) ??
+          _selectedTheme;
+    });
   }
 
   @override
@@ -153,8 +162,10 @@ class _EditPersonalInformationPageState
           dateOfBirth: _birthdateController.text.isNotEmpty
               ? DateTime.tryParse(_birthdateController.text)
               : null,
-          timezone: ProfileHelpers.extractTimezoneCode(_selectedTimezone) ?? '+08:00',
-          currencyPreference: ProfileHelpers.extractCurrencyCode(_selectedCurrency) ?? 'MYR',
+          timezone:
+              ProfileHelpers.extractTimezoneCode(_selectedTimezone) ?? '+08:00',
+          currencyPreference:
+              ProfileHelpers.extractCurrencyCode(_selectedCurrency) ?? 'MYR',
           themePreference: (_selectedTheme ?? 'System').toLowerCase(),
         );
 
@@ -195,11 +206,13 @@ class _EditPersonalInformationPageState
   /// Apply user preferences like theme to the app
   void _applyUserPreferences(AppUser user) {
     // Apply theme change immediately
-    Provider.of<ThemeProvider>(context, listen: false)
-        .setThemeFromPreference(user.themePreference);
-    
+    Provider.of<ThemeProvider>(
+      context,
+      listen: false,
+    ).setThemeFromPreference(user.themePreference);
+
     debugPrint('Applied theme preference: ${user.themePreference}');
-    
+
     // Future enhancements:
     // - Apply locale/language changes
     // - Update notification preferences
