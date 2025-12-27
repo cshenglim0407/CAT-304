@@ -124,8 +124,9 @@ class _RecurrentIncomeManagerPageState
           final bool isRecurrent = incomeData['is_recurrent'] as bool? ?? false;
           final DateTime createdAt =
               DateTime.tryParse(tx['created_at']?.toString() ?? '') ??
-                  DateTime.now();
-          final String? description = (tx['description'] as String?) ??
+              DateTime.now();
+          final String? description =
+              (tx['description'] as String?) ??
               (incomeData['description'] as String?);
 
           incomeRows.add(
@@ -168,25 +169,30 @@ class _RecurrentIncomeManagerPageState
     }
   }
 
-  // ... [Keep _maybePromptMonthlyAdditions, _addRecurringIncomes logic same] ...
-  // For brevity, I am omitting the exact copy-paste of logic methods 
-  // (_maybePromptMonthlyAdditions, _addRecurringIncomes) as they remain unchanged 
-  // from your original code. Assume they are here.
-  
   // Re-inserting the prompt logic for context:
   Future<void> _maybePromptMonthlyAdditions() async {
     if (!mounted) return;
     final now = DateTime.now();
-    // TO DO: Change to now.day != 1 for production
-    if (now.day != 1) return; 
+
+    // --- DO NOT DELETE: DISABLE LINE BELOW TO TEST PROMPT EVERY TIME
+    if (now.day != 1) return;
+    // --- END DO NOT DELETE
 
     final active = _incomes.where((i) => i.isRecurrent).toList();
     if (active.isEmpty) return;
 
+    // --- DO NOT DELETE: ENABLE LINE BELOW TO TEST PROMPT EVERY TIME
+    // final cacheKey =
+    //     'recurrent_income_prompt_${now.year}_${now.month}_${now.day}_${now.hour}_${now.minute}';
+    // --- END DO NOT DELETE
+    // --- DISABLE LINE BELOW TO TEST PROMPT EVERY TIME
     final cacheKey = 'recurrent_income_prompt_${now.year}_${now.month}';
+    // --- END DISABLE
+
     if (CacheService.load<bool>(cacheKey) == true) return;
 
-    final addedThisMonthKey = 'recurrent_incomes_added_${now.year}_${now.month}';
+    final addedThisMonthKey =
+        'recurrent_incomes_added_${now.year}_${now.month}';
     final addedIds = CacheService.load<List<dynamic>>(addedThisMonthKey) ?? [];
     final addedIdSet = addedIds.cast<String>().toSet();
     final toAdd = active
@@ -214,7 +220,7 @@ class _RecurrentIncomeManagerPageState
 
   Future<void> _addRecurringIncomes(List<_RecurrentIncomeItem> items) async {
     // ... [Same implementation as original code] ...
-     if (items.isEmpty) return;
+    if (items.isEmpty) return;
     setState(() => _isSaving = true);
 
     try {
@@ -302,9 +308,9 @@ class _RecurrentIncomeManagerPageState
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to save changes: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to save changes: $e')));
     } finally {
       if (mounted) {
         setState(() => _isSaving = false);
@@ -353,7 +359,7 @@ class _RecurrentIncomeManagerPageState
               children: [
                 if (!_isLoading && _incomes.isNotEmpty)
                   _SummaryHeader(totalAmount: _totalRecurrentAmount),
-                
+
                 Expanded(
                   child: _isLoading
                       ? const Center(child: CircularProgressIndicator())
@@ -362,27 +368,33 @@ class _RecurrentIncomeManagerPageState
                           child: _errorMessage != null
                               ? _ErrorView(message: _errorMessage!)
                               : _incomes.isEmpty
-                                  ? const _EmptyStateView()
-                                  : ListView.separated(
-                                      padding: const EdgeInsets.fromLTRB(20, 10, 20, 100), // Bottom padding for FAB
-                                      itemCount: _incomes.length,
-                                      separatorBuilder: (_, _) => const SizedBox(height: 12),
-                                      itemBuilder: (context, index) {
-                                        final item = _incomes[index];
-                                        return _RecurrentIncomeCard(
-                                          item: item,
-                                          onToggle: (val) => _toggleRecurrent(
-                                            item.transactionId,
-                                            val,
-                                          ),
-                                        );
-                                      },
-                                    ),
+                              ? const _EmptyStateView()
+                              : ListView.separated(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    20,
+                                    10,
+                                    20,
+                                    100,
+                                  ), // Bottom padding for FAB
+                                  itemCount: _incomes.length,
+                                  separatorBuilder: (_, _) =>
+                                      const SizedBox(height: 12),
+                                  itemBuilder: (context, index) {
+                                    final item = _incomes[index];
+                                    return _RecurrentIncomeCard(
+                                      item: item,
+                                      onToggle: (val) => _toggleRecurrent(
+                                        item.transactionId,
+                                        val,
+                                      ),
+                                    );
+                                  },
+                                ),
                         ),
                 ),
               ],
             ),
-            
+
             // Floating Save Button
             if (_pendingChanges.isNotEmpty)
               Positioned(
@@ -422,17 +434,18 @@ class _SummaryHeader extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.getSurface(context),
         border: Border(
-          bottom: BorderSide(
-            color: AppColors.greyLight.withValues(alpha: 0.5),
-          ),
+          bottom: BorderSide(color: AppColors.greyLight.withValues(alpha: 0.5)),
         ),
       ),
       child: Column(
         children: [
           Text(
             'Total Monthly Recurring',
-            style: AppTypography.bodyLarge.copyWith( // Changed from bodySmall
-              color: AppColors.getTextPrimary(context), // Changed from Secondary to Primary (Darker)
+            style: AppTypography.bodyLarge.copyWith(
+              // Changed from bodySmall
+              color: AppColors.getTextPrimary(
+                context,
+              ), // Changed from Secondary to Primary (Darker)
               fontWeight: FontWeight.w600, // Added weight
             ),
           ),
@@ -455,10 +468,7 @@ class _RecurrentIncomeCard extends StatelessWidget {
   final _RecurrentIncomeItem item;
   final ValueChanged<bool> onToggle;
 
-  const _RecurrentIncomeCard({
-    required this.item,
-    required this.onToggle,
-  });
+  const _RecurrentIncomeCard({required this.item, required this.onToggle});
 
   @override
   Widget build(BuildContext context) {
@@ -474,8 +484,8 @@ class _RecurrentIncomeCard extends StatelessWidget {
           ),
         ],
         border: Border.all(
-          color: item.isRecurrent 
-              ? AppColors.primary.withValues(alpha: 0.3) 
+          color: item.isRecurrent
+              ? AppColors.primary.withValues(alpha: 0.3)
               : Colors.transparent,
           width: 1.5,
         ),
@@ -483,25 +493,29 @@ class _RecurrentIncomeCard extends StatelessWidget {
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), // More padding
+          tilePadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ), // More padding
           leading: Container(
             padding: const EdgeInsets.all(12), // Larger icon area
             decoration: BoxDecoration(
-              color: item.isRecurrent 
-                  ? AppColors.primary.withValues(alpha: 0.1) 
+              color: item.isRecurrent
+                  ? AppColors.primary.withValues(alpha: 0.1)
                   : AppColors.greyLight.withValues(alpha: 0.3),
               shape: BoxShape.circle,
             ),
             child: Icon(
               _getCategoryIcon(item.category),
               // Use standard grey if AppColors.grey is missing
-              color: item.isRecurrent ? AppColors.primary : Colors.grey[700], 
+              color: item.isRecurrent ? AppColors.primary : Colors.grey[700],
               size: 24, // Larger icon
             ),
           ),
           title: Text(
             item.title,
-            style: AppTypography.headline3.copyWith( // Much larger title
+            style: AppTypography.headline3.copyWith(
+              // Much larger title
               fontSize: 18,
               fontWeight: FontWeight.w700,
               color: AppColors.getTextPrimary(context), // Darkest black
@@ -513,7 +527,8 @@ class _RecurrentIncomeCard extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 item.accountName,
-                style: AppTypography.bodyMedium.copyWith( // Larger subtitle
+                style: AppTypography.bodyMedium.copyWith(
+                  // Larger subtitle
                   color: Colors.black87, // Darker grey
                   fontWeight: FontWeight.w500,
                 ),
@@ -525,26 +540,27 @@ class _RecurrentIncomeCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                 MathFormatter.formatCurrency(item.amount),
-                style: AppTypography.bodyLarge.copyWith( // Larger amount
+                MathFormatter.formatCurrency(item.amount),
+                style: AppTypography.bodyLarge.copyWith(
+                  // Larger amount
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
-                  color: item.isRecurrent 
-                      ? const Color(0xFF2E7D32) 
+                  color: item.isRecurrent
+                      ? const Color(0xFF2E7D32)
                       : Colors.black87,
                 ),
               ),
               const SizedBox(height: 4),
-               SizedBox(
-                 height: 24,
-                 width: 40,
-                 child: Switch(
+              SizedBox(
+                height: 24,
+                width: 40,
+                child: Switch(
                   value: item.isRecurrent,
                   onChanged: onToggle,
-                  activeColor: AppColors.primary,
+                  activeThumbColor: AppColors.primary,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                 ),
-               ),
+                ),
+              ),
             ],
           ),
           children: [
@@ -562,9 +578,12 @@ class _RecurrentIncomeCard extends StatelessWidget {
                   const SizedBox(height: 12),
                   _DetailRow(
                     label: 'Date Added',
-                    value: IncomeExpenseHelpers.formatTransactionDate(item.createdAt),
+                    value: IncomeExpenseHelpers.formatTransactionDate(
+                      item.createdAt,
+                    ),
                   ),
-                  if (item.description != null && item.description!.isNotEmpty) ...[
+                  if (item.description != null &&
+                      item.description!.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     _DetailRow(label: 'Note', value: item.description!),
                   ],
@@ -579,12 +598,18 @@ class _RecurrentIncomeCard extends StatelessWidget {
 
   IconData _getCategoryIcon(String? category) {
     switch (category?.toLowerCase()) {
-      case 'salary': return Icons.work_outline;
-      case 'investment': return Icons.trending_up;
-      case 'gift': return Icons.card_giftcard;
-      case 'rental': return Icons.home_work_outlined;
-      case 'business': return Icons.storefront;
-      default: return Icons.attach_money;
+      case 'salary':
+        return Icons.work_outline;
+      case 'investment':
+        return Icons.trending_up;
+      case 'gift':
+        return Icons.card_giftcard;
+      case 'rental':
+        return Icons.home_work_outlined;
+      case 'business':
+        return Icons.storefront;
+      default:
+        return Icons.attach_money;
     }
   }
 }
@@ -696,11 +721,7 @@ class _EmptyStateView extends StatelessWidget {
               color: AppColors.primary.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.update,
-              size: 48,
-              color: AppColors.primary,
-            ),
+            child: const Icon(Icons.update, size: 48, color: AppColors.primary),
           ),
           const SizedBox(height: 24),
           Text(
@@ -781,8 +802,8 @@ class _MonthlyPromptSheet extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               Icon(
-                Icons.calendar_month, 
-                size: 48, 
+                Icons.calendar_month,
+                size: 48,
                 color: AppColors.primary.withValues(alpha: 0.8),
               ),
               const SizedBox(height: 16),
@@ -813,13 +834,22 @@ class _MonthlyPromptSheet extends StatelessWidget {
                   shrinkWrap: true,
                   padding: const EdgeInsets.all(8),
                   itemCount: toAdd.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  separatorBuilder: (_, _) => const Divider(height: 1),
                   itemBuilder: (context, index) {
                     final item = toAdd[index];
                     return ListTile(
                       dense: true,
-                      leading: const Icon(Icons.check_circle, size: 20, color: AppColors.primary),
-                      title: Text(item.title, style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.w600)),
+                      leading: const Icon(
+                        Icons.check_circle,
+                        size: 20,
+                        color: AppColors.primary,
+                      ),
+                      title: Text(
+                        item.title,
+                        style: AppTypography.bodyLarge.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                       trailing: Text(
                         MathFormatter.formatCurrency(item.amount),
                         style: AppTypography.bodyMedium,

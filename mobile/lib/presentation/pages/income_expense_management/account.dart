@@ -2901,7 +2901,7 @@ void _showAccountList(BuildContext context) {
                     shrinkWrap: true,
                     physics: const BouncingScrollPhysics(),
                     itemCount: _myAccounts.length + 1, // +1 for the "Add" button
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    separatorBuilder: (_, _) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       // --- Add New Account Button (Last Item) ---
                       if (index == _myAccounts.length) {
