@@ -50,6 +50,7 @@ dependencies:
   uuid: ^4.0.0
   timezone: ^0.9.3
   flutter_native_timezone: ^2.0.0
+  flutter_lints: ^6.0.0
 
 dev_dependencies:
   flutter_test:

@@ -325,7 +325,7 @@ class _AddTransferPageState extends State<AddTransferPage> {
                         ),
                         prefixText: _amountController.text.isEmpty
                             ? null
-                            : ProfileHelpers.getUserCurrencyPref() + ' ',
+                            : '${ProfileHelpers.getUserCurrencyPref()} ',
                       ),
                     ),
                   ),

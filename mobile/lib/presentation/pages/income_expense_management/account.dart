@@ -2224,7 +2224,7 @@ class _AccountPageState extends State<AccountPage> {
                         labelStyle: const TextStyle(color: Colors.grey),
                         hintText: '0.00',
                         hintStyle: TextStyle(color: Colors.grey.shade400),
-                        prefixText: ProfileHelpers.getUserCurrencyPref() + ' ',
+                        prefixText: '${ProfileHelpers.getUserCurrencyPref()} ',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -2490,7 +2490,7 @@ class _AccountPageState extends State<AccountPage> {
                       decoration: InputDecoration(
                         labelText: 'Initial Balance',
                         labelStyle: const TextStyle(color: Colors.grey),
-                        prefixText: ProfileHelpers.getUserCurrencyPref() + ' ',
+                        prefixText: '${ProfileHelpers.getUserCurrencyPref()} ',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -2511,7 +2511,7 @@ class _AccountPageState extends State<AccountPage> {
                       decoration: InputDecoration(
                         labelText: 'Current Balance (Read-only)',
                         labelStyle: const TextStyle(color: Colors.grey),
-                        prefixText: ProfileHelpers.getUserCurrencyPref() + ' ',
+                        prefixText: '${ProfileHelpers.getUserCurrencyPref()} ',
                         filled: true,
                         fillColor: Colors.grey.shade50,
                         border: OutlineInputBorder(

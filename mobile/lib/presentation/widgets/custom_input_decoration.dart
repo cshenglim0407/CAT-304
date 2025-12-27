@@ -6,7 +6,7 @@ class CustomInputDecoration {
     return InputDecoration(
       hintText: hint,
       hintStyle: const TextStyle(color: Colors.grey),
-      prefixText: ProfileHelpers.getUserCurrencyPref() + ' ',
+      prefixText: '${ProfileHelpers.getUserCurrencyPref()} ',
       filled: true,
       fillColor: fillColor,
       border: OutlineInputBorder(

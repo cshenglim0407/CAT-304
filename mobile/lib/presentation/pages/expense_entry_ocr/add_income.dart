@@ -352,7 +352,7 @@ class _AddIncomePageState extends State<AddIncomePage> {
                         ),
                         prefixText: _totalIncomeController.text.isEmpty
                             ? null
-                            : ProfileHelpers.getUserCurrencyPref() + ' ',
+                            : '${ProfileHelpers.getUserCurrencyPref()} ',
                       ),
                     ),
                   ),
