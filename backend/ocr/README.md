@@ -12,6 +12,19 @@
 6. Health check: `curl http://127.0.0.1:8000/`.
 7. OCR example: `curl -F "receipt=@/absolute/path/to/receipt.jpg" http://127.0.0.1:8000/ocr`.
 
+### Deployment (Docker)
+
+1. **Build the image**:
+   ```bash
+   docker build -t ocr-backend .
+   ```
+2. **Run locally**:
+   ```bash
+   docker run -p 8000:8000 -e OCR_SPACE_API_KEY="your_key_here" ocr-backend
+   ```
+3. **Deploy to Cloud (Render/Railway)**:
+   - Push code to Git. Connect repo to provider. Set `OCR_SPACE_API_KEY` env var.
+
 ### Endpoint
 
 POST /ocr
