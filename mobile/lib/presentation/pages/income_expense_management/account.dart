@@ -347,7 +347,8 @@ class _AccountPageState extends State<AccountPage> {
             final isExpense = tx.isExpense;
             final amount = tx.amount.abs();
             final displayAmount =
-                (isExpense ? '- \$' : '+ \$') + amount.toStringAsFixed(2);
+                (isExpense ? '- ' : '+ ') +
+                MathFormatter.formatCurrency(amount);
             final bool isTransfer =
                 (tx.category ?? '').toString().toUpperCase() == 'TRANSFER';
 

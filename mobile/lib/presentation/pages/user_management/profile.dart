@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cashlytics/core/utils/math_formatter.dart';
 import 'package:cashlytics/core/utils/string_case_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
@@ -285,8 +286,9 @@ class _ProfilePageState extends State<ProfilePage> {
               "N/A";
           _dependentNumber =
               _currentDetailed!.dependentNumber?.toString() ?? "0";
-          _estimatedLoan =
-              "RM ${_currentDetailed!.estimatedLoan?.toStringAsFixed(2) ?? '0'}";
+          _estimatedLoan = MathFormatter.formatCurrency(
+            _currentDetailed!.estimatedLoan ?? 0.0,
+          );
         });
       }
     } catch (e) {
@@ -739,8 +741,9 @@ class _ProfilePageState extends State<ProfilePage> {
                           "N/A";
                       _dependentNumber =
                           updatedDetailed.dependentNumber?.toString() ?? "0";
-                      _estimatedLoan =
-                          "RM ${updatedDetailed.estimatedLoan?.toStringAsFixed(2) ?? '0'}";
+                      _estimatedLoan = MathFormatter.formatCurrency(
+                        updatedDetailed.estimatedLoan ?? 0.0,
+                      );
                     });
                   }
                 },

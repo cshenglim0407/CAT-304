@@ -607,7 +607,7 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Spent: RM ${spent.toStringAsFixed(2)}',
+                'Spent: ${MathFormatter.formatCurrency(spent)}',
                 style: TextStyle(
                   color: percentage >= 1.0 ? error : greyText,
                   fontSize: 12,
@@ -615,7 +615,7 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
                 ),
               ),
               Text(
-                'Limit: RM ${limit.toStringAsFixed(0)}',
+                'Limit: ${MathFormatter.formatCurrency(limit)}',
                 style: TextStyle(
                   color: greyText,
                   fontSize: 12,

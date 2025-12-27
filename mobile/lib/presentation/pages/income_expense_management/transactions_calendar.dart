@@ -1,3 +1,4 @@
+import 'package:cashlytics/core/utils/math_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
@@ -259,13 +260,13 @@ class _TransactionsCalendarPageState extends State<TransactionsCalendarPage> {
                 Row(
                   children: [
                     _SummaryChip(
-                      label: "+ \$${incomeTotal.toStringAsFixed(2)}",
+                      label: "+ ${MathFormatter.formatCurrency(incomeTotal)}",
                       color: AppColors.success.withValues(alpha: 0.12),
                       textColor: AppColors.success,
                     ),
                     const SizedBox(width: 8),
                     _SummaryChip(
-                      label: "- \$${expenseTotal.toStringAsFixed(2)}",
+                      label: "- ${MathFormatter.formatCurrency(expenseTotal)}",
                       color: Colors.black.withValues(alpha: 0.06),
                       textColor: Colors.black,
                     ),

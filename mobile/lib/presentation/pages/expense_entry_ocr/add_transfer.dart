@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:cashlytics/core/utils/math_formatter.dart';
 import 'package:cashlytics/core/utils/currency_input_formatter.dart';
 import 'package:cashlytics/core/utils/income_expense_management/income_expense_helpers.dart';
 
@@ -312,7 +313,7 @@ class _AddTransferPageState extends State<AddTransferPage> {
                         enabledBorder: InputBorder.none,
                         focusedBorder: InputBorder.none,
                         contentPadding: EdgeInsets.zero,
-                        hintText: r"$0.00",
+                        hintText: MathFormatter.formatCurrency(0.0),
                         hintStyle: TextStyle(
                           color: primaryColor.withValues(alpha: 0.5),
                         ),

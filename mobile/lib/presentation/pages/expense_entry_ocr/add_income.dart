@@ -1,3 +1,4 @@
+import 'package:cashlytics/core/utils/math_formatter.dart';
 import 'package:flutter/material.dart';
 
 import 'package:cashlytics/core/config/icons.dart';
@@ -339,7 +340,7 @@ class _AddIncomePageState extends State<AddIncomePage> {
                         enabledBorder: InputBorder.none,
                         focusedBorder: InputBorder.none,
                         contentPadding: EdgeInsets.zero,
-                        hintText: r"$0.00",
+                        hintText: MathFormatter.formatCurrency(0.0),
                         hintStyle: TextStyle(
                           color: primaryColor.withValues(alpha: 0.5),
                         ),

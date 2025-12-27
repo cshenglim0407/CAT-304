@@ -1,9 +1,9 @@
 class MathFormatter {
   static String formatCurrency(double amount) {
-    return '\$${amount.toStringAsFixed(2)}';
+    return 'RM${amount.toStringAsFixed(2)}';
   }
 
-  /// Parse formatted amount strings (e.g., "$45.00", "45.00 USD") by removing
+  /// Parse formatted amount strings (e.g., "RM45.00", "45.00 USD") by removing
   /// non-numeric characters except decimal points
   static double parseFormattedAmount(String value) {
     String cleanString = value.replaceAll(RegExp(r'[^0-9.]'), '');
