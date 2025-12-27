@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+
 import 'package:cashlytics/core/services/cache/cache_service.dart';
 import 'package:cashlytics/core/services/supabase/client.dart';
 import 'package:cashlytics/core/services/supabase/database/database_service.dart';
 import 'package:cashlytics/core/utils/income_expense_management/income_expense_helpers.dart';
 import 'package:cashlytics/core/utils/math_formatter.dart';
+
+import 'package:cashlytics/data/models/recurrent_income_item_model.dart';
 import 'package:cashlytics/data/repositories/account_repository_impl.dart';
 import 'package:cashlytics/data/repositories/income_repository_impl.dart';
 import 'package:cashlytics/data/repositories/transaction_repository_impl.dart';
@@ -15,6 +18,7 @@ import 'package:cashlytics/domain/repositories/transaction_repository.dart';
 import 'package:cashlytics/domain/usecases/accounts/get_accounts.dart';
 import 'package:cashlytics/domain/usecases/income/upsert_income.dart';
 import 'package:cashlytics/domain/usecases/transactions/upsert_transaction.dart';
+
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
 
@@ -41,7 +45,7 @@ class _RecurrentIncomeManagerPageState
   bool _isSaving = false;
   String? _errorMessage;
 
-  List<_RecurrentIncomeItem> _incomes = [];
+  List<RecurrentIncomeItem> _incomes = [];
   Map<String, bool> _initialStates = {};
   final Map<String, bool> _pendingChanges = {};
 
@@ -96,7 +100,7 @@ class _RecurrentIncomeManagerPageState
           if (acc.id != null) acc.id!: acc.name,
       };
 
-      final List<_RecurrentIncomeItem> incomeRows = [];
+      final List<RecurrentIncomeItem> incomeRows = [];
 
       for (final account in accounts) {
         if (account.id == null) continue;
@@ -130,7 +134,7 @@ class _RecurrentIncomeManagerPageState
               (incomeData['description'] as String?);
 
           incomeRows.add(
-            _RecurrentIncomeItem(
+            RecurrentIncomeItem(
               transactionId: transactionId,
               accountId: account.id!,
               accountName: accountNames[account.id] ?? 'Account',
@@ -218,7 +222,7 @@ class _RecurrentIncomeManagerPageState
     }
   }
 
-  Future<void> _addRecurringIncomes(List<_RecurrentIncomeItem> items) async {
+  Future<void> _addRecurringIncomes(List<RecurrentIncomeItem> items) async {
     // ... [Same implementation as original code] ...
     if (items.isEmpty) return;
     setState(() => _isSaving = true);
@@ -465,7 +469,7 @@ class _SummaryHeader extends StatelessWidget {
 }
 
 class _RecurrentIncomeCard extends StatelessWidget {
-  final _RecurrentIncomeItem item;
+  final RecurrentIncomeItem item;
   final ValueChanged<bool> onToggle;
 
   const _RecurrentIncomeCard({required this.item, required this.onToggle});
@@ -775,7 +779,7 @@ class _ErrorView extends StatelessWidget {
 }
 
 class _MonthlyPromptSheet extends StatelessWidget {
-  final List<_RecurrentIncomeItem> toAdd;
+  final List<RecurrentIncomeItem> toAdd;
 
   const _MonthlyPromptSheet({required this.toAdd});
 
@@ -893,48 +897,6 @@ class _MonthlyPromptSheet extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-// -----------------------------------------------------------------------------
-// MODELS
-// -----------------------------------------------------------------------------
-
-class _RecurrentIncomeItem {
-  const _RecurrentIncomeItem({
-    required this.transactionId,
-    required this.accountId,
-    required this.accountName,
-    required this.title,
-    required this.amount,
-    required this.isRecurrent,
-    required this.createdAt,
-    this.category,
-    this.description,
-  });
-
-  final String transactionId;
-  final String accountId;
-  final String accountName;
-  final String title;
-  final double amount;
-  final bool isRecurrent;
-  final DateTime createdAt;
-  final String? category;
-  final String? description;
-
-  _RecurrentIncomeItem copyWith({bool? isRecurrent}) {
-    return _RecurrentIncomeItem(
-      transactionId: transactionId,
-      accountId: accountId,
-      accountName: accountName,
-      title: title,
-      amount: amount,
-      isRecurrent: isRecurrent ?? this.isRecurrent,
-      createdAt: createdAt,
-      category: category,
-      description: description,
     );
   }
 }
