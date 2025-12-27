@@ -9,6 +9,7 @@ import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_state_listener.dart';
 import 'package:cashlytics/core/services/cache/cache_service.dart';
 import 'package:cashlytics/core/utils/math_formatter.dart';
+import 'package:cashlytics/core/utils/string_case_formatter.dart';
 import 'package:cashlytics/core/utils/json_utils.dart';
 import 'package:cashlytics/core/utils/ai_insights/ai_insights_service.dart';
 
@@ -1777,9 +1778,9 @@ class _CashFlowCardState extends State<_CashFlowCard> {
       return sortedBalances.map((w) {
         if (w.weekNumber == 1 && sortedBalances.any((b) => b.weekNumber > 10)) {
           final nextYear = (w.startDate.year + 1) % 100;
-          return "Wk 1'$nextYear";
+          return "Week 1'$nextYear";
         }
-        return 'Wk ${w.weekNumber}';
+        return 'Week ${w.weekNumber}';
       }).toList();
     } else if (_quarterlyBalances.isNotEmpty) {
       return _quarterlyBalances.map((q) => 'Q${q.quarterNumber}').toList();
@@ -2290,7 +2291,7 @@ class _ExpenseDistributionCardState extends State<_ExpenseDistributionCard> {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: _LegendItem(
                   color: slice.color,
-                  label: slice.label,
+                  label: StringCaseFormatter.toTitleCase(slice.label),
                   pct: '${pct.toStringAsFixed(1)}%',
                   amt: '(${MathFormatter.formatCurrency(slice.amount)})',
                 ),
