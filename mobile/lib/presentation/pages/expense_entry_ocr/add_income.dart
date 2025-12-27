@@ -1,8 +1,8 @@
-import 'package:cashlytics/core/utils/math_formatter.dart';
 import 'package:flutter/material.dart';
 
 import 'package:cashlytics/core/config/icons.dart';
 import 'package:cashlytics/core/utils/currency_input_formatter.dart';
+import 'package:cashlytics/core/utils/user_management/profile_helpers.dart';
 import 'package:cashlytics/core/utils/income_expense_management/income_expense_helpers.dart';
 
 import 'package:cashlytics/presentation/themes/colors.dart';
@@ -340,10 +340,11 @@ class _AddIncomePageState extends State<AddIncomePage> {
                         enabledBorder: InputBorder.none,
                         focusedBorder: InputBorder.none,
                         contentPadding: EdgeInsets.zero,
-                        hintText: MathFormatter.formatCurrency(0.0),
+                        hintText: 0.toStringAsFixed(2),
                         hintStyle: TextStyle(
                           color: primaryColor.withValues(alpha: 0.5),
                         ),
+                        prefixText: ProfileHelpers.getUserCurrencyPref() + ' ',
                       ),
                     ),
                   ),

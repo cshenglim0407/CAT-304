@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cashlytics/core/utils/user_management/profile_helpers.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -2223,8 +2224,7 @@ class _AccountPageState extends State<AccountPage> {
                         labelStyle: const TextStyle(color: Colors.grey),
                         hintText: '0.00',
                         hintStyle: TextStyle(color: Colors.grey.shade400),
-                        prefixText:
-                            '\$ ', // TODO: Localize currency symbol @WenHao1223
+                        prefixText: ProfileHelpers.getUserCurrencyPref() + ' ',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -2490,8 +2490,7 @@ class _AccountPageState extends State<AccountPage> {
                       decoration: InputDecoration(
                         labelText: 'Initial Balance',
                         labelStyle: const TextStyle(color: Colors.grey),
-                        prefixText:
-                            '\$ ', // TODO: Localize currency symbol @WenHao1223
+                        prefixText: ProfileHelpers.getUserCurrencyPref() + ' ',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -2512,8 +2511,7 @@ class _AccountPageState extends State<AccountPage> {
                       decoration: InputDecoration(
                         labelText: 'Current Balance (Read-only)',
                         labelStyle: const TextStyle(color: Colors.grey),
-                        prefixText:
-                            '\$ ', // TODO: Localize currency symbol @WenHao1223
+                        prefixText: ProfileHelpers.getUserCurrencyPref() + ' ',
                         filled: true,
                         fillColor: Colors.grey.shade50,
                         border: OutlineInputBorder(
