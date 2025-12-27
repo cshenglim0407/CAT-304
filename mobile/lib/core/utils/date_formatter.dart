@@ -49,6 +49,11 @@ class DateFormatter {
     return '$day $month';
   }
 
+  /// Formats a date in DD/MM/YYYY format for display in input fields.
+  static String formatDateDDMMYYYY(DateTime date) {
+    return "${date.day}/${date.month}/${date.year}";
+  }
+
   /// Returns the abbreviated month name (e.g., 'Jan', 'Feb', etc.)
   static String _monthName(int month) {
     const months = [

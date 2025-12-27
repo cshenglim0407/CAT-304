@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:cashlytics/core/utils/math_formatter.dart';
+import 'package:cashlytics/core/utils/date_formatter.dart';
 import 'package:cashlytics/core/utils/string_case_formatter.dart';
 import 'package:cashlytics/core/utils/currency_input_formatter.dart';
 import 'package:cashlytics/core/utils/income_expense_management/income_expense_helpers.dart';
@@ -426,7 +427,7 @@ class _AccountPageState extends State<AccountPage> {
 
   String _formatDate(DateTime? dateTime) {
     if (dateTime == null) return 'Unknown';
-    return IncomeExpenseHelpers.formatTransactionDate(dateTime);
+    return DateFormatter.formatDate(dateTime);
   }
 
   IconData _getTransactionIcon(bool isExpense, String? category) {
@@ -461,7 +462,7 @@ class _AccountPageState extends State<AccountPage> {
       return _parseAmount(value as Map<String, dynamic>);
     }
     // For primitives, use the standard helper
-    return IncomeExpenseHelpers.parseAmount(value);
+    return MathFormatter.parseDouble(value) ?? 0.0;
   }
 
   /// Remove non-serializable fields (like IconData) before caching
@@ -955,7 +956,7 @@ class _AccountPageState extends State<AccountPage> {
 
       final dynamic dateDyn = result['date'];
       final String displayDate = (dateDyn is DateTime)
-          ? IncomeExpenseHelpers.formatTransactionDate(dateDyn)
+          ? DateFormatter.formatDate(dateDyn)
           : (dateDyn?.toString() ?? '');
 
       // Title prioritization
@@ -1377,7 +1378,7 @@ class _AccountPageState extends State<AccountPage> {
         throw Exception('Amount is required');
       }
 
-      final double amountValue = IncomeExpenseHelpers.parseAmount(amount);
+      final double amountValue = MathFormatter.parseDouble(amount) ?? 0.0;
       if (!IncomeExpenseHelpers.isValidAmount(amountValue)) {
         throw Exception('Invalid amount: must be positive');
       }
@@ -1504,9 +1505,7 @@ class _AccountPageState extends State<AccountPage> {
         final newTxSender = {
           'type': isTransfer ? 'transfer' : (isExpense ? 'expense' : 'income'),
           'title': title,
-          'date': IncomeExpenseHelpers.formatTransactionDate(
-            result['date'] as DateTime,
-          ),
+          'date': DateFormatter.formatDate(result['date'] as DateTime),
           'amount': displayAmount,
           'rawAmount': rawAmount,
           'isExpense': isExpense,
@@ -1551,9 +1550,7 @@ class _AccountPageState extends State<AccountPage> {
             final newTxReceiver = {
               'type': 'transfer',
               'title': "From $senderName", // Display "From [Sender Name]"
-              'date': IncomeExpenseHelpers.formatTransactionDate(
-                result['date'] as DateTime,
-              ),
+              'date': DateFormatter.formatDate(result['date'] as DateTime),
               'amount': displayAmountReceiver,
               'rawAmount': rawAmount,
               'isExpense': false, // It's income for the receiver

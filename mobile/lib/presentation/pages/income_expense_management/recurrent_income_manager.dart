@@ -1,9 +1,9 @@
+import 'package:cashlytics/core/utils/date_formatter.dart';
 import 'package:flutter/material.dart';
 
 import 'package:cashlytics/core/services/cache/cache_service.dart';
 import 'package:cashlytics/core/services/supabase/client.dart';
 import 'package:cashlytics/core/services/supabase/database/database_service.dart';
-import 'package:cashlytics/core/utils/income_expense_management/income_expense_helpers.dart';
 import 'package:cashlytics/core/utils/math_formatter.dart';
 
 import 'package:cashlytics/data/models/recurrent_income_item_model.dart';
@@ -122,9 +122,8 @@ class _RecurrentIncomeManagerPageState
           );
           if (incomeData == null) continue;
 
-          final double amount = IncomeExpenseHelpers.parseAmount(
-            incomeData['amount'],
-          );
+          final double amount =
+              MathFormatter.parseDouble(incomeData['amount']) ?? 0.0;
           final bool isRecurrent = incomeData['is_recurrent'] as bool? ?? false;
           final DateTime createdAt =
               DateTime.tryParse(tx['created_at']?.toString() ?? '') ??
@@ -582,7 +581,7 @@ class _RecurrentIncomeCard extends StatelessWidget {
                   const SizedBox(height: 12),
                   _DetailRow(
                     label: 'Date Added',
-                    value: IncomeExpenseHelpers.formatTransactionDate(
+                    value: DateFormatter.formatDateDDMMYYYY(
                       item.createdAt,
                     ),
                   ),

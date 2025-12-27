@@ -1,3 +1,4 @@
+import 'package:cashlytics/core/utils/date_formatter.dart';
 import 'package:flutter/material.dart';
 
 import 'package:cashlytics/core/config/icons.dart';
@@ -246,7 +247,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
   }
 
   String _formatDate(DateTime date) {
-    return IncomeExpenseHelpers.formatDateForInput(date);
+    return DateFormatter.formatDateDDMMYYYY(date);
   }
 
   Future<void> _pickDate() async {

@@ -8,33 +8,6 @@ class IncomeExpenseHelpers {
     return '$sign${MathFormatter.formatCurrency(amount)}';
   }
 
-  /// Formats a date for transaction display.
-  /// Returns 'Today', 'Yesterday', or 'DD/MM' format.
-  static String formatTransactionDate(DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final yesterday = today.subtract(const Duration(days: 1));
-    final dateOnly = DateTime(date.year, date.month, date.day);
-
-    if (dateOnly == today) {
-      return 'Today';
-    } else if (dateOnly == yesterday) {
-      return 'Yesterday';
-    } else {
-      return '${date.day}/${date.month}';
-    }
-  }
-
-  /// Formats a date in DD/MM/YYYY format for display in input fields.
-  static String formatDateForInput(DateTime date) {
-    return "${date.day}/${date.month}/${date.year}";
-  }
-
-  /// Parses amount from various types and returns as double.
-  static double parseAmount(dynamic value) {
-    return MathFormatter.parseDouble(value) ?? 0.0;
-  }
-
   /// Extracts initial data field with type coercion.
   static T? getInitialValue<T>(
     Map<String, dynamic>? initialData,
@@ -62,7 +35,7 @@ class IncomeExpenseHelpers {
   static double getInitialAmount(Map<String, dynamic>? initialData) {
     if (initialData == null) return 0.0;
     final rawAmt = initialData['rawAmount'] ?? initialData['amount'];
-    return parseAmount(rawAmt);
+    return MathFormatter.parseDouble(rawAmt) ?? 0.0;
   }
 
   /// Safely extracts a DateTime from initial data.

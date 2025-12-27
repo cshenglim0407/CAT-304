@@ -1,8 +1,8 @@
+import 'package:cashlytics/core/utils/date_formatter.dart';
 import 'package:cashlytics/core/utils/math_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
-import 'package:cashlytics/core/utils/income_expense_management/income_expense_helpers.dart';
 import 'package:flutter_neat_and_clean_calendar/flutter_neat_and_clean_calendar.dart';
 
 class TransactionsCalendarPage extends StatefulWidget {
@@ -252,7 +252,7 @@ class _TransactionsCalendarPageState extends State<TransactionsCalendarPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  IncomeExpenseHelpers.formatTransactionDate(_selectedDate),
+                  DateFormatter.formatDateDDMMYYYY(_selectedDate),
                   style: AppTypography.headline2.copyWith(
                     color: AppColors.getTextPrimary(context),
                   ),
