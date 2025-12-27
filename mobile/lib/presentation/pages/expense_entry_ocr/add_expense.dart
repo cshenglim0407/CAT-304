@@ -60,6 +60,8 @@ class _AddExpensePageState extends State<AddExpensePage> {
   bool _dateEdited = false;
   bool _itemEdited = false;
   Receipt? _pendingReceipt;
+  String? _existingReceiptUrl;
+  bool _isLoadingReceipt = false;
 
   @override
   void initState() {
@@ -133,8 +135,43 @@ class _AddExpensePageState extends State<AddExpensePage> {
         _items[0]['price']!.text = unitPrice;
         _calculateTotal();
       }
+
+      final String? transactionId = init['transactionId']?.toString();
+
+      if (transactionId != null && transactionId.isNotEmpty) {
+        _loadReceiptForEdit(transactionId);
+      }
     } else {
       _addNewItem();
+    }
+  }
+
+  Future<void> _loadReceiptForEdit(String transactionId) async {
+    setState(() => _isLoadingReceipt = true);
+
+    try {
+      final receiptRepo = ReceiptRepositoryImpl();
+
+      // Get receipt by transaction ID
+      final receipt = await receiptRepo.getReceiptByTransactionId(
+        transactionId,
+      );
+
+      if (receipt == null) return;
+
+      // Generate signed URL
+      final signedUrl = await receiptRepo.getSignedReceiptUrl(receipt.path);
+
+      if (!mounted) return;
+      setState(() {
+        _existingReceiptUrl = signedUrl;
+      });
+    } catch (e) {
+      debugPrint('Failed to load receipt for edit: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingReceipt = false);
+      }
     }
   }
 
@@ -340,6 +377,20 @@ class _AddExpensePageState extends State<AddExpensePage> {
         context,
       ).showSnackBar(SnackBar(content: Text('Failed to load receipt: $e')));
     }
+  }
+
+  void _viewExistingReceipt() {
+    if (_existingReceiptUrl == null) return;
+
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        insetPadding: const EdgeInsets.all(16),
+        child: InteractiveViewer(
+          child: Image.network(_existingReceiptUrl!, fit: BoxFit.contain),
+        ),
+      ),
+    );
   }
 
   // In AddExpensePage.dart
@@ -549,6 +600,12 @@ class _AddExpensePageState extends State<AddExpensePage> {
             ),
             const SizedBox(height: 12),
 
+            if (_isLoadingReceipt)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+              ),
+
             if (_pendingReceipt != null)
               SizedBox(
                 width: double.infinity,
@@ -556,6 +613,16 @@ class _AddExpensePageState extends State<AddExpensePage> {
                   icon: const Icon(Icons.receipt_long),
                   label: const Text("View Receipt"),
                   onPressed: _viewReceipt,
+                ),
+              ),
+
+            if (_existingReceiptUrl != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.receipt_long),
+                  label: const Text('View Receipt'),
+                  onPressed: _viewExistingReceipt,
                 ),
               ),
 

@@ -11,4 +11,6 @@ abstract class ReceiptRepository {
   Future<Receipt?> getReceiptById(String receiptId);
 
   Future<String> getSignedReceiptUrl(String storagePath);
+
+  Future<Receipt?> getReceiptByTransactionId(String transactionId);
 }
