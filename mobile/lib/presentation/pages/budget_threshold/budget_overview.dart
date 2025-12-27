@@ -13,7 +13,10 @@ import 'package:cashlytics/domain/usecases/budgets/delete_budget.dart';
 
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/widgets/index.dart';
+import 'package:cashlytics/presentation/widgets/confirm_delete_dialog.dart';
+
 import 'package:cashlytics/presentation/pages/budget_threshold/budget.dart';
+
 
 class BudgetOverviewPage extends StatefulWidget {
   const BudgetOverviewPage({super.key});
@@ -274,28 +277,14 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
   }
 
   Future<void> _confirmDelete(String budgetId) async {
-    final confirmed = await showDialog<bool>(
+    await showConfirmDeleteDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Budget'),
-        content: const Text('This will remove the budget. Continue?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+      title: 'Delete Budget',
+      content: 'This will remove the budget. Continue?',
+      onConfirm: () async {
+        await _deleteBudgetById(budgetId);
+      },
     );
-
-    if (confirmed == true) {
-      await _deleteBudgetById(budgetId);
-    }
   }
 
   Future<void> _deleteBudgetById(String budgetId) async {

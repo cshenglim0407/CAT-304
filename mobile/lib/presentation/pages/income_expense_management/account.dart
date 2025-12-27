@@ -47,6 +47,7 @@ import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
 import 'package:cashlytics/presentation/widgets/index.dart';
 import 'package:cashlytics/presentation/widgets/account_card.dart';
+import 'package:cashlytics/presentation/widgets/confirm_delete_dialog.dart';
 
 import 'package:cashlytics/presentation/pages/user_management/login.dart';
 import 'package:cashlytics/presentation/pages/expense_entry_ocr/add_income.dart';
@@ -2715,34 +2716,14 @@ class _AccountPageState extends State<AccountPage> {
     BuildContext context,
     Map<String, dynamic> account,
   ) {
-    showDialog(
+    showConfirmDeleteDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Account'),
-        content: const Text(
-          'This will remove the account and its transactions. Continue?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              textStyle: const TextStyle(fontSize: 16),
-              foregroundColor: Colors.red,
-              elevation: 0,
-              shadowColor: Colors.transparent,
-              side: BorderSide.none,
-            ),
-            onPressed: () async {
-              Navigator.pop(ctx);
-              await _deleteAccount(context, account);
-            },
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+      title: 'Delete Account',
+      content:
+          'This will remove the account ${account['name']} and all associated transactions. Contune?',
+      onConfirm: () async {
+        await _deleteAccount(context, account);
+      },
     );
   }
 
@@ -2838,10 +2819,11 @@ class _AccountPageState extends State<AccountPage> {
     );
   }
 
-void _showAccountList(BuildContext context) {
+  void _showAccountList(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true, // Allows the sheet to take up more height if needed
+      isScrollControlled:
+          true, // Allows the sheet to take up more height if needed
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -2850,7 +2832,8 @@ void _showAccountList(BuildContext context) {
         return SafeArea(
           child: Container(
             constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(ctx).size.height * 0.75, // Max 75% height
+              maxHeight:
+                  MediaQuery.of(ctx).size.height * 0.75, // Max 75% height
             ),
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Column(
@@ -2866,7 +2849,7 @@ void _showAccountList(BuildContext context) {
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                
+
                 // --- Header ---
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 20),
@@ -2900,7 +2883,8 @@ void _showAccountList(BuildContext context) {
                   child: ListView.separated(
                     shrinkWrap: true,
                     physics: const BouncingScrollPhysics(),
-                    itemCount: _myAccounts.length + 1, // +1 for the "Add" button
+                    itemCount:
+                        _myAccounts.length + 1, // +1 for the "Add" button
                     separatorBuilder: (_, _) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       // --- Add New Account Button (Last Item) ---
@@ -2919,7 +2903,10 @@ void _showAccountList(BuildContext context) {
                                 borderRadius: BorderRadius.circular(16),
                               ),
                             ),
-                            icon: const Icon(Icons.add, color: AppColors.primary),
+                            icon: const Icon(
+                              Icons.add,
+                              color: AppColors.primary,
+                            ),
                             label: Text(
                               "Add New Account",
                               style: AppTypography.bodyLarge.copyWith(
@@ -2976,17 +2963,20 @@ void _showAccountList(BuildContext context) {
                                 decoration: BoxDecoration(
                                   color: isSelected
                                       ? AppColors.primary
-                                      : AppColors.primary.withValues(alpha: 0.1),
+                                      : AppColors.primary.withValues(
+                                          alpha: 0.1,
+                                        ),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Center(
                                   child: Text(
-                                    (acc['name']?.toString().isNotEmpty ?? false)
+                                    (acc['name']?.toString().isNotEmpty ??
+                                            false)
                                         ? acc['name']
-                                            .toString()
-                                            .trim()
-                                            .substring(0, 1)
-                                            .toUpperCase()
+                                              .toString()
+                                              .trim()
+                                              .substring(0, 1)
+                                              .toUpperCase()
                                         : 'A',
                                     style: TextStyle(
                                       color: isSelected
@@ -2999,7 +2989,7 @@ void _showAccountList(BuildContext context) {
                                 ),
                               ),
                               const SizedBox(width: 16),
-                              
+
                               // Name & Type
                               Expanded(
                                 child: Column(
@@ -3030,11 +3020,13 @@ void _showAccountList(BuildContext context) {
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
                                   Text(
-                                    MathFormatter.formatCurrency(currentBalance),
+                                    MathFormatter.formatCurrency(
+                                      currentBalance,
+                                    ),
                                     style: AppTypography.bodyLarge.copyWith(
                                       fontWeight: FontWeight.bold,
-                                      color: isSelected 
-                                          ? AppColors.primary 
+                                      color: isSelected
+                                          ? AppColors.primary
                                           : AppColors.getTextPrimary(ctx),
                                     ),
                                   ),
@@ -3055,10 +3047,10 @@ void _showAccountList(BuildContext context) {
                                             color: AppColors.primary,
                                             fontWeight: FontWeight.bold,
                                           ),
-                                        )
+                                        ),
                                       ],
                                     ),
-                                  ]
+                                  ],
                                 ],
                               ),
                             ],
