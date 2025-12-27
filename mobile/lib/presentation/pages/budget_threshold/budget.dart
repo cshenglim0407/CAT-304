@@ -29,6 +29,7 @@ class BudgetOverviewPage extends StatefulWidget {
 
 class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
   String _selectedFilter = 'All';
+  String _selectedSort = 'Newest';
 
   // SAME MARGIN AS BUDGET.DART
   static const double pageMargin = 22.0;
@@ -193,6 +194,7 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
           final spent = _sumSpent(txList, start, end);
           items.add({
             'id': budgetId,
+            'created_at': row['created_at'],
             'type': 'U',
             'title': 'Monthly Limit',
             'icon': Icons.account_balance_wallet_rounded,
@@ -210,6 +212,7 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
           final spent = _sumSpent(txList, start, end, category: name);
           items.add({
             'id': budgetId,
+            'created_at': row['created_at'],
             'type': 'C',
             'title': name,
             'icon': getExpenseIcon(name.toUpperCase()),
@@ -229,6 +232,7 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
           final spent = _sumSpent(txList, start, end, accountId: accountId);
           items.add({
             'id': budgetId,
+            'created_at': row['created_at'],
             'type': 'A',
             'title': name,
             'icon': getAccountTypeIcon(accountType),
@@ -338,17 +342,42 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
   }
 
   List<Map<String, dynamic>> get _filteredBudgets {
-    if (_selectedFilter == 'All') return _budgets;
-    if (_selectedFilter == 'Overall') {
-      return _budgets.where((b) => b['type'] == 'U').toList();
+    List<Map<String, dynamic>> result;
+    if (_selectedFilter == 'All') {
+      result = List.from(_budgets);
+    } else if (_selectedFilter == 'Overall') {
+      result = _budgets.where((b) => b['type'] == 'U').toList();
+    } else if (_selectedFilter == 'Category') {
+      result = _budgets.where((b) => b['type'] == 'C').toList();
+    } else if (_selectedFilter == 'Account') {
+      result = _budgets.where((b) => b['type'] == 'A').toList();
+    } else {
+      result = List.from(_budgets);
     }
-    if (_selectedFilter == 'Category') {
-      return _budgets.where((b) => b['type'] == 'C').toList();
+
+    switch (_selectedSort) {
+      case 'Newest':
+        result.sort(
+          (a, b) => (b['created_at'] as String? ?? '').compareTo(
+            a['created_at'] as String? ?? '',
+          ),
+        );
+        break;
+      case 'Oldest':
+        result.sort(
+          (a, b) => (a['created_at'] as String? ?? '').compareTo(
+            b['created_at'] as String? ?? '',
+          ),
+        );
+        break;
+      case 'Limit: High':
+        result.sort((a, b) => (b['limit'] as num).compareTo(a['limit'] as num));
+        break;
+      case 'Limit: Low':
+        result.sort((a, b) => (a['limit'] as num).compareTo(b['limit'] as num));
+        break;
     }
-    if (_selectedFilter == 'Account') {
-      return _budgets.where((b) => b['type'] == 'A').toList();
-    }
-    return _budgets;
+    return result;
   }
 
   @override
@@ -433,17 +462,7 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
                           ),
                           children: [
                             if (activeBudgets.isNotEmpty) ...[
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: Text(
-                                  "Active",
-                                  style: TextStyle(
-                                    color: AppColors.getTextPrimary(context),
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
+                              _buildSectionHeader("Active", showSort: true),
                               ...activeBudgets.map(
                                 (budget) => _buildBudgetCard(
                                   budget,
@@ -459,16 +478,9 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
                                 expiredBudgets.isNotEmpty)
                               const SizedBox(height: 24),
                             if (expiredBudgets.isNotEmpty) ...[
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: Text(
-                                  "Expired",
-                                  style: TextStyle(
-                                    color: AppColors.getTextPrimary(context),
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
+                              _buildSectionHeader(
+                                "Expired",
+                                showSort: activeBudgets.isEmpty,
                               ),
                               ...expiredBudgets.map(
                                 (budget) => _buildBudgetCard(
@@ -506,6 +518,42 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
             }
           },
         ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, {bool showSort = false}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              color: AppColors.getTextPrimary(context),
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          if (showSort)
+            DropdownButton<String>(
+              value: _selectedSort,
+              icon: const Icon(Icons.sort_rounded),
+              underline: const SizedBox(),
+              onChanged: (String? newValue) {
+                if (newValue != null) setState(() => _selectedSort = newValue);
+              },
+              items: ['Newest', 'Oldest', 'Limit: High', 'Limit: Low']
+                  .map<DropdownMenuItem<String>>((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  })
+                  .toList(),
+            ),
+        ],
       ),
     );
   }
