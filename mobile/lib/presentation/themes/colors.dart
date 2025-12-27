@@ -41,6 +41,8 @@ class AppColors {
   static const Color darkTextSecondary = Color(0xFFB0B0B0);
   static const Color darkBorder = Color(0xFF3A3A3A);
 
+  static Color? get grey => null;
+
   // Get adaptive colors based on brightness
   static Color getBackground(BuildContext context) =>
       Theme.of(context).brightness == Brightness.dark ? darkBackground : background;
