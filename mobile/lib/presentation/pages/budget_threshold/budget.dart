@@ -555,10 +555,27 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
                         color: Colors.black,
                       ),
                     ),
-                    Text(
-                      '${budget['days_left']} days left',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-                    ),
+                    if ((budget['days_left'] as int) <= 0)
+                      Row(
+                        children: [
+                          Icon(Icons.error_outline, size: 14, color: error), // Alert Icon
+                          const SizedBox(width: 4),
+                          Text(
+                            'Expired',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: error, // Red color for expired
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      )
+                    else
+                      Text(
+                        '${budget['days_left']} days left',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                      ),
+                    // --------------------------
                   ],
                 ),
               ),
