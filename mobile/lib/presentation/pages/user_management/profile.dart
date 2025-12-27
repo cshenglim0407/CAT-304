@@ -754,22 +754,12 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
 
               AppMenuItem(
-                icon: Icons.savings_rounded,
-                label: "Create Budget",
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const BudgetPage()),
-                  );
-                },
-              ),
-
-              AppMenuItem(
                 icon: Icons.logout_rounded,
                 label: "Logout",
                 isDestructive: true,
                 onTap: _isLoading ? () {} : () => _signOut(),
               ),
+
               const SizedBox(height: 20),
             ],
           ),
