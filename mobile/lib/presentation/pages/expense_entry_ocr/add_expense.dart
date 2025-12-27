@@ -17,6 +17,7 @@ import 'package:cashlytics/domain/entities/receipt.dart';
 import 'package:cashlytics/data/repositories/receipt_repository_impl.dart';
 
 import 'package:uuid/uuid.dart';
+import 'receipt_preview_page.dart';
 
 class AddExpensePage extends StatefulWidget {
   final String accountName;
@@ -315,6 +316,32 @@ class _AddExpensePageState extends State<AddExpensePage> {
     }
   }
 
+  Future<void> _viewReceipt() async {
+    if (_pendingReceipt == null) return;
+
+    try {
+      final receiptRepo = ReceiptRepositoryImpl();
+
+      final signedUrl = await receiptRepo.getSignedReceiptUrl(
+        _pendingReceipt!.path,
+      );
+
+      if (!mounted) return;
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ReceiptPreviewPage(imageUrl: signedUrl),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to load receipt: $e')));
+    }
+  }
+
   // In AddExpensePage.dart
 
   void _saveExpense() {
@@ -521,6 +548,16 @@ class _AddExpensePageState extends State<AddExpensePage> {
               ),
             ),
             const SizedBox(height: 12),
+
+            if (_pendingReceipt != null)
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.receipt_long),
+                  label: const Text("View Receipt"),
+                  onPressed: _viewReceipt,
+                ),
+              ),
 
             // --- 1c. OCR Confidence ---
             if (_lastOcrConfidence != null)
