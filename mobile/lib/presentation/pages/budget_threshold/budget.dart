@@ -30,6 +30,7 @@ class BudgetOverviewPage extends StatefulWidget {
 class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
   String _selectedFilter = 'All';
   String _selectedSort = 'Newest';
+  bool _showAllExpired = false;
 
   // SAME MARGIN AS BUDGET.DART
   static const double pageMargin = 22.0;
@@ -482,16 +483,34 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
                                 "Expired",
                                 showSort: activeBudgets.isEmpty,
                               ),
-                              ...expiredBudgets.map(
-                                (budget) => _buildBudgetCard(
-                                  budget,
-                                  0,
-                                  primaryColor,
-                                  warningColor,
-                                  errorColor,
-                                  greyText,
+                              ...expiredBudgets
+                                  .take(
+                                    _showAllExpired ? expiredBudgets.length : 5,
+                                  )
+                                  .map(
+                                    (budget) => _buildBudgetCard(
+                                      budget,
+                                      0,
+                                      primaryColor,
+                                      warningColor,
+                                      errorColor,
+                                      greyText,
+                                    ),
+                                  ),
+                              if (expiredBudgets.length > 5)
+                                Center(
+                                  child: TextButton(
+                                    onPressed: () => setState(
+                                      () => _showAllExpired = !_showAllExpired,
+                                    ),
+                                    child: Text(
+                                      _showAllExpired
+                                          ? 'Show less'
+                                          : 'Show more',
+                                      style: TextStyle(color: primaryColor),
+                                    ),
+                                  ),
                                 ),
-                              ),
                             ],
                           ],
                         ),
