@@ -17,6 +17,7 @@ import 'package:cashlytics/domain/entities/receipt.dart';
 import 'package:cashlytics/data/repositories/receipt_repository_impl.dart';
 
 import 'package:uuid/uuid.dart';
+import 'receipt_preview_page.dart';
 
 class AddExpensePage extends StatefulWidget {
   final String accountName;
@@ -59,6 +60,8 @@ class _AddExpensePageState extends State<AddExpensePage> {
   bool _dateEdited = false;
   bool _itemEdited = false;
   Receipt? _pendingReceipt;
+  String? _existingReceiptUrl;
+  bool _isLoadingReceipt = false;
 
   @override
   void initState() {
@@ -132,8 +135,43 @@ class _AddExpensePageState extends State<AddExpensePage> {
         _items[0]['price']!.text = unitPrice;
         _calculateTotal();
       }
+
+      final String? transactionId = init['transactionId']?.toString();
+
+      if (transactionId != null && transactionId.isNotEmpty) {
+        _loadReceiptForEdit(transactionId);
+      }
     } else {
       _addNewItem();
+    }
+  }
+
+  Future<void> _loadReceiptForEdit(String transactionId) async {
+    setState(() => _isLoadingReceipt = true);
+
+    try {
+      final receiptRepo = ReceiptRepositoryImpl();
+
+      // Get receipt by transaction ID
+      final receipt = await receiptRepo.getReceiptByTransactionId(
+        transactionId,
+      );
+
+      if (receipt == null) return;
+
+      // Generate signed URL
+      final signedUrl = await receiptRepo.getSignedReceiptUrl(receipt.path);
+
+      if (!mounted) return;
+      setState(() {
+        _existingReceiptUrl = signedUrl;
+      });
+    } catch (e) {
+      debugPrint('Failed to load receipt for edit: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingReceipt = false);
+      }
     }
   }
 
@@ -258,19 +296,19 @@ class _AddExpensePageState extends State<AddExpensePage> {
     try {
       final OcrResult result = await OCRService.instance.scanReceipt(image);
 
-      // 1️⃣ Create repository (interface type)
+      // Create repository (interface type)
       final ReceiptRepository receiptRepo = ReceiptRepositoryImpl();
 
-      // 2️⃣ Generate receiptId (UUID or null → insert)
+      // Generate receiptId (UUID or null → insert)
       final String receiptId = const Uuid().v4();
 
-      // 3️⃣ Upload image to storage
+      // Upload image to storage
       final String storagePath = await receiptRepo.uploadReceiptImage(
         imageSource: image,
         receiptId: receiptId,
       );
 
-      // 4️⃣ Build pending domain entity
+      // Build pending domain entity
       _pendingReceipt = Receipt(
         id: null,
         transactionId: '', // Placeholder
@@ -313,6 +351,46 @@ class _AddExpensePageState extends State<AddExpensePage> {
         setState(() => _isScanning = false);
       }
     }
+  }
+
+  Future<void> _viewReceipt() async {
+    if (_pendingReceipt == null) return;
+
+    try {
+      final receiptRepo = ReceiptRepositoryImpl();
+
+      final signedUrl = await receiptRepo.getSignedReceiptUrl(
+        _pendingReceipt!.path,
+      );
+
+      if (!mounted) return;
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ReceiptPreviewPage(imageUrl: signedUrl),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to load receipt: $e')));
+    }
+  }
+
+  void _viewExistingReceipt() {
+    if (_existingReceiptUrl == null) return;
+
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        insetPadding: const EdgeInsets.all(16),
+        child: InteractiveViewer(
+          child: Image.network(_existingReceiptUrl!, fit: BoxFit.contain),
+        ),
+      ),
+    );
   }
 
   // In AddExpensePage.dart
@@ -521,6 +599,32 @@ class _AddExpensePageState extends State<AddExpensePage> {
               ),
             ),
             const SizedBox(height: 12),
+
+            if (_isLoadingReceipt)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+              ),
+
+            if (_pendingReceipt != null)
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.receipt_long),
+                  label: const Text("View Receipt"),
+                  onPressed: _viewReceipt,
+                ),
+              ),
+
+            if (_existingReceiptUrl != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.receipt_long),
+                  label: const Text('View Receipt'),
+                  onPressed: _viewExistingReceipt,
+                ),
+              ),
 
             // --- 1c. OCR Confidence ---
             if (_lastOcrConfidence != null)

@@ -92,4 +92,19 @@ class ReceiptRepositoryImpl implements ReceiptRepository {
         .from(_bucket)
         .createSignedUrl(storagePath, 60 * 5);
   }
+
+  // ---------------------------
+  // GET RECEIPT FOR VIEWING
+  // ---------------------------
+  @override
+  Future<Receipt?> getReceiptByTransactionId(String transactionId) async {
+    final data = await _databaseService.fetchSingle(
+      _table,
+      matchColumn: 'transaction_id',
+      matchValue: transactionId,
+    );
+
+    if (data == null) return null;
+    return ReceiptModel.fromMap(data);
+  }
 }
