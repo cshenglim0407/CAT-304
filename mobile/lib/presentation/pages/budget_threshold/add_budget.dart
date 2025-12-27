@@ -5,6 +5,7 @@ import 'package:cashlytics/core/services/supabase/client.dart';
 import 'package:cashlytics/core/services/supabase/database/database_service.dart';
 import 'package:cashlytics/core/utils/date_formatter.dart';
 import 'package:cashlytics/core/utils/math_formatter.dart';
+import 'package:cashlytics/core/utils/currency_input_formatter.dart';
 
 import 'package:cashlytics/data/repositories/account_budget_repository_impl.dart';
 import 'package:cashlytics/data/repositories/account_repository_impl.dart';
@@ -609,10 +610,10 @@ class _BudgetPageState extends State<BudgetPage> {
                                         MediaQuery.of(context).size.width * 0.6,
                                     child: TextFormField(
                                       controller: _amountController,
-                                      keyboardType:
-                                          const TextInputType.numberWithOptions(
-                                            decimal: true,
-                                          ),
+                                      keyboardType: TextInputType.number,
+                                      inputFormatters: [
+                                        CurrencyInputFormatter(),
+                                      ],
                                       textAlign: TextAlign.center,
                                       style: AppTypography.headline1.copyWith(
                                         color: AppColors.primary,
