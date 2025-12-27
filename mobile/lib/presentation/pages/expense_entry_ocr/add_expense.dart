@@ -258,19 +258,19 @@ class _AddExpensePageState extends State<AddExpensePage> {
     try {
       final OcrResult result = await OCRService.instance.scanReceipt(image);
 
-      // 1️⃣ Create repository (interface type)
+      // Create repository (interface type)
       final ReceiptRepository receiptRepo = ReceiptRepositoryImpl();
 
-      // 2️⃣ Generate receiptId (UUID or null → insert)
+      // Generate receiptId (UUID or null → insert)
       final String receiptId = const Uuid().v4();
 
-      // 3️⃣ Upload image to storage
+      // Upload image to storage
       final String storagePath = await receiptRepo.uploadReceiptImage(
         imageSource: image,
         receiptId: receiptId,
       );
 
-      // 4️⃣ Build pending domain entity
+      // Build pending domain entity
       _pendingReceipt = Receipt(
         id: null,
         transactionId: '', // Placeholder
