@@ -2838,94 +2838,232 @@ class _AccountPageState extends State<AccountPage> {
     );
   }
 
-  void _showAccountList(BuildContext context) {
-    if (_myAccounts.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('No accounts to show.')));
-      return;
-    }
-
+void _showAccountList(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true, // Allows the sheet to take up more height if needed
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       backgroundColor: AppColors.getSurface(context),
       builder: (ctx) {
         return SafeArea(
-          child: ConstrainedBox(
+          child: Container(
             constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(ctx).size.height * 0.6,
+              maxHeight: MediaQuery.of(ctx).size.height * 0.75, // Max 75% height
             ),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // --- Handle Bar ---
+                const SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                
+                // --- Header ---
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                  padding: const EdgeInsets.symmetric(vertical: 20),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'All Accounts',
+                        'Switch Account',
                         style: AppTypography.headline3.copyWith(
                           color: AppColors.getTextPrimary(ctx),
                         ),
                       ),
-                      IconButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        icon: const Icon(Icons.close),
+                      // "Done" or "Close" button
+                      GestureDetector(
+                        onTap: () => Navigator.pop(ctx),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.close, size: 20),
+                        ),
                       ),
                     ],
                   ),
                 ),
-                const Divider(height: 1),
-                Expanded(
+
+                // --- Account List ---
+                Flexible(
                   child: ListView.separated(
-                    itemCount: _myAccounts.length,
-                    separatorBuilder: (_, index) => const Divider(height: 1),
+                    shrinkWrap: true,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: _myAccounts.length + 1, // +1 for the "Add" button
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
+                      // --- Add New Account Button (Last Item) ---
+                      if (index == _myAccounts.length) {
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 8, bottom: 24),
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              _addAccount(context);
+                            },
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              side: BorderSide(color: Colors.grey.shade300),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            icon: const Icon(Icons.add, color: AppColors.primary),
+                            label: Text(
+                              "Add New Account",
+                              style: AppTypography.bodyLarge.copyWith(
+                                color: AppColors.getTextPrimary(context),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+
+                      // --- Account Item ---
                       final acc = _myAccounts[index];
+                      final bool isSelected = index == _currentCardIndex;
                       final double currentBalance =
                           MathFormatter.parseDouble(acc['current']) ?? 0.0;
                       final String typeLabel = StringCaseFormatter.toTitleCase(
                         acc['type']?.toString() ?? 'Account',
                       );
 
-                      return ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: AppColors.primary.withValues(
-                            alpha: 0.1,
-                          ),
-                          child: Text(
-                            (acc['name']?.toString().isNotEmpty ?? false)
-                                ? acc['name']
-                                      .toString()
-                                      .trim()
-                                      .substring(0, 1)
-                                      .toUpperCase()
-                                : 'A',
-                            style: const TextStyle(color: AppColors.primary),
-                          ),
-                        ),
-                        title: Text(
-                          acc['name']?.toString() ?? 'Unnamed account',
-                          style: AppTypography.bodyLarge.copyWith(
-                            color: AppColors.getTextPrimary(ctx),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        subtitle: Text(
-                          '$typeLabel • ${MathFormatter.formatCurrency(currentBalance)}',
-                          style: AppTypography.bodySmall.copyWith(
-                            color: AppColors.getTextSecondary(ctx),
-                          ),
-                        ),
-                        trailing: const Icon(Icons.chevron_right),
+                      return GestureDetector(
                         onTap: () {
                           Navigator.pop(ctx);
                           _jumpToAccount(index);
                         },
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? AppColors.primary.withValues(alpha: 0.05)
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : Colors.grey.shade200,
+                              width: isSelected ? 1.5 : 1,
+                            ),
+                            boxShadow: [
+                              if (!isSelected)
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.03),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              // Icon / Avatar
+                              Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? AppColors.primary
+                                      : AppColors.primary.withValues(alpha: 0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    (acc['name']?.toString().isNotEmpty ?? false)
+                                        ? acc['name']
+                                            .toString()
+                                            .trim()
+                                            .substring(0, 1)
+                                            .toUpperCase()
+                                        : 'A',
+                                    style: TextStyle(
+                                      color: isSelected
+                                          ? Colors.white
+                                          : AppColors.primary,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 20,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              
+                              // Name & Type
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      acc['name']?.toString() ?? 'Unnamed',
+                                      style: AppTypography.bodyLarge.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.getTextPrimary(ctx),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      typeLabel,
+                                      style: AppTypography.bodySmall.copyWith(
+                                        color: AppColors.getTextSecondary(ctx),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // Balance & Checkmark
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    MathFormatter.formatCurrency(currentBalance),
+                                    style: AppTypography.bodyLarge.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: isSelected 
+                                          ? AppColors.primary 
+                                          : AppColors.getTextPrimary(ctx),
+                                    ),
+                                  ),
+                                  if (isSelected) ...[
+                                    const SizedBox(height: 4),
+                                    const Row(
+                                      children: [
+                                        Icon(
+                                          Icons.check_circle,
+                                          size: 14,
+                                          color: AppColors.primary,
+                                        ),
+                                        SizedBox(width: 4),
+                                        Text(
+                                          "Active",
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: AppColors.primary,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        )
+                                      ],
+                                    ),
+                                  ]
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
                       );
                     },
                   ),
