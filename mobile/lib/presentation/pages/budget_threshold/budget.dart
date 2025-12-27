@@ -24,19 +24,23 @@ class BudgetPage extends StatefulWidget {
 
 class _BudgetPageState extends State<BudgetPage> {
   final _formKey = GlobalKey<FormState>();
-  
+
   // State
   BudgetType _selectedType = BudgetType.user;
   final TextEditingController _amountController = TextEditingController();
   DateTimeRange? _selectedDateRange;
-  
+
   // Selection IDs
   String? _selectedCategoryId;
   String? _selectedAccountId;
 
   // --- Category Data ---
   final List<Map<String, dynamic>> _categories = [
-    {'id': '1', 'name': 'Transport', 'icon': Icons.directions_car_filled_rounded},
+    {
+      'id': '1',
+      'name': 'Transport',
+      'icon': Icons.directions_car_filled_rounded,
+    },
     {'id': '2', 'name': 'Entertainment', 'icon': Icons.movie_creation_rounded},
     {'id': '3', 'name': 'Utilities', 'icon': Icons.bolt_rounded},
     {'id': '4', 'name': 'Healthcare', 'icon': Icons.medical_services_rounded},
@@ -51,7 +55,11 @@ class _BudgetPageState extends State<BudgetPage> {
   final List<Map<String, dynamic>> _accounts = [
     {'id': '1', 'name': 'Cash', 'icon': Icons.payments_rounded},
     {'id': '2', 'name': 'Bank', 'icon': Icons.account_balance_rounded},
-    {'id': '3', 'name': 'E-Wallet', 'icon': Icons.account_balance_wallet_rounded},
+    {
+      'id': '3',
+      'name': 'E-Wallet',
+      'icon': Icons.account_balance_wallet_rounded,
+    },
     {'id': '4', 'name': 'Credit Card', 'icon': Icons.credit_card_rounded},
     {'id': '5', 'name': 'Investment', 'icon': Icons.trending_up_rounded},
     {'id': '6', 'name': 'Loan', 'icon': Icons.monetization_on_rounded},
@@ -76,8 +84,18 @@ class _BudgetPageState extends State<BudgetPage> {
 
   String _formatDate(DateTime date, {bool showYear = false}) {
     const List<String> months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     final day = date.day;
     final month = months[date.month - 1];
@@ -112,71 +130,71 @@ class _BudgetPageState extends State<BudgetPage> {
     }
   }
 
-Future<void> _saveBudget() async {
-  if (!_formKey.currentState!.validate()) return;
-  
-  // Check if date range is selected
-  if (_selectedDateRange == null) {
+  Future<void> _saveBudget() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    // Check if date range is selected
+    if (_selectedDateRange == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please select a date range")),
+      );
+      return;
+    }
+
+    // Parse the amount safely
+    final cleanAmount = _amountController.text.replaceAll(',', '');
+    final threshold = double.tryParse(cleanAmount);
+
+    if (threshold == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Invalid amount format")));
+      return;
+    }
+
+    // 1. Logic to get the correct Name and Icon
+    String budgetName = 'Overall Limit';
+    IconData budgetIcon = Icons.account_balance_wallet_rounded;
+    String typeLabel = _selectedType.label;
+
+    if (_selectedType == BudgetType.category) {
+      // Find the name of the selected category
+      final category = _categories.firstWhere(
+        (element) => element['id'] == _selectedCategoryId,
+        orElse: () => {'name': 'Unknown Category', 'icon': Icons.category},
+      );
+      budgetName = category['name'];
+      budgetIcon = category['icon'];
+    } else if (_selectedType == BudgetType.account) {
+      // Find the name of the selected account
+      final account = _accounts.firstWhere(
+        (element) => element['id'] == _selectedAccountId,
+        orElse: () => {'name': 'Unknown Account', 'icon': Icons.credit_card},
+      );
+      budgetName = account['name'];
+      budgetIcon = account['icon'];
+    }
+
+    // 2. Create the Budget Data Map
+    final newBudget = {
+      'id': DateTime.now().millisecondsSinceEpoch.toString(), // Unique ID
+      'name': budgetName,
+      'type': typeLabel,
+      'icon': budgetIcon,
+      'spent': 0.0, // Start with 0 spent
+      'amount': threshold,
+      'days_left': _selectedDateRange!.duration.inDays,
+    };
+
+    // 3. Show Success Message
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Please select a date range")),
+      SnackBar(
+        content: Text("Budget created for $budgetName!"),
+        backgroundColor: Colors.green,
+      ),
     );
-    return;
-  }
 
-  // Parse the amount safely
-  final cleanAmount = _amountController.text.replaceAll(',', '');
-  final threshold = double.tryParse(cleanAmount); 
-
-  if (threshold == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Invalid amount format")),
-    );
-    return;
-  }
-
-  // 1. Logic to get the correct Name and Icon
-  String budgetName = 'Overall Limit';
-  IconData budgetIcon = Icons.account_balance_wallet_rounded;
-  String typeLabel = _selectedType.label;
-
-  if (_selectedType == BudgetType.category) {
-    // Find the name of the selected category
-    final category = _categories.firstWhere(
-      (element) => element['id'] == _selectedCategoryId,
-      orElse: () => {'name': 'Unknown Category', 'icon': Icons.category},
-    );
-    budgetName = category['name'];
-    budgetIcon = category['icon'];
-  } else if (_selectedType == BudgetType.account) {
-    // Find the name of the selected account
-    final account = _accounts.firstWhere(
-      (element) => element['id'] == _selectedAccountId,
-      orElse: () => {'name': 'Unknown Account', 'icon': Icons.credit_card},
-    );
-    budgetName = account['name'];
-    budgetIcon = account['icon'];
-  }
-
-  // 2. Create the Budget Data Map
-  final newBudget = {
-    'id': DateTime.now().millisecondsSinceEpoch.toString(), // Unique ID
-    'name': budgetName,
-    'type': typeLabel,
-    'icon': budgetIcon,
-    'spent': 0.0, // Start with 0 spent
-    'amount': threshold,
-    'days_left': _selectedDateRange!.duration.inDays,
-  };
-
-  // 3. Show Success Message
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text("Budget created for $budgetName!"),
-      backgroundColor: Colors.green,
-    ),
-  );
-
-  Navigator.pushReplacement(
+    Navigator.pushReplacement(
       context,
       MaterialPageRoute(
         builder: (context) => BudgetOverviewPage(newBudget: newBudget),
@@ -195,14 +213,15 @@ Future<void> _saveBudget() async {
           children: [
             // --- Header ---
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: pageMargin, vertical: 16),
+              padding: const EdgeInsets.symmetric(
+                horizontal: pageMargin,
+                vertical: 16,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  AppBackButton(
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  
+                  AppBackButton(onPressed: () => Navigator.pop(context)),
+
                   Text(
                     "Create Goal",
                     style: AppTypography.headline3.copyWith(
@@ -217,7 +236,8 @@ Future<void> _saveBudget() async {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const BudgetOverviewPage(), // Passing empty map
+                          builder: (context) =>
+                              const BudgetOverviewPage(), // Passing empty map
                         ),
                       );
                     },
@@ -226,10 +246,12 @@ Future<void> _saveBudget() async {
                       decoration: BoxDecoration(
                         color: AppColors.getSurface(context),
                         shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.greyLight.withValues(alpha: 0.5)),
+                        border: Border.all(
+                          color: AppColors.greyLight.withValues(alpha: 0.5),
+                        ),
                       ),
                       child: Icon(
-                        Icons.list_alt_rounded, 
+                        Icons.list_alt_rounded,
                         color: AppColors.getTextPrimary(context),
                         size: 20,
                       ),
@@ -249,10 +271,14 @@ Future<void> _saveBudget() async {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 10),
-                      Text("I want to control spending for...", 
-                        style: AppTypography.labelLarge.copyWith(color: AppColors.grey)),
+                      Text(
+                        "I want to control spending for...",
+                        style: AppTypography.labelLarge.copyWith(
+                          color: AppColors.grey,
+                        ),
+                      ),
                       const SizedBox(height: 16),
-                      
+
                       // Type Cards
                       SizedBox(
                         height: 100,
@@ -262,31 +288,52 @@ Future<void> _saveBudget() async {
                             final isSelected = _selectedType == type;
                             return Expanded(
                               child: GestureDetector(
-                                onTap: () => setState(() => _selectedType = type),
+                                onTap: () =>
+                                    setState(() => _selectedType = type),
                                 child: AnimatedContainer(
                                   duration: const Duration(milliseconds: 200),
-                                  margin: EdgeInsets.only(right: type == BudgetType.account ? 0 : 10),
+                                  margin: EdgeInsets.only(
+                                    right: type == BudgetType.account ? 0 : 10,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: isSelected ? AppColors.primary : AppColors.getSurface(context),
+                                    color: isSelected
+                                        ? AppColors.primary
+                                        : AppColors.getSurface(context),
                                     borderRadius: BorderRadius.circular(16),
                                     border: Border.all(
-                                      color: isSelected ? AppColors.primary : AppColors.greyLight,
+                                      color: isSelected
+                                          ? AppColors.primary
+                                          : AppColors.greyLight,
                                       width: 2,
                                     ),
-                                    boxShadow: isSelected ? [
-                                      BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0,4))
-                                    ] : [],
+                                    boxShadow: isSelected
+                                        ? [
+                                            BoxShadow(
+                                              color: AppColors.primary
+                                                  .withValues(alpha: 0.3),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 4),
+                                            ),
+                                          ]
+                                        : [],
                                   ),
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Icon(type.icon, 
-                                        color: isSelected ? Colors.white : AppColors.grey, size: 28),
+                                      Icon(
+                                        type.icon,
+                                        color: isSelected
+                                            ? Colors.white
+                                            : AppColors.grey,
+                                        size: 28,
+                                      ),
                                       const SizedBox(height: 8),
                                       Text(
                                         type.label,
                                         style: AppTypography.bodySmall.copyWith(
-                                          color: isSelected ? Colors.white : AppColors.grey,
+                                          color: isSelected
+                                              ? Colors.white
+                                              : AppColors.grey,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
@@ -305,15 +352,23 @@ Future<void> _saveBudget() async {
                       Center(
                         child: Column(
                           children: [
-                            Text("MY LIMIT IS", 
-                              style: AppTypography.labelSmall.copyWith(letterSpacing: 1.5, color: AppColors.grey)),
+                            Text(
+                              "MY LIMIT IS",
+                              style: AppTypography.labelSmall.copyWith(
+                                letterSpacing: 1.5,
+                                color: AppColors.grey,
+                              ),
+                            ),
                             const SizedBox(height: 8),
                             // Fix: Use SizedBox instead of IntrinsicWidth to avoid layout crash
                             SizedBox(
                               width: MediaQuery.of(context).size.width * 0.6,
                               child: TextFormField(
                                 controller: _amountController,
-                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                      decimal: true,
+                                    ),
                                 textAlign: TextAlign.center,
                                 style: AppTypography.headline1.copyWith(
                                   color: AppColors.primary,
@@ -327,19 +382,31 @@ Future<void> _saveBudget() async {
                                   ),
                                   border: InputBorder.none,
                                   hintText: "0.00",
-                                  hintStyle: TextStyle(color: AppColors.greyLight.withValues(alpha: 0.5)),
+                                  hintStyle: TextStyle(
+                                    color: AppColors.greyLight.withValues(
+                                      alpha: 0.5,
+                                    ),
+                                  ),
                                   // Optional: Custom underline if desired
                                   // enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppColors.greyLight)),
                                 ),
                                 validator: (val) {
-                                  if (val == null || val.isEmpty) return 'Enter amount';
-                                  if (double.tryParse(val) == null) return 'Invalid';
+                                  if (val == null || val.isEmpty) {
+                                    return 'Enter amount';
+                                  }
+                                  if (double.tryParse(val) == null) {
+                                    return 'Invalid';
+                                  }
                                   return null;
                                 },
                               ),
                             ),
                             // Decorative underline
-                            Container(height: 2, width: 150, color: AppColors.greyLight.withValues(alpha: 0.3)),
+                            Container(
+                              height: 2,
+                              width: 150,
+                              color: AppColors.greyLight.withValues(alpha: 0.3),
+                            ),
                           ],
                         ),
                       ),
@@ -349,28 +416,35 @@ Future<void> _saveBudget() async {
                       // Dynamic Dropdowns with Unique Keys
                       AnimatedSwitcher(
                         duration: const Duration(milliseconds: 300),
-                        child: _selectedType == BudgetType.category 
-                          ? _buildDropdownField(
-                              const ValueKey('category_dropdown'), // UNIQUE KEY for logic fix
-                              "Select Category",
-                              "Category", // Placeholder Text
-                              _categories,
-                              _selectedCategoryId,
-                              (val) => setState(() => _selectedCategoryId = val),
-                            )
-                          : _selectedType == BudgetType.account
+                        child: _selectedType == BudgetType.category
                             ? _buildDropdownField(
-                                const ValueKey('account_dropdown'), // UNIQUE KEY for logic fix
+                                const ValueKey(
+                                  'category_dropdown',
+                                ), // UNIQUE KEY for logic fix
+                                "Select Category",
+                                "Category", // Placeholder Text
+                                _categories,
+                                _selectedCategoryId,
+                                (val) =>
+                                    setState(() => _selectedCategoryId = val),
+                              )
+                            : _selectedType == BudgetType.account
+                            ? _buildDropdownField(
+                                const ValueKey(
+                                  'account_dropdown',
+                                ), // UNIQUE KEY for logic fix
                                 "Select Account",
                                 "Account", // Placeholder Text
                                 _accounts,
                                 _selectedAccountId,
-                                (val) => setState(() => _selectedAccountId = val),
+                                (val) =>
+                                    setState(() => _selectedAccountId = val),
                               )
                             : const SizedBox.shrink(),
                       ),
 
-                      if (_selectedType != BudgetType.user) const SizedBox(height: 24),
+                      if (_selectedType != BudgetType.user)
+                        const SizedBox(height: 24),
 
                       // Date Range Picker
                       Text("Duration", style: AppTypography.labelLarge),
@@ -379,7 +453,10 @@ Future<void> _saveBudget() async {
                         onTap: _pickDateRange,
                         borderRadius: BorderRadius.circular(12),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.getSurface(context),
                             borderRadius: BorderRadius.circular(12),
@@ -387,31 +464,43 @@ Future<void> _saveBudget() async {
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.calendar_month_rounded, color: AppColors.primary),
+                              Icon(
+                                Icons.calendar_month_rounded,
+                                color: AppColors.primary,
+                              ),
                               const SizedBox(width: 12),
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    _selectedDateRange == null 
-                                      ? "Select Dates" 
-                                      : "${_formatDate(_selectedDateRange!.start)} - ${_formatDate(_selectedDateRange!.end, showYear: true)}",
-                                    style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+                                    _selectedDateRange == null
+                                        ? "Select Dates"
+                                        : "${_formatDate(_selectedDateRange!.start)} - ${_formatDate(_selectedDateRange!.end, showYear: true)}",
+                                    style: AppTypography.bodyMedium.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                   if (_selectedDateRange != null)
                                     Text(
                                       "${_selectedDateRange!.duration.inDays} Days",
-                                      style: AppTypography.bodySmall.copyWith(color: AppColors.grey, fontSize: 10),
+                                      style: AppTypography.bodySmall.copyWith(
+                                        color: AppColors.grey,
+                                        fontSize: 10,
+                                      ),
                                     ),
                                 ],
                               ),
                               const Spacer(),
-                              Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.grey),
+                              Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                size: 14,
+                                color: AppColors.grey,
+                              ),
                             ],
                           ),
                         ),
                       ),
-                      
+
                       const SizedBox(height: 40),
                     ],
                   ),
@@ -429,13 +518,17 @@ Future<void> _saveBudget() async {
                   onPressed: _saveBudget,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     elevation: 5,
                     shadowColor: AppColors.primary.withValues(alpha: 0.3),
                   ),
                   child: Text(
                     "Set Limit",
-                    style: AppTypography.headline1.copyWith(color: Colors.white),
+                    style: AppTypography.headline1.copyWith(
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),
@@ -449,10 +542,10 @@ Future<void> _saveBudget() async {
   // Updated Widget to accept Key and hintText
   Widget _buildDropdownField(
     Key key, // New Parameter for Unique Key
-    String label, 
+    String label,
     String hintText, // New parameter for Placeholder
-    List<Map<String, dynamic>> items, 
-    String? currentValue, 
+    List<Map<String, dynamic>> items,
+    String? currentValue,
     Function(String?) onChanged,
   ) {
     return Column(
@@ -462,7 +555,7 @@ Future<void> _saveBudget() async {
         Text(label, style: AppTypography.labelLarge),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          value: currentValue,
+          initialValue: currentValue,
           // --- Placeholder Logic ---
           hint: Text(
             hintText,
@@ -471,7 +564,10 @@ Future<void> _saveBudget() async {
             ),
           ),
           decoration: InputDecoration(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: AppColors.greyLight),
@@ -506,10 +602,7 @@ Future<void> _saveBudget() async {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Text(
-                    item['name'] as String,
-                    style: AppTypography.bodyMedium,
-                  ),
+                  Text(item['name'] as String, style: AppTypography.bodyMedium),
                 ],
               ),
             );

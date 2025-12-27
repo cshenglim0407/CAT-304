@@ -128,9 +128,7 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
         leading: Container(
           margin: const EdgeInsets.only(left: pageMargin),
           alignment: Alignment.centerLeft, // Ensures button doesn't stretch
-          child: AppBackButton(
-            onPressed: () => Navigator.pop(context),
-          ),
+          child: AppBackButton(onPressed: () => Navigator.pop(context)),
         ),
         leadingWidth: 70, // Give enough width for margin + button
         title: Text(
@@ -146,13 +144,18 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
           // --- 1. FILTER BAR ---
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: pageMargin, vertical: 10),
+            padding: const EdgeInsets.symmetric(
+              horizontal: pageMargin,
+              vertical: 10,
+            ),
             child: Row(
               children: ['All', 'Overall', 'Category', 'Account']
-                  .map((filter) => Padding(
-                        padding: const EdgeInsets.only(right: 10),
-                        child: _buildFilterChip(filter, primaryColor, greyText),
-                      ))
+                  .map(
+                    (filter) => Padding(
+                      padding: const EdgeInsets.only(right: 10),
+                      child: _buildFilterChip(filter, primaryColor, greyText),
+                    ),
+                  )
                   .toList(),
             ),
           ),
@@ -167,7 +170,12 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
                     ),
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(pageMargin, 16, pageMargin, 100),
+                    padding: const EdgeInsets.fromLTRB(
+                      pageMargin,
+                      16,
+                      pageMargin,
+                      100,
+                    ),
                     itemCount: _filteredBudgets.length,
                     itemBuilder: (context, index) {
                       final budget = _filteredBudgets[index];
@@ -192,9 +200,11 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
         offset: const Offset(0, 15),
         child: FloatingActionButton(
           backgroundColor: primaryColor,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           child: const Icon(Icons.add, color: Colors.white, size: 28),
-          
+
           // UPDATED LOGIC HERE
           onPressed: () async {
             // 1. Wait for data from BudgetPage
@@ -225,13 +235,15 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
           color: isSelected ? primary : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-              color: isSelected ? primary : Colors.grey.shade300),
+            color: isSelected ? primary : Colors.grey.shade300,
+          ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                      color: primary.withOpacity(0.3),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2))
+                    color: primary.withValues(alpha: 0.3),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
                 ]
               : [],
         ),
@@ -247,12 +259,13 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
   }
 
   Widget _buildBudgetCard(
-      Map<String, dynamic> budget,
-      int index,
-      Color primary,
-      Color warning,
-      Color error,
-      Color greyText) {
+    Map<String, dynamic> budget,
+    int index,
+    Color primary,
+    Color warning,
+    Color error,
+    Color greyText,
+  ) {
     double spent = (budget['spent'] ?? 0).toDouble();
     double limit = (budget['amount'] ?? 0).toDouble();
     double percentage = (limit == 0) ? 0 : (spent / limit);
@@ -273,7 +286,7 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -299,9 +312,10 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
                     Text(
                       budget['name'],
                       style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black),
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
                     ),
                     Text(
                       '${budget['days_left']} days left',
@@ -311,7 +325,10 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: statusColor,
                   borderRadius: BorderRadius.circular(12),
@@ -319,16 +336,20 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
                 child: Text(
                   '$percentageInt%',
                   style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold),
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
               IconButton(
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
-                icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+                icon: const Icon(
+                  Icons.delete_outline_rounded,
+                  color: Colors.red,
+                ),
                 onPressed: () => _confirmDelete(index),
               ),
             ],

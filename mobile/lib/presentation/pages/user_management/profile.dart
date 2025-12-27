@@ -71,9 +71,7 @@ class _ProfilePageState extends State<ProfilePage> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const Center(
-          child: CircularProgressIndicator(),
-        ),
+        builder: (context) => const Center(child: CircularProgressIndicator()),
       );
       Future.delayed(const Duration(milliseconds: 300), () {
         if (!mounted) return;
@@ -761,10 +759,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      // ⚠️ Make sure this matches the class name in budget.dart
-                      builder: (context) => const BudgetPage(), 
-                    ),
+                    MaterialPageRoute(builder: (context) => const BudgetPage()),
                   );
                 },
               ),
