@@ -249,6 +249,7 @@ class _AccountPageState extends State<AccountPage> {
   }
 
   Future<void> _loadData() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
 
     try {
@@ -257,6 +258,7 @@ class _AccountPageState extends State<AccountPage> {
       final cachedTransactions = CacheService.load<List>('transactions');
 
       if (cachedAccounts != null && cachedTransactions != null) {
+        if (!mounted) return;
         setState(() {
           _myAccounts = List<Map<String, dynamic>>.from(
             cachedAccounts.map((e) => Map<String, dynamic>.from(e)),
@@ -310,6 +312,7 @@ class _AccountPageState extends State<AccountPage> {
       // If cache is empty, load from database progressively
       final userId = supabase.auth.currentUser?.id;
       if (userId == null) {
+        if (!mounted) return;
         setState(() => _isLoading = false);
         return;
       }
@@ -324,6 +327,7 @@ class _AccountPageState extends State<AccountPage> {
       );
 
       // Stop showing loading indicator, start showing accounts progressively
+      if (!mounted) return;
       setState(() => _isLoading = false);
 
       // Load each account and its transactions one by one
@@ -410,6 +414,7 @@ class _AccountPageState extends State<AccountPage> {
         }
 
         // Add this account and its transactions immediately to UI
+        if (!mounted) return;
         setState(() {
           _myAccounts.add(accountMap);
           _allTransactions.add(txList);
@@ -421,6 +426,7 @@ class _AccountPageState extends State<AccountPage> {
       CacheService.save('transactions', _getSanitizedTransactions());
     } catch (e) {
       debugPrint('Error loading data: $e');
+      if (!mounted) return;
       setState(() => _isLoading = false);
     }
   }
@@ -2217,7 +2223,8 @@ class _AccountPageState extends State<AccountPage> {
                         labelStyle: const TextStyle(color: Colors.grey),
                         hintText: '0.00',
                         hintStyle: TextStyle(color: Colors.grey.shade400),
-                        prefixText: '\$ ', // TODO: Localize currency symbol @WenHao1223
+                        prefixText:
+                            '\$ ', // TODO: Localize currency symbol @WenHao1223
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -2483,7 +2490,8 @@ class _AccountPageState extends State<AccountPage> {
                       decoration: InputDecoration(
                         labelText: 'Initial Balance',
                         labelStyle: const TextStyle(color: Colors.grey),
-                        prefixText: '\$ ', // TODO: Localize currency symbol @WenHao1223
+                        prefixText:
+                            '\$ ', // TODO: Localize currency symbol @WenHao1223
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -2504,7 +2512,8 @@ class _AccountPageState extends State<AccountPage> {
                       decoration: InputDecoration(
                         labelText: 'Current Balance (Read-only)',
                         labelStyle: const TextStyle(color: Colors.grey),
-                        prefixText: '\$ ', // TODO: Localize currency symbol @WenHao1223
+                        prefixText:
+                            '\$ ', // TODO: Localize currency symbol @WenHao1223
                         filled: true,
                         fillColor: Colors.grey.shade50,
                         border: OutlineInputBorder(
@@ -3354,7 +3363,9 @@ class _AccountPageState extends State<AccountPage> {
                                         child: _TransactionTile(
                                           title: tx['title'] ?? 'N/A',
                                           subtitle: tx['date'] ?? 'N/A',
-                                          amount: tx['amount'] ?? MathFormatter.formatCurrency(0.0),
+                                          amount:
+                                              tx['amount'] ??
+                                              MathFormatter.formatCurrency(0.0),
                                           icon: tx['icon'] ?? Icons.error,
                                           isExpense: tx['isExpense'] ?? false,
                                           isRecurrent:
