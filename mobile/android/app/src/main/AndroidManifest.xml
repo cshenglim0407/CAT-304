@@ -4,7 +4,7 @@
     <application
         android:label="cashlytics"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/launcher_icon">
         <!-- Facebook SDK meta-data -->
         <meta-data android:name="com.facebook.sdk.ApplicationId" android:value="${facebookAppId}"/>
         <meta-data android:name="com.facebook.sdk.ClientToken" android:value="${facebookClientToken}"/>
