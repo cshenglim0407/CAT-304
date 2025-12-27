@@ -90,42 +90,6 @@ class ProfileHelpers {
   }
 
   static String? mapOffsetToIana(String offset) {
-    const Map<String, String> offsetToIana = {
-      '-12:00': 'Etc/GMT+12',
-      '-11:00': 'Etc/GMT+11',
-      '-10:00': 'Pacific/Honolulu',
-      '-09:00': 'America/Anchorage',
-      '-08:00': 'America/Los_Angeles',
-      '-07:00': 'America/Denver',
-      '-06:00': 'America/Chicago',
-      '-05:00': 'America/New_York',
-      '-04:30': 'America/Caracas',
-      '-04:00': 'America/La_Paz',
-      '-03:30': 'America/St_Johns',
-      '-03:00': 'America/Sao_Paulo',
-      '-02:00': 'Etc/GMT+2',
-      '-01:00': 'Atlantic/Azores',
-      '+00:00': 'Europe/London',
-      '+01:00': 'Europe/Berlin',
-      '+02:00': 'Europe/Helsinki',
-      '+03:00': 'Europe/Moscow',
-      '+03:30': 'Asia/Tehran',
-      '+04:00': 'Asia/Dubai',
-      '+04:30': 'Asia/Kabul',
-      '+05:00': 'Asia/Karachi',
-      '+05:30': 'Asia/Kolkata',
-      '+05:45': 'Asia/Kathmandu',
-      '+06:00': 'Asia/Dhaka',
-      '+06:30': 'Asia/Yangon',
-      '+07:00': 'Asia/Bangkok',
-      '+08:00': 'Asia/Kuala_Lumpur',
-      '+09:00': 'Asia/Tokyo',
-      '+09:30': 'Australia/Darwin',
-      '+10:00': 'Australia/Sydney',
-      '+11:00': 'Pacific/Noumea',
-      '+12:00': 'Pacific/Auckland',
-      '+13:00': 'Pacific/Fakaofo',
-    };
-    return offsetToIana[offset];
+    return ProfileConstants.offsetToIana[offset];
   }
 }
