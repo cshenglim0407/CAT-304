@@ -1355,7 +1355,11 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
     } else if (_quarterlyBalances.isNotEmpty) {
       balances = _quarterlyBalances.map((q) => q.balance).toList();
     } else {
-      return [0.2, 0.5, 0.4, 0.7, 0.6, 0.9, 0.8]; // Default placeholder
+      return [];
+    }
+
+    if (balances.isEmpty) {
+      return [];
     }
 
     // Normalize balance values to 0-1 range for chart
@@ -1388,75 +1392,30 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
     } else if (_quarterlyBalances.isNotEmpty) {
       return _quarterlyBalances.map((q) => 'Q${q.quarterNumber}').toList();
     }
-    return ['Week 1', 'Week 2', 'Week 3', 'Week 4']; // Default placeholder
+    return [];
   }
-
-  final Map<String, dynamic> _data = {
-    // TODO: Remove dummy data @WenHao1223
-    'This month': {
-      'amount': '\$12,450.75',
-      'pct': '+2.4%',
-      'pctColor': AppColors.success,
-      'compare': 'vs last month',
-      'labels': ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-      'chart': [0.2, 0.5, 0.4, 0.7, 0.6, 0.9, 0.8],
-    },
-    'Last month': {
-      'amount': '\$11,230.00',
-      'pct': '-1.2%',
-      'pctColor': Colors.red,
-      'compare': 'vs prev month',
-      'labels': ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-      'chart': [0.6, 0.5, 0.6, 0.4, 0.3, 0.4, 0.2],
-    },
-    'This year': {
-      'amount': '\$145,200.50',
-      'pct': '+15.3%',
-      'pctColor': AppColors.success,
-      'compare': 'vs last year',
-      'labels': ['Q1', 'Q2', 'Q3', 'Q4'],
-      'chart': [0.3, 0.4, 0.6, 0.8, 0.7, 0.9, 0.95],
-    },
-    'Last year': {
-      'amount': '\$128,900.00',
-      'pct': '+8.5%',
-      'pctColor': AppColors.success,
-      'compare': 'vs prev year',
-      'labels': ['Q1', 'Q2', 'Q3', 'Q4'],
-      'chart': [0.2, 0.3, 0.4, 0.5, 0.5, 0.6, 0.7],
-    },
-  };
 
   @override
   Widget build(BuildContext context) {
     // Use real data if available for any filter
-    final bool useRealData =
+    final bool hasData =
         !_isLoading &&
         (_weeklyBalances.isNotEmpty || _quarterlyBalances.isNotEmpty);
 
-    // Fallback to default placeholder data if the selected filter has no mock entry yet
-    final currentData = useRealData
-        ? null
-        : (_data[_selectedFilter] ?? _data['This month']);
-
-    final displayAmount = useRealData
+    final displayAmount = hasData
         ? MathFormatter.formatCurrency(_calculateTotalBalance())
-        : currentData['amount'];
+        : MathFormatter.formatCurrency(0.0);
 
-    final displayPct = useRealData
-        ? _calculatePercentageChange()
-        : currentData['pct'];
+    final displayPct = hasData ? _calculatePercentageChange() : '+0.0%';
 
-    final displayPctColor = useRealData
+    final displayPctColor = hasData
         ? _getPercentageColor()
-        : currentData['pctColor'];
+        : AppColors.greyText;
 
-    final displayCompare = useRealData
-        ? _getCompareText()
-        : currentData['compare'];
+    final displayCompare = _getCompareText();
 
-    final chartData = useRealData ? _getChartData() : currentData['chart'];
-    final labels = useRealData ? _getLabels() : currentData['labels'];
+    final chartData = hasData ? _getChartData() : <double>[];
+    final labels = hasData ? _getLabels() : <String>[];
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -1587,7 +1546,7 @@ class _TotalBalanceCardState extends State<_TotalBalanceCard> {
           if (!_isLoading)
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: (labels as List<String>)
+              children: (labels)
                   .map(
                     (label) => Text(
                       label,
@@ -1743,7 +1702,7 @@ class _CashFlowCardState extends State<_CashFlowCard> {
     } else if (_quarterlyBalances.isNotEmpty) {
       incomes = _quarterlyBalances.map((q) => q.totalIncome).toList();
     } else {
-      return [0.6, 0.4, 0.8, 0.45]; // Default placeholder
+      return []; // Default placeholder
     }
 
     // Normalize to 0-1 range
@@ -1764,7 +1723,7 @@ class _CashFlowCardState extends State<_CashFlowCard> {
     } else if (_quarterlyBalances.isNotEmpty) {
       expenses = _quarterlyBalances.map((q) => q.totalExpense).toList();
     } else {
-      return [0.35, 0.38, 0.65, 0.48]; // Default placeholder
+      return []; // Default placeholder
     }
 
     // Normalize to 0-1 range
@@ -1791,21 +1750,21 @@ class _CashFlowCardState extends State<_CashFlowCard> {
       }
     }
 
-    if (allValues.isEmpty) return 8000.0;
+    if (allValues.isEmpty) return 0.0;
     final maxValue = allValues.reduce((a, b) => a > b ? a : b);
-    if (maxValue <= 0) return 8000.0;
+    if (maxValue <= 0) return 0.0;
     return maxValue;
   }
 
   List<String> _getYAxisLabels() {
     final maxValue = _getMaxValue();
-    final step = maxValue / 4;
+    final step = maxValue > 0 ? maxValue / 4 : 0;
 
     return [
       _formatCurrency(maxValue),
-      _formatCurrency(maxValue - step),
-      _formatCurrency(maxValue - step * 2),
-      _formatCurrency(maxValue - step * 3),
+      _formatCurrency(maxValue > 0 ? maxValue - step : 0),
+      _formatCurrency(maxValue > 0 ? maxValue - step * 2 : 0),
+      _formatCurrency(maxValue > 0 ? maxValue - step * 3 : 0),
       _formatCurrency(0),
     ];
   }
@@ -1825,48 +1784,20 @@ class _CashFlowCardState extends State<_CashFlowCard> {
     } else if (_quarterlyBalances.isNotEmpty) {
       return _quarterlyBalances.map((q) => 'Q${q.quarterNumber}').toList();
     }
-    return ['Week 1', 'Week 2', 'Week 3', 'Week 4']; // Default placeholder
+    return [];
   }
-
-  final Map<String, dynamic> _data = {
-    'This month': {
-      'incomeData': [0.6, 0.4, 0.8, 0.45],
-      'expenseData': [0.35, 0.38, 0.65, 0.48],
-      'labels': ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-    },
-    'Last month': {
-      'incomeData': [0.5, 0.6, 0.5, 0.4],
-      'expenseData': [0.4, 0.55, 0.6, 0.3],
-      'labels': ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-    },
-  };
 
   @override
   Widget build(BuildContext context) {
     // Use real data if available
-    final bool useRealData =
+    final bool hasData =
         !_isLoading &&
         (_weeklyBalances.isNotEmpty || _quarterlyBalances.isNotEmpty);
 
-    final currentData = useRealData
-        ? null
-        : (_data[_selectedFilter] ?? _data['This month']);
-    final incomeData = useRealData
-        ? _getIncomeData()
-        : currentData!['incomeData'];
-    final expenseData = useRealData
-        ? _getExpenseData()
-        : currentData!['expenseData'];
-    final labels = useRealData ? _getLabels() : currentData!['labels'];
-    final yAxisLabels = useRealData
-        ? _getYAxisLabels()
-        : [
-            '\$8,000',
-            '\$6,000',
-            '\$4,000',
-            '\$2,000',
-            '\$0',
-          ]; // TODO: Remove dummy data @WenHao1223
+    final incomeData = hasData ? _getIncomeData() : <double>[];
+    final expenseData = hasData ? _getExpenseData() : <double>[];
+    final labels = hasData ? _getLabels() : <String>[];
+    final yAxisLabels = _getYAxisLabels();
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -1989,7 +1920,7 @@ class _CashFlowCardState extends State<_CashFlowCard> {
               padding: const EdgeInsets.only(left: 45.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: (labels as List<String>)
+                children: (labels)
                     .map(
                       (label) => Text(
                         label,
@@ -2210,13 +2141,6 @@ class _ExpenseDistributionCardState extends State<_ExpenseDistributionCard> {
     return "$start - $end";
   }
 
-  String _formatCurrency(double value) { // TODO: Remove duplicate code @WenHao1223
-    if (value >= 1000) {
-      return '${MathFormatter.formatCurrency(value / 1000)}K';
-    }
-    return MathFormatter.formatCurrency(value);
-  }
-
   Future<void> _pickDateRange() async {
     final now = DateTime.now();
     final today = _stripTime(now); // Strip time for the limit as well
@@ -2345,7 +2269,7 @@ class _ExpenseDistributionCardState extends State<_ExpenseDistributionCard> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            _formatCurrency(_totalExpense),
+                            MathFormatter.formatCurrency(_totalExpense),
                             style: AppTypography.labelLarge.copyWith(
                               color: Colors.black87,
                             ),
@@ -2368,7 +2292,7 @@ class _ExpenseDistributionCardState extends State<_ExpenseDistributionCard> {
                   color: slice.color,
                   label: slice.label,
                   pct: '${pct.toStringAsFixed(1)}%',
-                  amt: '(${_formatCurrency(slice.amount)})',
+                  amt: '(${MathFormatter.formatCurrency(slice.amount)})',
                 ),
               );
             }),
