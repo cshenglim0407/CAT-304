@@ -30,6 +30,7 @@ class _HomePageState extends State<HomePage> {
     await CacheService.remove('user_profile_cache');
     await CacheService.remove('accounts');
     await CacheService.remove('transactions');
+    await CacheService.remove('budgets_cache');
     await ImageCacheService.clearCachedImage();
 
     // Reset theme to system when user logs out

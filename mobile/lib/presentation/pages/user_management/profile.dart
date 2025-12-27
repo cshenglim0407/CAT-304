@@ -223,6 +223,7 @@ class _ProfilePageState extends State<ProfilePage> {
     await CacheService.remove('user_profile_cache');
     await CacheService.remove('accounts');
     await CacheService.remove('transactions');
+    await CacheService.remove('budgets_cache');
     await ImageCacheService.clearCachedImage();
 
     if (mounted) {
