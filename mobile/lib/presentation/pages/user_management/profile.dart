@@ -31,7 +31,7 @@ import 'package:cashlytics/presentation/widgets/index.dart';
 import 'package:cashlytics/presentation/pages/user_management/edit_personal_info.dart';
 import 'package:cashlytics/presentation/pages/user_management/login.dart';
 import 'package:cashlytics/presentation/pages/user_management/edit_detail_information.dart';
-import 'package:cashlytics/presentation/pages/budget_threshold/my_budgets.dart';
+import 'package:cashlytics/presentation/pages/budget_threshold/budget.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});

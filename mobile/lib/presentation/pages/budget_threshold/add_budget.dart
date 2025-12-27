@@ -26,7 +26,7 @@ import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
 import 'package:cashlytics/presentation/widgets/index.dart';
 
-import 'package:cashlytics/presentation/pages/budget_threshold/my_budgets.dart';
+import 'package:cashlytics/presentation/pages/budget_threshold/budget.dart';
 
 enum BudgetType {
   user('U', 'Overall', Icons.account_balance_wallet_rounded),
