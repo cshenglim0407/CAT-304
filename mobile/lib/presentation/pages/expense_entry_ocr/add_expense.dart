@@ -1,15 +1,38 @@
 import 'package:flutter/material.dart';
+
+import 'package:cashlytics/core/config/icons.dart';
+import 'package:cashlytics/core/utils/math_formatter.dart';
+import 'package:cashlytics/core/utils/currency_input_formatter.dart';
+import 'package:cashlytics/core/utils/income_expense_management/income_expense_helpers.dart';
+import 'package:cashlytics/core/services/ocr/ocr_service.dart';
+import 'package:cashlytics/core/utils/budget_threshold/receipt_picker.dart';
+
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
+import 'package:cashlytics/presentation/widgets/index.dart';
+
+import 'package:cashlytics/data/models/ocr_result.dart';
+import 'package:cashlytics/domain/repositories/receipt_repository.dart';
+import 'package:cashlytics/domain/entities/receipt.dart';
+import 'package:cashlytics/data/repositories/receipt_repository_impl.dart';
+
+import 'package:uuid/uuid.dart';
 
 class AddExpensePage extends StatefulWidget {
   final String accountName;
+  final List<String> availableAccounts;
   final String category;
+  final List<String> availableCategories;
+  // Optional initial data to prefill when used for editing/duplication
+  final Map<String, dynamic>? initialData;
 
   const AddExpensePage({
     super.key,
     required this.accountName,
+    required this.availableAccounts,
     required this.category,
+    required this.availableCategories,
+    this.initialData,
   });
 
   @override
@@ -18,23 +41,107 @@ class AddExpensePage extends StatefulWidget {
 
 class _AddExpensePageState extends State<AddExpensePage> {
   // Controller for the overall Transaction Name (e.g. "Grocery Run")
-  final _transactionNameController = TextEditingController();
-  
+  final TextEditingController _transactionNameController =
+      TextEditingController();
+  final TextEditingController _totalPriceController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+
   // List of items
   final List<Map<String, TextEditingController>> _items = [];
 
+  String? _selectedAccount;
+  String? _selectedCategory;
   double _totalPrice = 0.0;
   DateTime _selectedDate = DateTime.now();
+  bool _isScanning = false;
+  double? _lastOcrConfidence;
+  bool _nameEdited = false;
+  bool _dateEdited = false;
+  bool _itemEdited = false;
+  Receipt? _pendingReceipt;
 
   @override
   void initState() {
     super.initState();
-    _addNewItem();
+    _selectedAccount = widget.accountName;
+    _selectedCategory = widget.category;
+    // Prefill from initialData if provided, otherwise start with an empty row
+    final init = widget.initialData;
+    if (init != null) {
+      // Use helper to extract title
+      final String? title = IncomeExpenseHelpers.getInitialString(
+        init,
+        'title',
+      );
+      if (title != null) {
+        _transactionNameController.text = title;
+      }
+
+      // Use helper to extract description
+      final String? desc = IncomeExpenseHelpers.getInitialString(
+        init,
+        'description',
+      );
+      if (desc != null) {
+        _descriptionController.text = desc;
+      }
+
+      // Use helper to extract date
+      final DateTime? date = IncomeExpenseHelpers.getInitialDate(init);
+      if (date != null) {
+        _selectedDate = date;
+      }
+
+      // Use helper to match category
+      _selectedCategory =
+          IncomeExpenseHelpers.getInitialCategory(
+            init,
+            widget.availableCategories,
+            widget.category,
+          ) ??
+          widget.category;
+
+      // Use helper to extract account name
+      final String? acct = IncomeExpenseHelpers.getInitialAccount(init);
+      if (acct != null && acct.isNotEmpty) {
+        _selectedAccount = acct;
+      }
+
+      // Items
+      final items = init['items'];
+      if (IncomeExpenseHelpers.hasItems(items)) {
+        for (final item in items) {
+          final String name = item['name']?.toString() ?? '';
+          final String qty = item['qty']?.toString() ?? '1';
+          final String unitPrice = item['unitPrice']?.toString() ?? '0.00';
+          _addNewItem();
+          final idx = _items.length - 1;
+          _items[idx]['name']!.text = name;
+          _items[idx]['qty']!.text = qty;
+          _items[idx]['price']!.text = unitPrice;
+        }
+        _calculateTotal();
+      } else {
+        // Fallback single item from itemName/quantity/unitPrice
+        _addNewItem();
+        final String name = init['itemName']?.toString() ?? '';
+        final String qty = init['quantity']?.toString() ?? '1';
+        final String unitPrice = init['unitPrice']?.toString() ?? '0.00';
+        _items[0]['name']!.text = name;
+        _items[0]['qty']!.text = qty;
+        _items[0]['price']!.text = unitPrice;
+        _calculateTotal();
+      }
+    } else {
+      _addNewItem();
+    }
   }
 
   @override
   void dispose() {
     _transactionNameController.dispose();
+    _totalPriceController.dispose();
+    _descriptionController.dispose();
     for (var item in _items) {
       item['name']?.dispose();
       item['qty']?.dispose();
@@ -51,12 +158,18 @@ class _AddExpensePageState extends State<AddExpensePage> {
     qtyParams.addListener(_calculateTotal);
     priceParams.addListener(_calculateTotal);
 
+    qtyParams.addListener(() {
+      final hasValue = qtyParams.text.trim().isNotEmpty;
+      _itemEdited = hasValue;
+    });
+
+    priceParams.addListener(() {
+      final hasValue = priceParams.text.trim().isNotEmpty;
+      _itemEdited = hasValue;
+    });
+
     setState(() {
-      _items.add({
-        'name': nameParams,
-        'qty': qtyParams,
-        'price': priceParams,
-      });
+      _items.add({'name': nameParams, 'qty': qtyParams, 'price': priceParams});
     });
   }
 
@@ -88,11 +201,14 @@ class _AddExpensePageState extends State<AddExpensePage> {
     }
     setState(() {
       _totalPrice = tempTotal;
+      _totalPriceController.text = tempTotal == 0
+          ? ""
+          : MathFormatter.formatCurrency(tempTotal);
     });
   }
 
   String _formatDate(DateTime date) {
-    return "${date.day}/${date.month}/${date.year}";
+    return IncomeExpenseHelpers.formatDateForInput(date);
   }
 
   Future<void> _pickDate() async {
@@ -104,24 +220,110 @@ class _AddExpensePageState extends State<AddExpensePage> {
       lastDate: DateTime.now().add(const Duration(days: 365)),
       builder: (context, child) {
         return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(primary: primaryColor),
-          ),
+          data: Theme.of(
+            context,
+          ).copyWith(colorScheme: ColorScheme.light(primary: primaryColor)),
           child: child!,
         );
       },
     );
     if (picked != null) {
-      setState(() => _selectedDate = picked);
+      setState(() {
+        _selectedDate = picked;
+        _dateEdited = true;
+      });
+    }
+  }
+
+  Future<void> _scanReceiptAndPrefill() async {
+    // Allow OCR to refill if fields are empty
+    if (_transactionNameController.text.trim().isEmpty) {
+      _nameEdited = false;
+    }
+
+    if (_items.isNotEmpty && _items[0]['price']!.text.trim().isEmpty) {
+      _itemEdited = false;
+    }
+
+    if (_isScanning) return;
+
+    final image = await ReceiptPicker.pickReceipt();
+    if (image == null) return;
+
+    setState(() {
+      _isScanning = true;
+      _lastOcrConfidence = null;
+    });
+
+    try {
+      final OcrResult result = await OCRService.instance.scanReceipt(image);
+
+      // 1️⃣ Create repository (interface type)
+      final ReceiptRepository receiptRepo = ReceiptRepositoryImpl();
+
+      // 2️⃣ Generate receiptId (UUID or null → insert)
+      final String receiptId = const Uuid().v4();
+
+      // 3️⃣ Upload image to storage
+      final String storagePath = await receiptRepo.uploadReceiptImage(
+        imageSource: image,
+        receiptId: receiptId,
+      );
+
+      // 4️⃣ Build pending domain entity
+      _pendingReceipt = Receipt(
+        id: null,
+        transactionId: '', // Placeholder
+        merchantName: result.merchant,
+        confidenceScore: result.confidence,
+        ocrRawText: result.rawText,
+        path: storagePath,
+        scannedAt: DateTime.now(),
+      );
+
+      setState(() {
+        // Transaction name
+        if (!_nameEdited &&
+            result.merchant != null &&
+            _transactionNameController.text.isEmpty) {
+          _transactionNameController.text = result.merchant!;
+        }
+
+        // Date
+        if (!_dateEdited && result.date != null) {
+          _selectedDate = result.date!;
+        }
+
+        // Item total → qty & price
+        if (!_itemEdited && result.total != null && _items.isNotEmpty) {
+          _items[0]['qty']?.text = '1';
+          _items[0]['price']?.text = result.total!.toStringAsFixed(2);
+        }
+
+        // Confidence (always update)
+        _lastOcrConfidence = result.confidence;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('OCR failed: $e')));
+    } finally {
+      if (mounted) {
+        setState(() => _isScanning = false);
+      }
     }
   }
 
   // In AddExpensePage.dart
 
   void _saveExpense() {
-    if (_totalPrice <= 0 || _items.isEmpty) {
+    if (!IncomeExpenseHelpers.isValidAmount(_totalPrice) ||
+        !IncomeExpenseHelpers.hasItems(_items)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please enter at least one item and price")),
+        const SnackBar(
+          content: Text("Please enter at least one item and price"),
+        ),
       );
       return;
     }
@@ -153,13 +355,17 @@ class _AddExpensePageState extends State<AddExpensePage> {
 
     final newTransaction = {
       'amount': _totalPrice,
-      'category': widget.category,
+      'category': _selectedCategory ?? widget.category,
       'itemName': finalTitle, // Main title
       'quantity': _items.length > 1 ? '1' : _items[0]['qty']!.text,
-      'unitPrice': _items.length > 1 ? _totalPrice.toString() : _items[0]['price']!.text,
+      'unitPrice': _items.length > 1
+          ? _totalPrice.toString()
+          : _items[0]['price']!.text,
       'date': _selectedDate,
-      'accountName': widget.accountName,
-      'items': itemsList, // <--- CRITICAL FIX: Sending the list
+      'accountName': _selectedAccount ?? widget.accountName,
+      'items': itemsList,
+      'description': _descriptionController.text.trim(),
+      'pendingReceipt': _pendingReceipt,
     };
 
     Navigator.pop(context, newTransaction);
@@ -179,7 +385,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
         elevation: 0,
         iconTheme: IconThemeData(color: primaryTextColor),
         title: Text(
-          "Add Expense",
+          widget.initialData != null ? "Edit Expense" : "Add Expense",
           style: AppTypography.headline3.copyWith(color: primaryTextColor),
         ),
         centerTitle: true,
@@ -193,71 +399,185 @@ class _AddExpensePageState extends State<AddExpensePage> {
             Row(
               children: [
                 Expanded(
-                  child: _buildInfoBadge(
-                    context, 
-                    icon: Icons.category, 
-                    label: widget.category, 
-                    color: primaryColor
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: primaryColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _selectedAccount ?? widget.accountName,
+                        isExpanded: true,
+                        icon: Icon(Icons.arrow_drop_down, color: primaryColor),
+                        dropdownColor: AppColors.white,
+                        items: widget.availableAccounts
+                            .map(
+                              (acc) => DropdownMenuItem(
+                                value: acc,
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      getAccountTypeIcon(acc),
+                                      color: primaryColor,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Flexible(
+                                      child: Text(
+                                        acc,
+                                        style: AppTypography.bodySmall.copyWith(
+                                          color: primaryColor,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (val) =>
+                            setState(() => _selectedAccount = val!),
+                      ),
+                    ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Expanded(
-                  child: _buildInfoBadge(
-                    context, 
-                    icon: Icons.account_balance_wallet, 
-                    label: widget.accountName, 
-                    color: primaryColor
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: primaryColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _selectedCategory ?? widget.category,
+                        isExpanded: true,
+                        icon: Icon(Icons.arrow_drop_down, color: primaryColor),
+                        dropdownColor: AppColors.white,
+                        items: widget.availableCategories
+                            .map(
+                              (cat) => DropdownMenuItem(
+                                value: cat,
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      getExpenseIcon(cat),
+                                      color: primaryColor,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Flexible(
+                                      child: Text(
+                                        cat,
+                                        style: AppTypography.bodySmall.copyWith(
+                                          color: primaryColor,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (val) =>
+                            setState(() => _selectedCategory = val!),
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 24),
 
-            // --- 2. TOTAL EXPENSE DISPLAY ---
-            Container(
+            // --- 1b. Scan Receipt Button ---
+            SizedBox(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: primaryColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(20),
+              child: OutlinedButton.icon(
+                icon: _isScanning
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.document_scanner),
+                label: Text(_isScanning ? "Scanning..." : "Scan Receipt"),
+                onPressed: (_isScanning || _items.isEmpty)
+                    ? null
+                    : _scanReceiptAndPrefill,
               ),
-              child: Column(
+            ),
+            const SizedBox(height: 12),
+
+            // --- 1c. OCR Confidence ---
+            if (_lastOcrConfidence != null)
+              Row(
                 children: [
-                  Text(
-                    "Total Expense",
-                    style: TextStyle(
-                      color: primaryColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
+                  Icon(
+                    _lastOcrConfidence! >= 0.8
+                        ? Icons.check_circle
+                        : Icons.warning_amber_rounded,
+                    color: _lastOcrConfidence! >= 0.8
+                        ? Colors.green
+                        : Colors.orange,
+                    size: 16,
                   ),
-                  const SizedBox(height: 12),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Center(
-                      child: Text(
-                        "\$${_totalPrice.toStringAsFixed(2)}",
-                        style: TextStyle(
-                          color: _totalPrice == 0 ? Colors.grey[400] : primaryColor,
-                          fontSize: 40,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
+                  const SizedBox(width: 8),
+                  Text(
+                    "OCR confidence: ${(_lastOcrConfidence! * 100).toStringAsFixed(0)}%",
+                    style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
                   ),
                 ],
               ),
+
+            // --- 2. Transaction Name ---
+            const FormLabel(label: "Name", useGreyStyle: true),
+            TextField(
+              controller: _transactionNameController,
+              onChanged: (value) {
+                _nameEdited = value.trim().isNotEmpty;
+              },
+              decoration: CustomInputDecoration.simple(
+                "e.g. Weekly Groceries",
+                fieldColor,
+              ),
             ),
-            
-            const SizedBox(height: 30),
+            const SizedBox(height: 20),
+
+            // --- 2b. Description (Optional) ---
+            const FormLabel(
+              label: "Description (optional)",
+              useGreyStyle: true,
+            ),
+            TextField(
+              controller: _descriptionController,
+              decoration: CustomInputDecoration.simple(
+                "Add a description...",
+                fieldColor,
+              ),
+            ),
+            const SizedBox(height: 20),
 
             // --- 3. Date Input ---
-            Text("Date", style: AppTypography.labelLarge.copyWith(color: AppColors.greyText)),
+            Text(
+              "Date",
+              style: AppTypography.labelLarge.copyWith(
+                color: AppColors.greyText,
+              ),
+            ),
             const SizedBox(height: 8),
             GestureDetector(
               onTap: _pickDate,
@@ -273,38 +593,33 @@ class _AddExpensePageState extends State<AddExpensePage> {
                     const SizedBox(width: 12),
                     Text(
                       _formatDate(_selectedDate),
-                      style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.bold),
+                      style: AppTypography.bodySmall.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
+
             const SizedBox(height: 20),
-
-            // --- 4. Transaction Name (New Feature) ---
-            _buildLabel("Transaction Name"),
-            TextField(
-              controller: _transactionNameController,
-              decoration: _inputDecoration("e.g. Weekly Groceries", fieldColor),
-            ),
-            const SizedBox(height: 30),
-
             Divider(color: Colors.grey.shade200, thickness: 2),
             const SizedBox(height: 20),
+
+            // --- 4. DYNAMIC ITEMS LIST ---
             Text(
-              "Items", 
+              "Items",
               style: AppTypography.headline3.copyWith(fontSize: 18),
             ),
             const SizedBox(height: 16),
 
-            // --- 5. DYNAMIC ITEMS LIST ---
             Column(
               children: List.generate(_items.length, (index) {
                 return _buildItemRow(index, fieldColor);
               }),
             ),
 
-            // --- 6. Add Item Button ---
+            // --- 5. Add Item Button ---
             Center(
               child: TextButton.icon(
                 onPressed: _addNewItem,
@@ -317,11 +632,73 @@ class _AddExpensePageState extends State<AddExpensePage> {
                   ),
                 ),
                 style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
                 ),
               ),
             ),
 
+            const SizedBox(height: 20),
+
+            // --- 6. TOTAL EXPENSE DISPLAY ---
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: primaryColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    "Total Expense (Read-Only)",
+                    style: TextStyle(
+                      color: primaryColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: TextField(
+                      controller: _totalPriceController,
+                      enabled: false,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: primaryColor,
+                        fontSize: 40,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      decoration: InputDecoration(
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        disabledBorder: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
+                        hintText: r"$0.00",
+                        hintStyle: TextStyle(
+                          color: primaryColor.withValues(alpha: 0.5),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+            Divider(color: Colors.grey.shade200, thickness: 2),
             const SizedBox(height: 20),
 
             // --- 7. Save Button ---
@@ -331,7 +708,9 @@ class _AddExpensePageState extends State<AddExpensePage> {
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryColor,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                   elevation: 0,
                 ),
                 onPressed: _saveExpense,
@@ -376,14 +755,21 @@ class _AddExpensePageState extends State<AddExpensePage> {
             children: [
               Text(
                 "Item ${index + 1}",
-                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey,
+                ),
               ),
               if (_items.length > 1)
                 InkWell(
                   onTap: () => _removeItem(index),
                   child: const Padding(
                     padding: EdgeInsets.all(4.0),
-                    child: Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                    child: Icon(
+                      Icons.delete_outline,
+                      color: Colors.red,
+                      size: 20,
+                    ),
                   ),
                 ),
             ],
@@ -391,10 +777,10 @@ class _AddExpensePageState extends State<AddExpensePage> {
           const SizedBox(height: 12),
 
           // Item Name
-          _buildLabel("Item Name"),
+          const FormLabel(label: "Item Name", useGreyStyle: true),
           TextField(
             controller: _items[index]['name'],
-            decoration: _inputDecoration("e.g. Milk", fieldColor),
+            decoration: CustomInputDecoration.simple("e.g. Milk", fieldColor),
           ),
           const SizedBox(height: 12),
 
@@ -405,11 +791,11 @@ class _AddExpensePageState extends State<AddExpensePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildLabel("Quantity"),
+                    const FormLabel(label: "Quantity", useGreyStyle: true),
                     TextField(
                       controller: _items[index]['qty'],
                       keyboardType: TextInputType.number,
-                      decoration: _inputDecoration("1", fieldColor),
+                      decoration: CustomInputDecoration.simple("1", fieldColor),
                     ),
                   ],
                 ),
@@ -419,65 +805,20 @@ class _AddExpensePageState extends State<AddExpensePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildLabel("Unit Price"),
+                    const FormLabel(label: "Unit Price", useGreyStyle: true),
                     TextField(
                       controller: _items[index]['price'],
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: _inputDecoration("0.00", fieldColor),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [CurrencyInputFormatter()],
+                      decoration: CustomInputDecoration.simple(
+                        "0.00",
+                        fieldColor,
+                      ),
                     ),
                   ],
                 ),
               ),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLabel(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Text(text, style: AppTypography.labelLarge.copyWith(color: AppColors.greyText)),
-    );
-  }
-
-  InputDecoration _inputDecoration(String hint, Color fillColor) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: const TextStyle(color: Colors.grey),
-      filled: true,
-      fillColor: fillColor,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-    );
-  }
-
-  Widget _buildInfoBadge(BuildContext context, {required IconData icon, required String label, required Color color}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 18, color: color),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Text(
-              label,
-              style: AppTypography.bodySmall.copyWith(
-                color: color,
-                fontWeight: FontWeight.bold,
-                fontSize: 12
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
           ),
         ],
       ),

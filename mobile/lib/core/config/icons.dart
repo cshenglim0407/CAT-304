@@ -4,13 +4,21 @@ import 'package:flutter/material.dart';
 IconData getIncomeIcon(String? category) {
   switch (category?.toUpperCase()) {
     case 'SALARY':
-      return Icons.attach_money;
-    case 'BUSINESS':
-      return Icons.business;
-    case 'GIFT':
-      return Icons.card_giftcard;
+      return Icons.work_rounded;
+    case 'ALLOWANCE':
+      return Icons.volunteer_activism_rounded;
+    case 'BONUS':
+      return Icons.stars_rounded;
+    case 'DIVIDEND':
+      return Icons.trending_up_rounded;
     case 'INVESTMENT':
-      return Icons.trending_up;
+      return Icons.account_balance_rounded;
+    case 'RENTAL':
+      return Icons.home_work_rounded;
+    case 'REFUND':
+      return Icons.refresh_rounded;
+    case 'SALE':
+      return Icons.storefront_rounded;
     default:
       return Icons.add_circle; // generic income
   }

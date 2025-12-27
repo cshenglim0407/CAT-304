@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cashlytics/core/utils/string_case_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
@@ -31,7 +32,6 @@ import 'package:cashlytics/presentation/pages/user_management/edit_personal_info
 import 'package:cashlytics/presentation/pages/user_management/login.dart';
 import 'package:cashlytics/presentation/pages/user_management/edit_detail_information.dart';
 import 'package:cashlytics/presentation/pages/budget_threshold/budget.dart';
-import 'package:cashlytics/presentation/pages/budget_threshold/budget_overview.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -59,6 +59,28 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _showDetailedInfo = false;
 
   late final StreamSubscription<AuthState> _authStateSubscription;
+
+  void _redirectToLoginOnce() {
+    if (!mounted) return;
+    if (_redirecting) return;
+    setState(() => _redirecting = true);
+    CacheService.remove('user_profile_cache');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (!mounted) return;
+        Navigator.of(context).pop();
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+        );
+      });
+    });
+  }
 
   Future<void> _uploadProfilePhoto() async {
     try {
@@ -168,7 +190,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 });
 
             // Update cache
-            CacheService.save(_userProfileCacheKey, currentUserProfile!);
+            CacheService.save('user_profile_cache', currentUserProfile!);
           }
         });
         context.showSnackBar('Profile photo updated successfully');
@@ -197,6 +219,13 @@ class _ProfilePageState extends State<ProfilePage> {
       onError: (msg) => context.showSnackBar(msg, isError: true),
     );
 
+    // Clear all user-related cache
+    await CacheService.remove('user_profile_cache');
+    await CacheService.remove('accounts');
+    await CacheService.remove('transactions');
+    await CacheService.remove('budgets_cache');
+    await ImageCacheService.clearCachedImage();
+
     if (mounted) {
       Provider.of<ThemeProvider>(
         context,
@@ -206,8 +235,6 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   final int _selectedIndex = 2;
-
-  static const String _userProfileCacheKey = 'user_profile_cache';
 
   // --- Basic User Data ---
   late String _displayName = "";
@@ -285,25 +312,21 @@ class _ProfilePageState extends State<ProfilePage> {
           'currency_pref': _domainUser!.currencyPreference,
           'theme_pref': _domainUser!.themePreference,
         };
-        await CacheService.save(_userProfileCacheKey, currentUserProfile!);
+        await CacheService.save('user_profile_cache', currentUserProfile!);
       }
     } catch (e) {
       debugPrint('Error fetching profile: $e');
       currentUserProfile = CacheService.load<Map<String, dynamic>>(
-        _userProfileCacheKey,
+        'user_profile_cache',
       );
     } finally {
       if (_authService.currentUser == null) {
         if (currentUserProfile == null || currentUserProfile!.isEmpty) {
           currentUserProfile = null;
-          await CacheService.remove(_userProfileCacheKey);
-          if (mounted) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const LoginPage()),
-            );
-          } else {
-            debugPrint('User logged out but cache available');
-          }
+          await CacheService.remove('user_profile_cache');
+          _redirectToLoginOnce();
+        } else {
+          debugPrint('User logged out but cache available');
         }
       }
     }
@@ -336,8 +359,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
       final themePref = currentUserProfile!['theme_pref'] ?? 'system';
       _themePref = themePref.isNotEmpty
-          ? themePref[0].toUpperCase() +
-              (themePref.length > 1 ? themePref.substring(1) : '')
+          ? StringCaseFormatter.toTitleCase(themePref)
           : 'System';
     });
   }
@@ -347,7 +369,7 @@ class _ProfilePageState extends State<ProfilePage> {
     super.initState();
 
     final cachedProfile = CacheService.load<Map<String, dynamic>>(
-      _userProfileCacheKey,
+      'user_profile_cache',
     );
     if (cachedProfile != null) {
       currentUserProfile = cachedProfile;
@@ -373,12 +395,7 @@ class _ProfilePageState extends State<ProfilePage> {
     _authStateSubscription = listenForSignedOutRedirect(
       shouldRedirect: () => !_redirecting,
       onRedirect: () {
-        if (!mounted) return;
-        setState(() => _redirecting = true);
-        CacheService.remove(_userProfileCacheKey);
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const LoginPage()),
-        );
+        _redirectToLoginOnce();
       },
       onError: (error) {
         debugPrint('Auth State Listener Error: $error');
@@ -389,7 +406,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void dispose() {
     _authStateSubscription.cancel();
-    CacheService.remove(_userProfileCacheKey);
+    CacheService.remove('user_profile_cache');
     super.dispose();
   }
 
@@ -406,9 +423,14 @@ class _ProfilePageState extends State<ProfilePage> {
 
     // If it's a storage path (doesn't start with http), construct the public URL
     if (!_imagePath.startsWith('http')) {
+      // Defensively remove the bucket name from the path to avoid URL duplication
+      final correctedPath = _imagePath.startsWith('profile-pictures/')
+          ? _imagePath.replaceFirst('profile-pictures/', '')
+          : _imagePath;
+
       final publicUrl = _storageService.getPublicUrl(
         bucketId: 'profile-pictures',
-        filePath: _imagePath,
+        filePath: correctedPath,
       );
 
       if (publicUrl != null && publicUrl.isNotEmpty) {
@@ -431,7 +453,6 @@ class _ProfilePageState extends State<ProfilePage> {
             children: [
               // --- Removed AppBackButton here ---
               const SizedBox(height: 16), // Kept some top spacing
-
               // --- Profile Header ---
               Center(
                 child: Column(
@@ -613,7 +634,9 @@ class _ProfilePageState extends State<ProfilePage> {
                           const SizedBox(height: 10),
                           InfoRow(
                             label: "Education Level",
-                            value: _educationLevel,
+                            value: _educationLevel.isNotEmpty
+                                ? _educationLevel
+                                : 'No record found',
                             icon: Icons.school_rounded,
                           ),
                           InfoRow(
@@ -737,25 +760,12 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
 
               AppMenuItem(
-                icon: Icons.savings_rounded,
-                label: "Create Budget",
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      // ⚠️ Make sure this matches the class name in budget.dart
-                      builder: (context) => const BudgetPage(), 
-                    ),
-                  );
-                },
-              ),
-
-              AppMenuItem(
                 icon: Icons.logout_rounded,
                 label: "Logout",
                 isDestructive: true,
                 onTap: _isLoading ? () {} : () => _signOut(),
               ),
+
               const SizedBox(height: 20),
             ],
           ),

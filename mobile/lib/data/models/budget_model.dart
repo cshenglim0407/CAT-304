@@ -1,3 +1,4 @@
+import 'package:cashlytics/core/utils/date_formatter.dart';
 import 'package:cashlytics/domain/entities/budget.dart';
 
 /// Data model for budgets.
@@ -27,9 +28,9 @@ class BudgetModel extends Budget {
       id: map['budget_id'] as String?,
       userId: map['user_id'] as String? ?? '',
       type: map['type'] as String? ?? '',
-      dateFrom: _parseDate(map['date_from']) ?? DateTime.now(),
-      dateTo: _parseDate(map['date_to']) ?? DateTime.now(),
-      createdAt: _parseDateTime(map['created_at']),
+      dateFrom: DateFormatter.parseDateTime(map['date_from']) ?? DateTime.now(),
+      dateTo: DateFormatter.parseDateTime(map['date_to']) ?? DateTime.now(),
+      createdAt: DateFormatter.parseDateTime(map['created_at']),
     );
   }
 
@@ -46,24 +47,6 @@ class BudgetModel extends Budget {
   Map<String, dynamic> toUpdate() => toInsert();
 
   Map<String, dynamic> toJson() => toUpdate();
-
-  static DateTime? _parseDate(dynamic raw) {
-    if (raw == null) return null;
-    if (raw is DateTime) return raw;
-    if (raw is String && raw.isNotEmpty) {
-      return DateTime.tryParse(raw);
-    }
-    return null;
-  }
-
-  static DateTime? _parseDateTime(dynamic raw) {
-    if (raw == null) return null;
-    if (raw is DateTime) return raw;
-    if (raw is String && raw.isNotEmpty) {
-      return DateTime.tryParse(raw);
-    }
-    return null;
-  }
 
   static String _formatDate(DateTime date) => date.toIso8601String().split('T').first;
 }

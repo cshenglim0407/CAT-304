@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+
 import 'package:cashlytics/core/config/icons.dart';
+import 'package:cashlytics/core/utils/math_formatter.dart';
+
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
 
@@ -64,13 +67,17 @@ class AccountCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2), 
+                    color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Icon(getAccountTypeIcon(accountType), color: iconTint, size: 24),
+                  child: Icon(
+                    getAccountTypeIcon(accountType),
+                    color: iconTint,
+                    size: 24,
+                  ),
                 ),
                 const SizedBox(width: 14),
-                
+
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -85,7 +92,10 @@ class AccountCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(6),
@@ -103,7 +113,7 @@ class AccountCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                
+
                 // --- UPDATED: Clickable Three Dots ---
                 GestureDetector(
                   onTap: onEditTap, // Trigger the callback
@@ -121,7 +131,11 @@ class AccountCard extends StatelessWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Icon(Icons.info_outline_rounded, size: 14, color: subTextColor),
+                  Icon(
+                    Icons.info_outline_rounded,
+                    size: 14,
+                    color: subTextColor,
+                  ),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
@@ -144,10 +158,12 @@ class AccountCard extends StatelessWidget {
             // --- BOTTOM ROW: Balances ---
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.end, 
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  "\$ ${currentBalance.toStringAsFixed(2)}",
+                  currentBalance == 0 && initialBalance == 0
+                      ? '\$0.00'
+                      : MathFormatter.formatCurrency(currentBalance),
                   style: AppTypography.headline2.copyWith(
                     fontSize: 24,
                     color: textColor,
@@ -157,9 +173,11 @@ class AccountCard extends StatelessWidget {
                 ),
 
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 4), 
+                  padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
-                    "Initial: \$ ${initialBalance.toStringAsFixed(2)}",
+                    initialBalance == 0
+                        ? "Initial: \$0.00"
+                        : "Initial: ${MathFormatter.formatCurrency(initialBalance)}",
                     style: AppTypography.caption.copyWith(
                       color: subTextColor,
                       fontWeight: FontWeight.w500,

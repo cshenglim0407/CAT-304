@@ -19,7 +19,7 @@ class CacheService {
       debugPrint('Cache service not initialized, cannot save [$key]');
       return;
     }
-    
+
     try {
       if (value is String) {
         await _prefs!.setString(key, value);
@@ -31,11 +31,13 @@ class CacheService {
         await _prefs!.setBool(key, value);
       } else if (value is List<String>) {
         await _prefs!.setStringList(key, value);
-      } else if (value is Map<String, dynamic>) {
+      } else if (value is List || value is Map) {
+        // Handle any List or Map by JSON encoding
         final jsonString = jsonEncode(value);
         await _prefs!.setString(key, jsonString);
       } else {
-        debugPrint('Unsupported type for cache: ${T.toString()}');
+        debugPrint('Unsupported type for cache: ${value.runtimeType}');
+        return;
       }
       debugPrint('Cache saved: $key');
     } catch (e) {
@@ -49,7 +51,7 @@ class CacheService {
       debugPrint('Cache service not initialized, cannot load [$key]');
       return null;
     }
-    
+
     try {
       if (!containsKey(key)) return null;
 
@@ -64,15 +66,15 @@ class CacheService {
         return _prefs!.getDouble(key) as T?;
       } else if (T == bool) {
         return _prefs!.getBool(key) as T?;
-      } else if (T == List<String>) {
+      } else if (T.toString().contains('List<String>')) {
         return _prefs!.getStringList(key) as T?;
-      } else if (T == Map<String, dynamic>) {
+      } else {
+        // Try to decode as JSON for List or Map types
         final jsonString = _prefs!.getString(key);
         if (jsonString != null) {
-          return jsonDecode(jsonString) as T?;
+          final decoded = jsonDecode(jsonString);
+          return decoded as T?;
         }
-      } else {
-        debugPrint('Unsupported type for cache load: ${T.toString()}');
       }
     } catch (e) {
       debugPrint('Error loading cache [$key]: $e');
@@ -86,10 +88,10 @@ class CacheService {
       debugPrint('Cache service not initialized, cannot remove [$key]');
       return;
     }
-    
+
     try {
       if (!containsKey(key)) return;
-      
+
       await _prefs!.remove(key);
       debugPrint('Cache removed: $key');
     } catch (e) {
@@ -103,7 +105,7 @@ class CacheService {
       debugPrint('Cache service not initialized, cannot clear all');
       return;
     }
-    
+
     try {
       await _prefs!.clear();
       debugPrint('All cache cleared');

@@ -98,7 +98,7 @@ DECLARE
 BEGIN
     SELECT USER_ID INTO v_user_id FROM APP_USERS WHERE EMAIL = 'janedoe@example.com';
     SELECT ACCOUNT_ID INTO v_account_id FROM ACCOUNTS WHERE NAME = 'Jane''s Savings' AND USER_ID = v_user_id;
-    CALL add_income(v_user_id, v_account_id, 'Freelance Project', 1200.00, 'BUSINESS', 'Payment for freelance web development project', 'MYR', FALSE);
+    CALL add_income(v_user_id, v_account_id, 'Freelance Project', 1200.00, 'INVESTMENT', 'Payment for freelance web development project', 'MYR', FALSE);
 END $$;
 
 DO $$
@@ -230,6 +230,7 @@ VALUES
     (SELECT USER_ID FROM APP_USERS WHERE EMAIL = 'janedoe@example.com')),
 ('DIPLOMA', 'UNEMPLOYED', 'DIVORCED', 1, 2000.00,
     (SELECT USER_ID FROM APP_USERS WHERE EMAIL = 'bobsmith@example.com'));
+
 INSERT INTO AI_REPORT (TITLE, INSIGHTS, BODY, MONTH, HEALTH_SCORE, USER_ID)
 VALUES
 ('September 2024 Financial Health Report', 'An overview of your financial health for September 2024.',

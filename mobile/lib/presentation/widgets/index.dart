@@ -2,6 +2,7 @@
 export 'custom_text_form_field.dart';
 export 'custom_drop_down_form_field.dart';
 export 'form_label.dart';
+export 'custom_input_decoration.dart';
 export 'social_auth_button.dart';
 export 'primary_button.dart';
 

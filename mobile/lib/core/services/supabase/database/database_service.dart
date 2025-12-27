@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:cashlytics/core/services/supabase/client.dart';
 
@@ -59,10 +60,20 @@ class DatabaseService {
     Map<String, dynamic> values, {
     String columns = '*',
   }) async {
-    final data = await _table(
-      table,
-    ).insert(values).select(columns).maybeSingle();
-    return data == null ? null : Map<String, dynamic>.from(data);
+    try {
+      final data = await _table(
+        table,
+      ).insert(values).select(columns).maybeSingle();
+      
+      if (data == null) {
+        debugPrint('Warning: Insert into $table succeeded but select returned no rows. Values: $values');
+      }
+      
+      return data == null ? null : Map<String, dynamic>.from(data);
+    } catch (e) {
+      debugPrint('Error inserting into $table: $e. Values: $values');
+      rethrow;
+    }
   }
 
   Future<List<Map<String, dynamic>>> insertMany(

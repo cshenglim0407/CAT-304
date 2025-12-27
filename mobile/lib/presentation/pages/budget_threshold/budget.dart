@@ -1,522 +1,631 @@
 import 'package:flutter/material.dart';
+
+import 'package:cashlytics/core/config/icons.dart';
+import 'package:cashlytics/core/services/cache/cache_service.dart';
+import 'package:cashlytics/core/services/supabase/client.dart';
+import 'package:cashlytics/core/services/supabase/database/database_service.dart';
+import 'package:cashlytics/core/utils/date_formatter.dart';
+import 'package:cashlytics/core/utils/math_formatter.dart';
+
+import 'package:cashlytics/data/repositories/account_repository_impl.dart';
+import 'package:cashlytics/data/repositories/budget_repository_impl.dart';
+import 'package:cashlytics/domain/repositories/account_repository.dart';
+import 'package:cashlytics/domain/usecases/accounts/get_account_transactions.dart';
+import 'package:cashlytics/domain/usecases/accounts/get_accounts.dart';
+import 'package:cashlytics/domain/usecases/budgets/delete_budget.dart';
+
 import 'package:cashlytics/presentation/themes/colors.dart';
-import 'package:cashlytics/presentation/themes/typography.dart';
 import 'package:cashlytics/presentation/widgets/index.dart';
-import 'package:cashlytics/presentation/pages/budget_threshold/budget_overview.dart';
+import 'package:cashlytics/presentation/widgets/confirm_delete_dialog.dart';
 
-enum BudgetType {
-  user('U', 'Overall', Icons.account_balance_wallet_rounded),
-  category('C', 'Category', Icons.grid_view_rounded),
-  account('A', 'Account', Icons.credit_card_rounded);
+import 'package:cashlytics/presentation/pages/budget_threshold/add_budget.dart';
 
-  final String code;
-  final String label;
-  final IconData icon;
-  const BudgetType(this.code, this.label, this.icon);
-}
-
-class BudgetPage extends StatefulWidget {
-  const BudgetPage({super.key});
+class BudgetOverviewPage extends StatefulWidget {
+  const BudgetOverviewPage({super.key});
 
   @override
-  State<BudgetPage> createState() => _BudgetPageState();
+  State<BudgetOverviewPage> createState() => _BudgetOverviewPageState();
 }
 
-class _BudgetPageState extends State<BudgetPage> {
-  final _formKey = GlobalKey<FormState>();
-  
-  // State
-  BudgetType _selectedType = BudgetType.user;
-  final TextEditingController _amountController = TextEditingController();
-  DateTimeRange? _selectedDateRange;
-  
-  // Selection IDs
-  String? _selectedCategoryId;
-  String? _selectedAccountId;
+class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
+  String _selectedFilter = 'All';
 
-  // --- Category Data ---
-  final List<Map<String, dynamic>> _categories = [
-    {'id': '1', 'name': 'Transport', 'icon': Icons.directions_car_filled_rounded},
-    {'id': '2', 'name': 'Entertainment', 'icon': Icons.movie_creation_rounded},
-    {'id': '3', 'name': 'Utilities', 'icon': Icons.bolt_rounded},
-    {'id': '4', 'name': 'Healthcare', 'icon': Icons.medical_services_rounded},
-    {'id': '5', 'name': 'Shopping', 'icon': Icons.shopping_bag_rounded},
-    {'id': '6', 'name': 'Travel', 'icon': Icons.flight_takeoff_rounded},
-    {'id': '7', 'name': 'Education', 'icon': Icons.school_rounded},
-    {'id': '8', 'name': 'Rent', 'icon': Icons.home_rounded},
-    {'id': '9', 'name': 'Other', 'icon': Icons.more_horiz_rounded},
-  ];
+  // SAME MARGIN AS BUDGET.DART
+  static const double pageMargin = 22.0;
+  static const String _budgetsCacheKey = 'budgets_cache';
 
-  // --- Account Data ---
-  final List<Map<String, dynamic>> _accounts = [
-    {'id': '1', 'name': 'Cash', 'icon': Icons.payments_rounded},
-    {'id': '2', 'name': 'Bank', 'icon': Icons.account_balance_rounded},
-    {'id': '3', 'name': 'E-Wallet', 'icon': Icons.account_balance_wallet_rounded},
-    {'id': '4', 'name': 'Credit Card', 'icon': Icons.credit_card_rounded},
-    {'id': '5', 'name': 'Investment', 'icon': Icons.trending_up_rounded},
-    {'id': '6', 'name': 'Loan', 'icon': Icons.monetization_on_rounded},
-    {'id': '7', 'name': 'Other', 'icon': Icons.more_horiz_rounded},
-  ];
+  final DatabaseService _databaseService = const DatabaseService();
+  bool _isLoading = true;
+  List<Map<String, dynamic>> _budgets = [];
+
+  late final AccountRepository _accountRepository;
+  late final GetAccounts _getAccounts;
+  late final GetAccountTransactions _getAccountTransactions;
+  late final DeleteBudget _deleteBudget;
 
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
-    _selectedDateRange = DateTimeRange(
-      start: DateTime(now.year, now.month, 1),
-      end: DateTime(now.year, now.month + 1, 0),
-    );
+    _accountRepository = AccountRepositoryImpl();
+    _getAccounts = GetAccounts(_accountRepository);
+    _getAccountTransactions = GetAccountTransactions(_accountRepository);
+    _deleteBudget = DeleteBudget(BudgetRepositoryImpl());
+    _loadBudgets();
   }
 
-  @override
-  void dispose() {
-    _amountController.dispose();
-    super.dispose();
-  }
+  Future<void> _loadBudgets({bool forceRefresh = false}) async {
+    setState(() => _isLoading = true);
 
-  String _formatDate(DateTime date, {bool showYear = false}) {
-    const List<String> months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
-    final day = date.day;
-    final month = months[date.month - 1];
-    if (showYear) {
-      return '$day $month ${date.year}';
+    if (!forceRefresh) {
+      final cachedBudgets = CacheService.load<List>(_budgetsCacheKey);
+      if (cachedBudgets != null) {
+        setState(() {
+          _budgets = List<Map<String, dynamic>>.from(
+            cachedBudgets.map((e) {
+              final budget = Map<String, dynamic>.from(e);
+              budget['icon'] = _getIconFromBudget(budget);
+              return budget;
+            }),
+          );
+          _isLoading = false;
+        });
+        return;
+      }
     }
-    return '$day $month';
+
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) {
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    try {
+      final accounts = await _getAccounts(userId);
+      final accountMap = <String, Map<String, dynamic>>{};
+      for (final acc in accounts) {
+        if (acc.id == null) continue;
+        accountMap[acc.id!] = {'name': acc.name, 'type': acc.type};
+      }
+
+      final categoryRows = await _databaseService.fetchAll('expense_category');
+      final categoryMap = <String, String>{};
+      for (final row in categoryRows) {
+        final id = row['expense_cat_id'] as String?;
+        final name = row['name'] as String?;
+        if (id != null && name != null) {
+          categoryMap[id] = name;
+        }
+      }
+
+      final budgetRows = await _databaseService.fetchAll(
+        'budget',
+        filters: {'user_id': userId},
+        orderBy: 'created_at',
+        ascending: false,
+      );
+
+      final budgetIds = budgetRows
+          .map((row) => row['budget_id'])
+          .whereType<String>()
+          .toList();
+
+      final userBudgetRows = budgetIds.isEmpty
+          ? <Map<String, dynamic>>[]
+          : await _databaseService.fetchAll(
+              'user_budget',
+              filters: {'budget_id': budgetIds},
+            );
+      final categoryBudgetRows = budgetIds.isEmpty
+          ? <Map<String, dynamic>>[]
+          : await _databaseService.fetchAll(
+              'category_budget',
+              filters: {'budget_id': budgetIds},
+            );
+      final accountBudgetRows = budgetIds.isEmpty
+          ? <Map<String, dynamic>>[]
+          : await _databaseService.fetchAll(
+              'account_budget',
+              filters: {'budget_id': budgetIds},
+            );
+
+      final userBudgetMap = <String, double>{};
+      for (final row in userBudgetRows) {
+        final id = row['budget_id'] as String?;
+        if (id != null) {
+          userBudgetMap[id] =
+              MathFormatter.parseDouble(row['threshold']) ?? 0.0;
+        }
+      }
+
+      final categoryBudgetMap = <String, Map<String, dynamic>>{};
+      for (final row in categoryBudgetRows) {
+        final id = row['budget_id'] as String?;
+        if (id != null) {
+          categoryBudgetMap[id] = {
+            'expense_cat_id': row['expense_cat_id'] as String?,
+            'threshold': MathFormatter.parseDouble(row['threshold']) ?? 0.0,
+          };
+        }
+      }
+
+      final accountBudgetMap = <String, Map<String, dynamic>>{};
+      for (final row in accountBudgetRows) {
+        final id = row['budget_id'] as String?;
+        if (id != null) {
+          accountBudgetMap[id] = {
+            'account_id': row['account_id'] as String?,
+            'threshold': MathFormatter.parseDouble(row['threshold']) ?? 0.0,
+          };
+        }
+      }
+
+      final txList = <Map<String, dynamic>>[];
+      for (final acc in accounts) {
+        if (acc.id == null) continue;
+        final txns = await _getAccountTransactions(acc.id!);
+        for (final tx in txns) {
+          if (!tx.isExpense) continue;
+          final category = (tx.category ?? '').trim();
+          if (category.toLowerCase() == 'transfer') continue;
+          txList.add({
+            'accountId': acc.id,
+            'category': category,
+            'amount': tx.amount,
+            'date': DateFormatter.dateOnly(tx.date),
+          });
+        }
+      }
+
+      final items = <Map<String, dynamic>>[];
+      final now = DateFormatter.dateOnly(DateTime.now());
+      for (final row in budgetRows) {
+        final budgetId = row['budget_id'] as String?;
+        final type = row['type'] as String?;
+        if (budgetId == null || type == null) continue;
+
+        final start = DateFormatter.parseDate(row['date_from']);
+        final end = DateFormatter.parseDate(row['date_to']);
+        final daysLeft = end.isBefore(now) ? 0 : DateFormatter.daysLeft(end);
+
+        if (type == 'U') {
+          final limit = userBudgetMap[budgetId];
+          if (limit == null) continue;
+          final spent = _sumSpent(txList, start, end);
+          items.add({
+            'id': budgetId,
+            'type': 'U',
+            'title': 'Monthly Limit',
+            'icon': Icons.account_balance_wallet_rounded,
+            'limit': limit,
+            'spent': spent,
+            'days_left': daysLeft,
+          });
+        } else if (type == 'C') {
+          final catBudget = categoryBudgetMap[budgetId];
+          if (catBudget == null) continue;
+          final catId = catBudget['expense_cat_id'] as String?;
+          final limit = catBudget['threshold'] as double?;
+          if (catId == null || limit == null) continue;
+          final name = categoryMap[catId] ?? 'Category';
+          final spent = _sumSpent(txList, start, end, category: name);
+          items.add({
+            'id': budgetId,
+            'type': 'C',
+            'title': name,
+            'icon': getExpenseIcon(name.toUpperCase()),
+            'limit': limit,
+            'spent': spent,
+            'days_left': daysLeft,
+          });
+        } else if (type == 'A') {
+          final accBudget = accountBudgetMap[budgetId];
+          if (accBudget == null) continue;
+          final accountId = accBudget['account_id'] as String?;
+          final limit = accBudget['threshold'] as double?;
+          if (accountId == null || limit == null) continue;
+          final accountInfo = accountMap[accountId];
+          final name = accountInfo?['name'] as String? ?? 'Account';
+          final accountType = accountInfo?['type'] as String? ?? '';
+          final spent = _sumSpent(txList, start, end, accountId: accountId);
+          items.add({
+            'id': budgetId,
+            'type': 'A',
+            'title': name,
+            'icon': getAccountTypeIcon(accountType),
+            'limit': limit,
+            'spent': spent,
+            'days_left': daysLeft,
+            'accountType': accountType,
+          });
+        }
+      }
+
+      CacheService.save(_budgetsCacheKey, _getSanitizedBudgets(items));
+      setState(() {
+        _budgets = items;
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Error loading budgets: $e');
+      setState(() => _isLoading = false);
+    }
   }
 
-  Future<void> _pickDateRange() async {
-    final DateTimeRange? picked = await showDateRangePicker(
+  List<Map<String, dynamic>> _getSanitizedBudgets(
+      List<Map<String, dynamic>> budgets) {
+    return budgets.map((budget) {
+      final sanitized = Map<String, dynamic>.from(budget);
+      sanitized.remove('icon'); // Remove IconData
+
+      final type = sanitized['type'];
+      if (type == 'U') {
+        sanitized['iconName'] = 'account_balance_wallet_rounded';
+      } else if (type == 'C') {
+        sanitized['iconName'] = sanitized['title']; // The category name
+      } else if (type == 'A') {
+        sanitized['iconName'] = sanitized['accountType']; // The account type
+      }
+      return sanitized;
+    }).toList();
+  }
+
+  IconData _getIconFromBudget(Map<String, dynamic> budget) {
+    final type = budget['type'];
+    final iconName = budget['iconName'] as String?;
+
+    if (iconName == null) return Icons.error; // Fallback
+
+    if (type == 'U') {
+      return Icons.account_balance_wallet_rounded;
+    } else if (type == 'C') {
+      return getExpenseIcon(iconName.toUpperCase());
+    } else if (type == 'A') {
+      return getAccountTypeIcon(iconName); // iconName is accountType
+    }
+    return Icons.error; // Fallback
+  }
+
+  double _sumSpent(
+    List<Map<String, dynamic>> txList,
+    DateTime start,
+    DateTime end, {
+    String? category,
+    String? accountId,
+  }) {
+    double total = 0;
+    for (final tx in txList) {
+      final date = tx['date'] as DateTime;
+      if (date.isBefore(start) || date.isAfter(end)) continue;
+      if (category != null) {
+        final txCategory = (tx['category'] as String).toLowerCase();
+        if (txCategory != category.toLowerCase()) continue;
+      }
+      if (accountId != null && tx['accountId'] != accountId) continue;
+      total += (tx['amount'] as num).toDouble();
+    }
+    return total;
+  }
+
+  Future<void> _confirmDelete(String budgetId) async {
+    await showConfirmDeleteDialog(
       context: context,
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
-      initialDateRange: _selectedDateRange,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: AppColors.primary,
-              onPrimary: Colors.white,
-              surface: AppColors.getSurface(context),
-            ),
-          ),
-          child: child!,
-        );
+      title: 'Delete Budget',
+      content: 'This will remove the budget. Continue?',
+      onConfirm: () async {
+        await _deleteBudgetById(budgetId);
       },
     );
+  }
 
-    if (picked != null) {
-      setState(() => _selectedDateRange = picked);
+  Future<void> _deleteBudgetById(String budgetId) async {
+    try {
+      await _deleteBudget(budgetId);
+      setState(() {
+        _budgets.removeWhere((b) => b['id'] == budgetId);
+      });
+      CacheService.save(_budgetsCacheKey, _getSanitizedBudgets(_budgets));
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Budget deleted')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Delete failed: $e')));
     }
   }
 
-Future<void> _saveBudget() async {
-  if (!_formKey.currentState!.validate()) return;
-  
-  // Check if date range is selected
-  if (_selectedDateRange == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Please select a date range")),
-    );
-    return;
-  }
-
-  // Parse the amount safely
-  final cleanAmount = _amountController.text.replaceAll(',', '');
-  final threshold = double.tryParse(cleanAmount); 
-
-  if (threshold == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Invalid amount format")),
-    );
-    return;
-  }
-
-  // 1. Logic to get the correct Name and Icon
-  String budgetName = 'Overall Limit';
-  IconData budgetIcon = Icons.account_balance_wallet_rounded;
-  String typeLabel = _selectedType.label;
-
-  if (_selectedType == BudgetType.category) {
-    // Find the name of the selected category
-    final category = _categories.firstWhere(
-      (element) => element['id'] == _selectedCategoryId,
-      orElse: () => {'name': 'Unknown Category', 'icon': Icons.category},
-    );
-    budgetName = category['name'];
-    budgetIcon = category['icon'];
-  } else if (_selectedType == BudgetType.account) {
-    // Find the name of the selected account
-    final account = _accounts.firstWhere(
-      (element) => element['id'] == _selectedAccountId,
-      orElse: () => {'name': 'Unknown Account', 'icon': Icons.credit_card},
-    );
-    budgetName = account['name'];
-    budgetIcon = account['icon'];
-  }
-
-  // 2. Create the Budget Data Map
-  final newBudget = {
-    'id': DateTime.now().millisecondsSinceEpoch.toString(), // Unique ID
-    'name': budgetName,
-    'type': typeLabel,
-    'icon': budgetIcon,
-    'spent': 0.0, // Start with 0 spent
-    'amount': threshold,
-    'days_left': _selectedDateRange!.duration.inDays,
-  };
-
-  // 3. Show Success Message
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text("Budget created for $budgetName!"),
-      backgroundColor: Colors.green,
-    ),
-  );
-
-  Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => BudgetOverviewPage(newBudget: newBudget),
-      ),
-    );
+  List<Map<String, dynamic>> get _filteredBudgets {
+    if (_selectedFilter == 'All') return _budgets;
+    if (_selectedFilter == 'Overall') {
+      return _budgets.where((b) => b['type'] == 'U').toList();
+    }
+    if (_selectedFilter == 'Category') {
+      return _budgets.where((b) => b['type'] == 'C').toList();
+    }
+    if (_selectedFilter == 'Account') {
+      return _budgets.where((b) => b['type'] == 'A').toList();
+    }
+    return _budgets;
   }
 
   @override
   Widget build(BuildContext context) {
-    const double pageMargin = 22.0;
+    final surfaceColor = AppColors.getSurface(context);
+    final Color primaryColor = AppColors.primary;
+    const Color warningColor = Color(0xFFF5A623);
+    const Color errorColor = Color(0xFFE02020);
+    const Color greyText = Color(0xFF757575);
 
     return Scaffold(
-      backgroundColor: AppColors.getSurface(context),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // --- Header ---
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: pageMargin, vertical: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  AppBackButton(
-                    onPressed: () => Navigator.pop(context),
+      backgroundColor: surfaceColor,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        // --- UPDATED BACK BUTTON SECTION ---
+        // We use Container + padding to perfectly align with the page margin
+        leading: Container(
+          margin: const EdgeInsets.only(left: pageMargin),
+          alignment: Alignment.centerLeft, // Ensures button doesn't stretch
+          child: AppBackButton(onPressed: () => Navigator.pop(context)),
+        ),
+        leadingWidth: 70, // Give enough width for margin + button
+        title: Text(
+          'My Budgets',
+          style: TextStyle(
+            color: AppColors.getTextPrimary(context),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                // --- 1. FILTER BAR ---
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: pageMargin,
+                    vertical: 10,
                   ),
-                  
-                  Text(
-                    "Create Goal",
-                    style: AppTypography.headline3.copyWith(
-                      color: AppColors.getTextPrimary(context),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-
-                  // 👇 CHANGED: Replaced SizedBox with an Icon Button
-                  IconButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const BudgetOverviewPage(), // Passing empty map
-                        ),
-                      );
-                    },
-                    icon: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.getSurface(context),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.greyLight.withValues(alpha: 0.5)),
-                      ),
-                      child: Icon(
-                        Icons.list_alt_rounded, 
-                        color: AppColors.getTextPrimary(context),
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // --- Scrollable Content ---
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: pageMargin),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 10),
-                      Text("I want to control spending for...", 
-                        style: AppTypography.labelLarge.copyWith(color: AppColors.grey)),
-                      const SizedBox(height: 16),
-                      
-                      // Type Cards
-                      SizedBox(
-                        height: 100,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: BudgetType.values.map((type) {
-                            final isSelected = _selectedType == type;
-                            return Expanded(
-                              child: GestureDetector(
-                                onTap: () => setState(() => _selectedType = type),
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 200),
-                                  margin: EdgeInsets.only(right: type == BudgetType.account ? 0 : 10),
-                                  decoration: BoxDecoration(
-                                    color: isSelected ? AppColors.primary : AppColors.getSurface(context),
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(
-                                      color: isSelected ? AppColors.primary : AppColors.greyLight,
-                                      width: 2,
-                                    ),
-                                    boxShadow: isSelected ? [
-                                      BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0,4))
-                                    ] : [],
-                                  ),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(type.icon, 
-                                        color: isSelected ? Colors.white : AppColors.grey, size: 28),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        type.label,
-                                        style: AppTypography.bodySmall.copyWith(
-                                          color: isSelected ? Colors.white : AppColors.grey,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-
-                      const SizedBox(height: 32),
-
-                      // Threshold Amount
-                      Center(
-                        child: Column(
-                          children: [
-                            Text("MY LIMIT IS", 
-                              style: AppTypography.labelSmall.copyWith(letterSpacing: 1.5, color: AppColors.grey)),
-                            const SizedBox(height: 8),
-                            // Fix: Use SizedBox instead of IntrinsicWidth to avoid layout crash
-                            SizedBox(
-                              width: MediaQuery.of(context).size.width * 0.6,
-                              child: TextFormField(
-                                controller: _amountController,
-                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                textAlign: TextAlign.center,
-                                style: AppTypography.headline1.copyWith(
-                                  color: AppColors.primary,
-                                  fontSize: 42,
-                                ),
-                                decoration: InputDecoration(
-                                  prefixText: "RM ",
-                                  prefixStyle: AppTypography.headline1.copyWith(
-                                    color: AppColors.grey,
-                                    fontSize: 42,
-                                  ),
-                                  border: InputBorder.none,
-                                  hintText: "0.00",
-                                  hintStyle: TextStyle(color: AppColors.greyLight.withValues(alpha: 0.5)),
-                                  // Optional: Custom underline if desired
-                                  // enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppColors.greyLight)),
-                                ),
-                                validator: (val) {
-                                  if (val == null || val.isEmpty) return 'Enter amount';
-                                  if (double.tryParse(val) == null) return 'Invalid';
-                                  return null;
-                                },
-                              ),
+                  child: Row(
+                    children: ['All', 'Overall', 'Category', 'Account']
+                        .map(
+                          (filter) => Padding(
+                            padding: const EdgeInsets.only(right: 10),
+                            child: _buildFilterChip(
+                              filter,
+                              primaryColor,
+                              greyText,
                             ),
-                            // Decorative underline
-                            Container(height: 2, width: 150, color: AppColors.greyLight.withValues(alpha: 0.3)),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 32),
-
-                      // Dynamic Dropdowns with Unique Keys
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 300),
-                        child: _selectedType == BudgetType.category 
-                          ? _buildDropdownField(
-                              const ValueKey('category_dropdown'), // UNIQUE KEY for logic fix
-                              "Select Category",
-                              "Category", // Placeholder Text
-                              _categories,
-                              _selectedCategoryId,
-                              (val) => setState(() => _selectedCategoryId = val),
-                            )
-                          : _selectedType == BudgetType.account
-                            ? _buildDropdownField(
-                                const ValueKey('account_dropdown'), // UNIQUE KEY for logic fix
-                                "Select Account",
-                                "Account", // Placeholder Text
-                                _accounts,
-                                _selectedAccountId,
-                                (val) => setState(() => _selectedAccountId = val),
-                              )
-                            : const SizedBox.shrink(),
-                      ),
-
-                      if (_selectedType != BudgetType.user) const SizedBox(height: 24),
-
-                      // Date Range Picker
-                      Text("Duration", style: AppTypography.labelLarge),
-                      const SizedBox(height: 8),
-                      InkWell(
-                        onTap: _pickDateRange,
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                          decoration: BoxDecoration(
-                            color: AppColors.getSurface(context),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.greyLight),
                           ),
-                          child: Row(
-                            children: [
-                              Icon(Icons.calendar_month_rounded, color: AppColors.primary),
-                              const SizedBox(width: 12),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    _selectedDateRange == null 
-                                      ? "Select Dates" 
-                                      : "${_formatDate(_selectedDateRange!.start)} - ${_formatDate(_selectedDateRange!.end, showYear: true)}",
-                                    style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600),
-                                  ),
-                                  if (_selectedDateRange != null)
-                                    Text(
-                                      "${_selectedDateRange!.duration.inDays} Days",
-                                      style: AppTypography.bodySmall.copyWith(color: AppColors.grey, fontSize: 10),
-                                    ),
-                                ],
-                              ),
-                              const Spacer(),
-                              Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.grey),
-                            ],
-                          ),
-                        ),
-                      ),
-                      
-                      const SizedBox(height: 40),
-                    ],
+                        )
+                        .toList(),
                   ),
                 ),
-              ),
+
+                // --- 2. BUDGET LIST ---
+                Expanded(
+                  child: _filteredBudgets.isEmpty
+                      ? Center(
+                          child: Text(
+                            "No budgets found.",
+                            style: TextStyle(color: greyText),
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.fromLTRB(
+                            pageMargin,
+                            16,
+                            pageMargin,
+                            100,
+                          ),
+                          itemCount: _filteredBudgets.length,
+                          itemBuilder: (context, index) {
+                            final budget = _filteredBudgets[index];
+                            return _buildBudgetCard(
+                              budget,
+                              index,
+                              primaryColor,
+                              warningColor,
+                              errorColor,
+                              greyText,
+                            );
+                          },
+                        ),
+                ),
+              ],
             ),
 
-            // --- Pinned Bottom Button ---
-            Padding(
-              padding: const EdgeInsets.all(pageMargin),
-              child: SizedBox(
-                width: double.infinity,
-                height: 55,
-                child: ElevatedButton(
-                  onPressed: _saveBudget,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    elevation: 5,
-                    shadowColor: AppColors.primary.withValues(alpha: 0.3),
-                  ),
-                  child: Text(
-                    "Set Limit",
-                    style: AppTypography.headline1.copyWith(color: Colors.white),
-                  ),
-                ),
-              ),
-            ),
-          ],
+      // --- 3. CREATE NEW BUTTON ---
+      floatingActionButton: Transform.translate(
+        offset: const Offset(0, 15),
+        child: FloatingActionButton(
+          backgroundColor: primaryColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: const Icon(Icons.add, color: Colors.white, size: 28),
+          onPressed: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const BudgetPage()),
+            );
+            if (mounted) {
+              _loadBudgets(forceRefresh: true);
+            }
+          },
         ),
       ),
     );
   }
 
-  // Updated Widget to accept Key and hintText
-  Widget _buildDropdownField(
-    Key key, // New Parameter for Unique Key
-    String label, 
-    String hintText, // New parameter for Placeholder
-    List<Map<String, dynamic>> items, 
-    String? currentValue, 
-    Function(String?) onChanged,
-  ) {
-    return Column(
-      key: key, // Apply Key here
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: AppTypography.labelLarge),
-        const SizedBox(height: 8),
-        DropdownButtonFormField<String>(
-          value: currentValue,
-          // --- Placeholder Logic ---
-          hint: Text(
-            hintText,
-            style: AppTypography.bodyMedium.copyWith(
-              color: AppColors.grey, // Placeholder put grey color
-            ),
+  Widget _buildFilterChip(String label, Color primary, Color greyText) {
+    final bool isSelected = _selectedFilter == label;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedFilter = label),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? primary : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? primary : Colors.grey.shade300,
           ),
-          decoration: InputDecoration(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.greyLight),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.greyLight),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.primary, width: 2),
-            ),
-            filled: true,
-            fillColor: AppColors.getSurface(context),
-          ),
-          dropdownColor: AppColors.getSurface(context),
-          items: items.map((item) {
-            return DropdownMenuItem(
-              value: item['id'] as String,
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      item['icon'] as IconData,
-                      size: 18,
-                      color: AppColors.primary,
-                    ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: primary.withValues(alpha: 0.3),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
                   ),
-                  const SizedBox(width: 12),
-                  Text(
-                    item['name'] as String,
-                    style: AppTypography.bodyMedium,
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
-          onChanged: onChanged,
+                ]
+              : [],
         ),
-      ],
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : greyText,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBudgetCard(
+    Map<String, dynamic> budget,
+    int index,
+    Color primary,
+    Color warning,
+    Color error,
+    Color greyText,
+  ) {
+    double spent = (budget['spent'] ?? 0).toDouble();
+    double limit = (budget['limit'] ?? 0).toDouble();
+    double percentage = (limit == 0) ? 0 : (spent / limit);
+    int percentageInt = (percentage * 100).toInt();
+
+    Color statusColor = primary;
+    if (percentage >= 1.0) {
+      statusColor = error;
+    } else if (percentage >= 0.8) {
+      statusColor = warning;
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(budget['icon'], color: Colors.black87),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      budget['title'],
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                    Text(
+                      '${budget['days_left']} days left',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: statusColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '$percentageInt%',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                icon: const Icon(
+                  Icons.delete_outline_rounded,
+                  color: Colors.red,
+                ),
+                onPressed: () => _confirmDelete(budget['id'] as String),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: percentage > 1 ? 1 : percentage,
+              backgroundColor: Colors.grey.shade200,
+              color: statusColor,
+              minHeight: 10,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Spent: RM ${spent.toStringAsFixed(2)}',
+                style: TextStyle(
+                  color: percentage >= 1.0 ? error : greyText,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                'Limit: RM ${limit.toStringAsFixed(0)}',
+                style: TextStyle(
+                  color: greyText,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

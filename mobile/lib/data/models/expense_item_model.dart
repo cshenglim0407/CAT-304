@@ -1,3 +1,4 @@
+import 'package:cashlytics/core/utils/math_formatter.dart';
 import 'package:cashlytics/domain/entities/expense_item.dart';
 
 /// Data model for individual expense items on a receipt.
@@ -28,8 +29,8 @@ class ExpenseItemModel extends ExpenseItem {
       itemId: map['item_id'] as int? ?? 0,
       itemName: map['item_name'] as String?,
       quantity: map['qty'] as int? ?? 1,
-      unitPrice: _parseDouble(map['unit_price']),
-      price: _parseDouble(map['price']),
+      unitPrice: MathFormatter.parseDouble(map['unit_price']) ?? 0.0,
+      price: MathFormatter.parseDouble(map['price']) ?? 0.0,
     );
   }
 
@@ -47,14 +48,4 @@ class ExpenseItemModel extends ExpenseItem {
   Map<String, dynamic> toUpdate() => toInsert();
 
   Map<String, dynamic> toJson() => toUpdate();
-
-  static double _parseDouble(dynamic raw) {
-    if (raw == null) return 0;
-    if (raw is double) return raw;
-    if (raw is int) return raw.toDouble();
-    if (raw is String && raw.isNotEmpty) {
-      return double.tryParse(raw) ?? 0;
-    }
-    return 0;
-  }
 }

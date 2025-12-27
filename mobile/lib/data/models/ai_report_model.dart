@@ -1,3 +1,5 @@
+import 'package:cashlytics/core/utils/date_formatter.dart';
+
 import 'package:cashlytics/domain/entities/ai_report.dart';
 
 /// Data model for AI financial health reports.
@@ -35,7 +37,7 @@ class AiReportModel extends AiReport {
       body: map['body'] as String?,
       month: map['month'] as String?,
       healthScore: map['health_score'] as int?,
-      createdAt: _parseDateTime(map['created_at']),
+      createdAt: DateFormatter.parseDateTime(map['created_at']),
     );
   }
 
@@ -55,12 +57,5 @@ class AiReportModel extends AiReport {
 
   Map<String, dynamic> toJson() => toUpdate();
 
-  static DateTime? _parseDateTime(dynamic raw) {
-    if (raw == null) return null;
-    if (raw is DateTime) return raw;
-    if (raw is String && raw.isNotEmpty) {
-      return DateTime.tryParse(raw);
-    }
-    return null;
-  }
+  
 }

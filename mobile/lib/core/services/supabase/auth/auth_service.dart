@@ -1,4 +1,5 @@
 import 'package:cashlytics/core/services/cache/cache_service.dart';
+import 'package:cashlytics/core/services/cache/image_cache_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -384,6 +385,10 @@ class AuthService {
       // Clear cached data before signing out
       await CacheService.save('remember_me', false);
       await CacheService.remove('user_profile_cache');
+      await CacheService.remove('accounts');
+      await CacheService.remove('transactions');
+      await CacheService.remove('budgets_cache');
+      await ImageCacheService.clearCachedImage();
     } on AuthException catch (error) {
       onError(error.message);
     } catch (error) {

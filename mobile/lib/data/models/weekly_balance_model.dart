@@ -1,3 +1,5 @@
+import 'package:cashlytics/core/utils/math_formatter.dart';
+import 'package:cashlytics/core/utils/date_formatter.dart';
 import 'package:cashlytics/domain/entities/weekly_balance.dart';
 
 class WeeklyBalanceModel extends WeeklyBalance {
@@ -13,13 +15,13 @@ class WeeklyBalanceModel extends WeeklyBalance {
 
   factory WeeklyBalanceModel.fromMap(Map<String, dynamic> map) {
     return WeeklyBalanceModel(
-      weekNumber: _parseInt(map['week_number']) ?? 0,
-      startDate: _parseDateTime(map['start_date']) ?? DateTime.now(),
-      endDate: _parseDateTime(map['end_date']) ?? DateTime.now(),
-      totalIncome: _parseDouble(map['total_income']) ?? 0.0,
-      totalExpense: _parseDouble(map['total_expense']) ?? 0.0,
-      balance: _parseDouble(map['balance']) ?? 0.0,
-      isCurrentWeek: _parseBool(map['is_current_week']) ?? false,
+      weekNumber: MathFormatter.parseInt(map['week_number']) ?? 0,
+      startDate: DateFormatter.parseDateTime(map['start_date']) ?? DateTime.now(),
+      endDate: DateFormatter.parseDateTime(map['end_date']) ?? DateTime.now(),
+      totalIncome: MathFormatter.parseDouble(map['total_income']) ?? 0.0,
+      totalExpense: MathFormatter.parseDouble(map['total_expense']) ?? 0.0,
+      balance: MathFormatter.parseDouble(map['balance']) ?? 0.0,
+      isCurrentWeek: MathFormatter.parseBool(map['is_current_week']) ?? false,
     );
   }
 
@@ -45,36 +47,5 @@ class WeeklyBalanceModel extends WeeklyBalance {
       'balance': balance,
       'is_current_week': isCurrentWeek,
     };
-  }
-
-  static int? _parseInt(dynamic value) {
-    if (value == null) return null;
-    if (value is int) return value;
-    if (value is String) return int.tryParse(value);
-    if (value is double) return value.toInt();
-    return null;
-  }
-
-  static double? _parseDouble(dynamic value) {
-    if (value == null) return null;
-    if (value is double) return value;
-    if (value is int) return value.toDouble();
-    if (value is String) return double.tryParse(value);
-    return null;
-  }
-
-  static DateTime? _parseDateTime(dynamic value) {
-    if (value == null) return null;
-    if (value is DateTime) return value;
-    if (value is String) return DateTime.tryParse(value);
-    return null;
-  }
-
-  static bool? _parseBool(dynamic value) {
-    if (value == null) return null;
-    if (value is bool) return value;
-    if (value is int) return value == 1;
-    if (value is String) return value.toLowerCase() == 'true' || value == '1';
-    return null;
   }
 }

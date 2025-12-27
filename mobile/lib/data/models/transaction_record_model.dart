@@ -1,4 +1,5 @@
 import 'package:cashlytics/domain/entities/transaction_record.dart';
+import 'package:cashlytics/core/utils/date_formatter.dart';
 
 /// Data model for transactions linked to accounts.
 class TransactionRecordModel extends TransactionRecord {
@@ -34,14 +35,14 @@ class TransactionRecordModel extends TransactionRecord {
       type: map['type'] as String? ?? '',
       description: map['description'] as String?,
       currency: map['currency'] as String?,
-      createdAt: _parseDateTime(map['created_at']),
-      updatedAt: _parseDateTime(map['updated_at']),
+      createdAt: DateFormatter.parseDateTime(map['created_at']),
+      updatedAt: DateFormatter.parseDateTime(map['updated_at']),
     );
   }
 
   Map<String, dynamic> toInsert() {
     return {
-      if (id != null) 'transaction_id': id,
+      'transaction_id': id, // Always include ID (it's generated before calling this)
       'account_id': accountId,
       'name': name,
       'type': type,
@@ -53,13 +54,4 @@ class TransactionRecordModel extends TransactionRecord {
   Map<String, dynamic> toUpdate() => toInsert();
 
   Map<String, dynamic> toJson() => toUpdate();
-
-  static DateTime? _parseDateTime(dynamic raw) {
-    if (raw == null) return null;
-    if (raw is DateTime) return raw;
-    if (raw is String && raw.isNotEmpty) {
-      return DateTime.tryParse(raw);
-    }
-    return null;
-  }
 }

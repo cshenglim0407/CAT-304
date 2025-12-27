@@ -6,6 +6,7 @@ import 'package:cashlytics/domain/entities/account.dart';
 import 'package:cashlytics/domain/entities/account_transaction_view.dart';
 import 'package:cashlytics/domain/repositories/account_repository.dart';
 import 'package:cashlytics/core/config/icons.dart';
+import 'package:cashlytics/core/utils/math_formatter.dart';
 
 class AccountRepositoryImpl implements AccountRepository {
   AccountRepositoryImpl({DatabaseService? databaseService})
@@ -82,6 +83,7 @@ class AccountRepositoryImpl implements AccountRepository {
                 isExpense: false,
                 category: category,
                 icon: getIncomeIcon(category),
+                description: incomeData['description'] as String?,
               ),
             );
           }
@@ -113,6 +115,7 @@ class AccountRepositoryImpl implements AccountRepository {
                 isExpense: true,
                 category: categoryName ?? category ?? 'Expense',
                 icon: getExpenseIcon(categoryName),
+                description: expenseData['description'] as String?,
               ),
             );
           }
@@ -125,23 +128,32 @@ class AccountRepositoryImpl implements AccountRepository {
           );
 
           if (transferData != null) {
-            // Get destination account name
-            final toAccount = await _databaseService.fetchSingle(
-              'accounts',
-              matchColumn: 'account_id',
-              matchValue: transferData['to_account_id'],
-              columns: 'name',
-            );
+            // Get destination account name (nullable after ON DELETE SET NULL)
+            final String? toAccountId = transferData['to_account_id'] as String?;
+            String toAccountName = 'Account';
+            if (toAccountId != null && toAccountId.isNotEmpty) {
+              final toAccount = await _databaseService.fetchSingle(
+                'accounts',
+                matchColumn: 'account_id',
+                matchValue: toAccountId,
+                columns: 'name',
+              );
+              toAccountName = (toAccount?['name'] as String?) ?? 'Account';
+            } else {
+              toAccountName = 'Deleted account';
+            }
 
             views.add(
               AccountTransactionView(
                 transactionId: transactionId,
-                title: 'Transfer to ${toAccount?['name'] ?? 'Account'}',
+                title: 'To $toAccountName',
                 date: createdAt,
                 amount: _parseAmount(transferData['amount']),
                 isExpense: true, // Deducting from this account
                 category: 'Transfer',
-                icon: Icons.arrow_upward,
+                icon: Icons.north_east_rounded,
+                // description is stored on TRANSACTION, not TRANSFER; keep nullable
+                description: transferData['description'] as String?,
               ),
             );
           }
@@ -164,23 +176,32 @@ class AccountRepositoryImpl implements AccountRepository {
               DateTime.tryParse(tx['created_at'] as String? ?? '') ??
               DateTime.now();
 
-          // Get source account name
-          final fromAccount = await _databaseService.fetchSingle(
-            'accounts',
-            matchColumn: 'account_id',
-            matchValue: transfer['from_account_id'],
-            columns: 'name',
-          );
+          // Get source account name (nullable after ON DELETE SET NULL)
+          final String? fromAccountId = transfer['from_account_id'] as String?;
+          String fromAccountName = 'Account';
+          if (fromAccountId != null && fromAccountId.isNotEmpty) {
+            final fromAccount = await _databaseService.fetchSingle(
+              'accounts',
+              matchColumn: 'account_id',
+              matchValue: fromAccountId,
+              columns: 'name',
+            );
+            fromAccountName = (fromAccount?['name'] as String?) ?? 'Account';
+          } else {
+            fromAccountName = 'Deleted account';
+          }
 
           views.add(
             AccountTransactionView(
               transactionId: transactionId,
-              title: 'Transfer from ${fromAccount?['name'] ?? 'Account'}',
+              title: 'From $fromAccountName',
               date: createdAt,
               amount: _parseAmount(transfer['amount']),
               isExpense: false, // Adding to this account
               category: 'Transfer',
-              icon: Icons.arrow_downward,
+              icon: Icons.south_east_rounded,
+              // description is stored on TRANSACTION, not TRANSFER; keep nullable
+              description: transfer['description'] as String?,
             ),
           );
         }
@@ -198,11 +219,7 @@ class AccountRepositoryImpl implements AccountRepository {
   }
 
   double _parseAmount(dynamic value) {
-    if (value == null) return 0.0;
-    if (value is double) return value;
-    if (value is int) return value.toDouble();
-    if (value is String) return double.tryParse(value) ?? 0.0;
-    return 0.0;
+    return MathFormatter.parseDouble(value) ?? 0.0;
   }
 
   // Icon mapping moved to config/icons.dart

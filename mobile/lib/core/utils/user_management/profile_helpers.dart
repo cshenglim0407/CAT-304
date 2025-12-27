@@ -1,4 +1,5 @@
 import 'package:cashlytics/core/config/profile_constants.dart';
+import 'package:cashlytics/core/utils/string_case_formatter.dart';
 
 class ProfileHelpers {
   /// Finds a timezone item from the list using a UTC code
@@ -35,7 +36,7 @@ class ProfileHelpers {
     if (raw == null || raw.isEmpty) return null;
     final t = raw.toLowerCase();
     if (t == 'light' || t == 'dark' || t == 'system') {
-      return t[0].toUpperCase() + t.substring(1);
+      return StringCaseFormatter.toTitleCase(t);
     }
     return null;
   }
