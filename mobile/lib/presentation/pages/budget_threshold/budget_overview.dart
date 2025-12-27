@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:cashlytics/core/config/icons.dart';
 import 'package:cashlytics/core/services/supabase/client.dart';
 import 'package:cashlytics/core/services/supabase/database/database_service.dart';
+import 'package:cashlytics/core/utils/date_formatter.dart';
+import 'package:cashlytics/core/utils/math_formatter.dart';
 
 import 'package:cashlytics/data/repositories/account_repository_impl.dart';
 import 'package:cashlytics/data/repositories/budget_repository_impl.dart';
@@ -16,7 +18,6 @@ import 'package:cashlytics/presentation/widgets/index.dart';
 import 'package:cashlytics/presentation/widgets/confirm_delete_dialog.dart';
 
 import 'package:cashlytics/presentation/pages/budget_threshold/budget.dart';
-
 
 class BudgetOverviewPage extends StatefulWidget {
   const BudgetOverviewPage({super.key});
@@ -48,35 +49,6 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
     _getAccountTransactions = GetAccountTransactions(_accountRepository);
     _deleteBudget = DeleteBudget(BudgetRepositoryImpl());
     _loadBudgets();
-  }
-
-  DateTime _dateOnly(DateTime value) =>
-      DateTime(value.year, value.month, value.day);
-
-  DateTime _parseDate(dynamic raw) {
-    if (raw is DateTime) return _dateOnly(raw);
-    if (raw is String && raw.isNotEmpty) {
-      final parsed = DateTime.tryParse(raw);
-      if (parsed != null) return _dateOnly(parsed);
-    }
-    return _dateOnly(DateTime.now());
-  }
-
-  double _parseDouble(dynamic raw) {
-    if (raw == null) return 0;
-    if (raw is double) return raw;
-    if (raw is int) return raw.toDouble();
-    if (raw is String && raw.isNotEmpty) {
-      return double.tryParse(raw) ?? 0;
-    }
-    return 0;
-  }
-
-  int _daysLeft(DateTime endDate) {
-    final today = _dateOnly(DateTime.now());
-    final end = _dateOnly(endDate);
-    final diff = end.difference(today).inDays;
-    return diff < 0 ? 0 : diff;
   }
 
   Future<void> _loadBudgets() async {
@@ -140,7 +112,8 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
       for (final row in userBudgetRows) {
         final id = row['budget_id'] as String?;
         if (id != null) {
-          userBudgetMap[id] = _parseDouble(row['threshold']);
+          userBudgetMap[id] =
+              MathFormatter.parseDouble(row['threshold']) ?? 0.0;
         }
       }
 
@@ -150,7 +123,7 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
         if (id != null) {
           categoryBudgetMap[id] = {
             'expense_cat_id': row['expense_cat_id'] as String?,
-            'threshold': _parseDouble(row['threshold']),
+            'threshold': MathFormatter.parseDouble(row['threshold']) ?? 0.0,
           };
         }
       }
@@ -161,7 +134,7 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
         if (id != null) {
           accountBudgetMap[id] = {
             'account_id': row['account_id'] as String?,
-            'threshold': _parseDouble(row['threshold']),
+            'threshold': MathFormatter.parseDouble(row['threshold']) ?? 0.0,
           };
         }
       }
@@ -178,20 +151,21 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
             'accountId': acc.id,
             'category': category,
             'amount': tx.amount,
-            'date': _dateOnly(tx.date),
+            'date': DateFormatter.dateOnly(tx.date),
           });
         }
       }
 
       final items = <Map<String, dynamic>>[];
+      final now = DateFormatter.dateOnly(DateTime.now());
       for (final row in budgetRows) {
         final budgetId = row['budget_id'] as String?;
         final type = row['type'] as String?;
         if (budgetId == null || type == null) continue;
 
-        final start = _parseDate(row['date_from']);
-        final end = _parseDate(row['date_to']);
-        final daysLeft = _daysLeft(end);
+        final start = DateFormatter.parseDate(row['date_from']);
+        final end = DateFormatter.parseDate(row['date_to']);
+        final daysLeft = end.isBefore(now) ? 0 : DateFormatter.daysLeft(end);
 
         if (type == 'U') {
           final limit = userBudgetMap[budgetId];

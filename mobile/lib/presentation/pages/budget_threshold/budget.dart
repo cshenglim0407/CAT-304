@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+
 import 'package:cashlytics/core/config/icons.dart';
 import 'package:cashlytics/core/services/supabase/client.dart';
 import 'package:cashlytics/core/services/supabase/database/database_service.dart';
+import 'package:cashlytics/core/utils/date_formatter.dart';
+import 'package:cashlytics/core/utils/math_formatter.dart';
+
 import 'package:cashlytics/data/repositories/account_budget_repository_impl.dart';
 import 'package:cashlytics/data/repositories/account_repository_impl.dart';
 import 'package:cashlytics/data/repositories/budget_repository_impl.dart';
@@ -17,9 +21,11 @@ import 'package:cashlytics/domain/usecases/accounts/get_accounts.dart';
 import 'package:cashlytics/domain/usecases/budgets/upsert_budget.dart';
 import 'package:cashlytics/domain/usecases/category_budgets/upsert_category_budget.dart';
 import 'package:cashlytics/domain/usecases/user_budgets/upsert_user_budget.dart';
+
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
 import 'package:cashlytics/presentation/widgets/index.dart';
+
 import 'package:cashlytics/presentation/pages/budget_threshold/budget_overview.dart';
 
 enum BudgetType {
@@ -142,37 +148,6 @@ class _BudgetPageState extends State<BudgetPage> {
     }
   }
 
-  DateTime _dateOnly(DateTime value) =>
-      DateTime(value.year, value.month, value.day);
-
-  bool _rangesOverlap(
-    DateTime aStart,
-    DateTime aEnd,
-    DateTime bStart,
-    DateTime bEnd,
-  ) {
-    return !aEnd.isBefore(bStart) && !bEnd.isBefore(aStart);
-  }
-
-  DateTime _parseDate(dynamic raw) {
-    if (raw is DateTime) return _dateOnly(raw);
-    if (raw is String && raw.isNotEmpty) {
-      final parsed = DateTime.tryParse(raw);
-      if (parsed != null) return _dateOnly(parsed);
-    }
-    return _dateOnly(DateTime.now());
-  }
-
-  double _parseDouble(dynamic raw) {
-    if (raw == null) return 0;
-    if (raw is double) return raw;
-    if (raw is int) return raw.toDouble();
-    if (raw is String && raw.isNotEmpty) {
-      return double.tryParse(raw) ?? 0;
-    }
-    return 0;
-  }
-
   Future<double> _sumChildBudgetsForRange(
     List<Map<String, dynamic>> budgets,
     DateTime rangeStart,
@@ -181,9 +156,9 @@ class _BudgetPageState extends State<BudgetPage> {
     final matching = budgets.where((b) {
       final type = b['type'] as String?;
       if (type != 'C' && type != 'A') return false;
-      final start = _parseDate(b['date_from']);
-      final end = _parseDate(b['date_to']);
-      return _rangesOverlap(rangeStart, rangeEnd, start, end);
+      final start = DateFormatter.parseDate(b['date_from']);
+      final end = DateFormatter.parseDate(b['date_to']);
+      return DateFormatter.rangesOverlap(rangeStart, rangeEnd, start, end);
     }).toList();
 
     if (matching.isEmpty) return 0;
@@ -200,10 +175,10 @@ class _BudgetPageState extends State<BudgetPage> {
 
     double total = 0;
     for (final row in categoryRows) {
-      total += _parseDouble(row['threshold']);
+      total += MathFormatter.parseDouble(row['threshold']) ?? 0;
     }
     for (final row in accountRows) {
-      total += _parseDouble(row['threshold']);
+      total += MathFormatter.parseDouble(row['threshold']) ?? 0;
     }
     return total;
   }
@@ -303,8 +278,8 @@ class _BudgetPageState extends State<BudgetPage> {
 
     setState(() => _isSaving = true);
     try {
-      final rangeStart = _dateOnly(_selectedDateRange!.start);
-      final rangeEnd = _dateOnly(_selectedDateRange!.end);
+      final rangeStart = DateFormatter.dateOnly(_selectedDateRange!.start);
+      final rangeEnd = DateFormatter.dateOnly(_selectedDateRange!.end);
 
       final budgets = await _databaseService.fetchAll(
         'budget',
@@ -312,9 +287,9 @@ class _BudgetPageState extends State<BudgetPage> {
       );
 
       final overlapping = budgets.where((b) {
-        final start = _parseDate(b['date_from']);
-        final end = _parseDate(b['date_to']);
-        return _rangesOverlap(rangeStart, rangeEnd, start, end);
+        final start = DateFormatter.parseDate(b['date_from']);
+        final end = DateFormatter.parseDate(b['date_to']);
+        return DateFormatter.rangesOverlap(rangeStart, rangeEnd, start, end);
       }).toList();
 
       Map<String, dynamic>? overallBudget;
@@ -325,8 +300,8 @@ class _BudgetPageState extends State<BudgetPage> {
             .toList();
         if (overallBudgets.isNotEmpty) {
           overallBudgets.sort((a, b) {
-            final aDate = _parseDate(a['created_at']);
-            final bDate = _parseDate(b['created_at']);
+            final aDate = DateFormatter.parseDate(a['created_at']);
+            final bDate = DateFormatter.parseDate(b['created_at']);
             return bDate.compareTo(aDate);
           });
           overallBudget = overallBudgets.first;
@@ -340,7 +315,9 @@ class _BudgetPageState extends State<BudgetPage> {
               },
             );
             if (rows.isNotEmpty) {
-              overallThreshold = _parseDouble(rows.first['threshold']);
+              overallThreshold = MathFormatter.parseDouble(
+                rows.first['threshold'],
+              );
             }
           }
         }
@@ -349,9 +326,16 @@ class _BudgetPageState extends State<BudgetPage> {
       if (_selectedType != BudgetType.user &&
           overallBudget != null &&
           overallThreshold != null) {
-        final overallStart = _parseDate(overallBudget['date_from']);
-        final overallEnd = _parseDate(overallBudget['date_to']);
-        if (_rangesOverlap(rangeStart, rangeEnd, overallStart, overallEnd)) {
+        final overallStart = DateFormatter.parseDate(
+          overallBudget['date_from'],
+        );
+        final overallEnd = DateFormatter.parseDate(overallBudget['date_to']);
+        if (DateFormatter.rangesOverlap(
+          rangeStart,
+          rangeEnd,
+          overallStart,
+          overallEnd,
+        )) {
           final existingTotal = await _sumChildBudgetsForRange(
             budgets,
             overallStart,
