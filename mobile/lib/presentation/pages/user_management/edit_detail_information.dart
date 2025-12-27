@@ -3,10 +3,14 @@ import 'package:flutter/services.dart';
 
 import 'package:cashlytics/core/config/detailed_constants.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
+import 'package:cashlytics/core/utils/user_management/profile_helpers.dart';
+import 'package:cashlytics/core/utils/currency_input_formatter.dart';
+
 import 'package:cashlytics/domain/repositories/detailed_repository.dart';
 import 'package:cashlytics/data/repositories/detailed_repository_impl.dart';
 import 'package:cashlytics/domain/entities/detailed.dart';
 import 'package:cashlytics/domain/usecases/detailed/upsert_detailed.dart';
+
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
 import 'package:cashlytics/presentation/widgets/index.dart';
@@ -220,13 +224,15 @@ class _EditDetailInformationPageState extends State<EditDetailInformationPage> {
                 const SizedBox(height: 16),
 
                 // --- Estimated Loan ---
-                const FormLabel(label: "Estimated Loan (RM)"),
+                FormLabel(
+                  label:
+                      "Estimated Loan (${ProfileHelpers.getUserCurrencyPref()})",
+                ),
                 CustomTextFormField(
                   controller: _loanController,
                   hint: "e.g. 12000",
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [CurrencyInputFormatter()],
                   validator: (value) {
                     if (value != null && value.isNotEmpty) {
                       if (double.tryParse(value) == null) {

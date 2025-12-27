@@ -1,11 +1,13 @@
 import 'dart:async';
 
-import 'package:cashlytics/core/utils/math_formatter.dart';
-import 'package:cashlytics/core/utils/string_case_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'package:cashlytics/core/utils/math_formatter.dart';
+import 'package:cashlytics/core/utils/string_case_formatter.dart';
+import 'package:cashlytics/core/utils/user_management/profile_helpers.dart';
 
 import 'package:cashlytics/core/config/detailed_constants.dart';
 import 'package:cashlytics/core/services/supabase/auth/auth_service.dart';
@@ -253,7 +255,7 @@ class _ProfilePageState extends State<ProfilePage> {
   String _employmentStatus = "N/A";
   String _maritalStatus = "N/A";
   String _dependentNumber = "0";
-  String _estimatedLoan = "RM 0";
+  String _estimatedLoan = "${ProfileHelpers.getUserCurrencyPref()}0";
 
   Future<void> _fetchDetailedInfo() async {
     try {

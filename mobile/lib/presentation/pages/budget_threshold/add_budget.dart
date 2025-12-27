@@ -1,3 +1,4 @@
+import 'package:cashlytics/core/utils/user_management/profile_helpers.dart';
 import 'package:flutter/material.dart';
 
 import 'package:cashlytics/core/config/icons.dart';
@@ -620,7 +621,7 @@ class _BudgetPageState extends State<BudgetPage> {
                                         fontSize: 42,
                                       ),
                                       decoration: InputDecoration(
-                                        prefixText: "RM ",
+                                        prefixText: ProfileHelpers.getUserCurrencyPref(),
                                         prefixStyle: AppTypography.headline1
                                             .copyWith(
                                               color: AppColors.grey,
