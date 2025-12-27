@@ -1,4 +1,4 @@
-import 'package:cashlytics/core/utils/math_formatter.dart';
+import 'package:cashlytics/core/utils/date_formatter.dart';
 import 'package:cashlytics/domain/entities/budget.dart';
 
 /// Data model for budgets.
@@ -28,9 +28,9 @@ class BudgetModel extends Budget {
       id: map['budget_id'] as String?,
       userId: map['user_id'] as String? ?? '',
       type: map['type'] as String? ?? '',
-      dateFrom: MathFormatter.parseDateTime(map['date_from']) ?? DateTime.now(),
-      dateTo: MathFormatter.parseDateTime(map['date_to']) ?? DateTime.now(),
-      createdAt: MathFormatter.parseDateTime(map['created_at']),
+      dateFrom: DateFormatter.parseDateTime(map['date_from']) ?? DateTime.now(),
+      dateTo: DateFormatter.parseDateTime(map['date_to']) ?? DateTime.now(),
+      createdAt: DateFormatter.parseDateTime(map['created_at']),
     );
   }
 

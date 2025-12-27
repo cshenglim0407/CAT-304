@@ -1,5 +1,5 @@
 import 'package:cashlytics/domain/entities/transaction_record.dart';
-import 'package:cashlytics/core/utils/math_formatter.dart';
+import 'package:cashlytics/core/utils/date_formatter.dart';
 
 /// Data model for transactions linked to accounts.
 class TransactionRecordModel extends TransactionRecord {
@@ -35,8 +35,8 @@ class TransactionRecordModel extends TransactionRecord {
       type: map['type'] as String? ?? '',
       description: map['description'] as String?,
       currency: map['currency'] as String?,
-      createdAt: MathFormatter.parseDateTime(map['created_at']),
-      updatedAt: MathFormatter.parseDateTime(map['updated_at']),
+      createdAt: DateFormatter.parseDateTime(map['created_at']),
+      updatedAt: DateFormatter.parseDateTime(map['updated_at']),
     );
   }
 

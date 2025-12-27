@@ -1,4 +1,5 @@
-import 'package:cashlytics/core/utils/math_formatter.dart';
+import 'package:cashlytics/core/utils/date_formatter.dart';
+
 import 'package:cashlytics/domain/entities/ai_report.dart';
 
 /// Data model for AI financial health reports.
@@ -36,7 +37,7 @@ class AiReportModel extends AiReport {
       body: map['body'] as String?,
       month: map['month'] as String?,
       healthScore: map['health_score'] as int?,
-      createdAt: MathFormatter.parseDateTime(map['created_at']),
+      createdAt: DateFormatter.parseDateTime(map['created_at']),
     );
   }
 

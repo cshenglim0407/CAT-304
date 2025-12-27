@@ -1,4 +1,5 @@
 import 'package:cashlytics/core/utils/math_formatter.dart';
+import 'package:cashlytics/core/utils/date_formatter.dart';
 import 'package:cashlytics/domain/entities/detailed.dart';
 
 /// Data model for detailed user information. Converts between Supabase rows and domain entity.
@@ -38,8 +39,8 @@ class DetailedModel extends Detailed {
       maritalStatus: map['marital_stat'] as String?,
       dependentNumber: map['dependent_num'] as int? ?? 0,
       estimatedLoan: MathFormatter.parseDouble(map['estimated_loan']) ?? 0.0,
-      createdAt: MathFormatter.parseDateTime(map['created_at']),
-      updatedAt: MathFormatter.parseDateTime(map['updated_at']),
+      createdAt: DateFormatter.parseDateTime(map['created_at']),
+      updatedAt: DateFormatter.parseDateTime(map['updated_at']),
     );
   }
 

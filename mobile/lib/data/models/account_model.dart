@@ -1,5 +1,6 @@
 import 'package:cashlytics/domain/entities/account.dart';
 import 'package:cashlytics/core/utils/math_formatter.dart';
+import 'package:cashlytics/core/utils/date_formatter.dart';
 
 /// Data model for account rows.
 class AccountModel extends Account {
@@ -38,8 +39,8 @@ class AccountModel extends Account {
       initialBalance: MathFormatter.parseDouble(map['initial_balance']) ?? 0.0,
       currentBalance: MathFormatter.parseDouble(map['current_balance']) ?? 0.0,
       description: map['description'] as String?,
-      createdAt: MathFormatter.parseDateTime(map['created_at']),
-      updatedAt: MathFormatter.parseDateTime(map['updated_at']),
+      createdAt: DateFormatter.parseDateTime(map['created_at']),
+      updatedAt: DateFormatter.parseDateTime(map['updated_at']),
     );
   }
 
