@@ -628,6 +628,7 @@ class _AccountPageState extends State<AccountPage> {
       // Update caches to persist changes
       CacheService.save('accounts', _myAccounts);
       CacheService.save('transactions', _getSanitizedTransactions());
+      CacheService.remove('budgets_cache');
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1173,6 +1174,7 @@ class _AccountPageState extends State<AccountPage> {
       // Update caches to persist changes
       CacheService.save('accounts', _myAccounts);
       CacheService.save('transactions', _getSanitizedTransactions());
+      CacheService.remove('budgets_cache');
 
       try {
         await _persistEditedTransaction(
@@ -1612,6 +1614,7 @@ class _AccountPageState extends State<AccountPage> {
       // Save changes to cache
       CacheService.save('transactions', _getSanitizedTransactions());
       CacheService.save('accounts', _myAccounts);
+      CacheService.remove('budgets_cache');
 
       if (!mounted) return;
 
@@ -2315,6 +2318,7 @@ class _AccountPageState extends State<AccountPage> {
                             'transactions',
                             _getSanitizedTransactions(),
                           );
+                          CacheService.remove('budgets_cache');
 
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -2614,6 +2618,7 @@ class _AccountPageState extends State<AccountPage> {
                                   'transactions',
                                   _allTransactions,
                                 );
+                                CacheService.remove('budgets_cache');
 
                                 if (ctx.mounted) {
                                   Navigator.pop(ctx); // Close bottom sheet only
@@ -2752,6 +2757,7 @@ class _AccountPageState extends State<AccountPage> {
         });
         CacheService.save('accounts', _myAccounts);
         CacheService.save('transactions', _getSanitizedTransactions());
+        CacheService.remove('budgets_cache');
       }
 
       // After deleting the account, remove any orphan transfer transactions
