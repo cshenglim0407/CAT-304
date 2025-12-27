@@ -252,7 +252,8 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
   }
 
   List<Map<String, dynamic>> _getSanitizedBudgets(
-      List<Map<String, dynamic>> budgets) {
+    List<Map<String, dynamic>> budgets,
+  ) {
     return budgets.map((budget) {
       final sanitized = Map<String, dynamic>.from(budget);
       sanitized.remove('icon'); // Remove IconData
@@ -358,6 +359,13 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
     const Color errorColor = Color(0xFFE02020);
     const Color greyText = Color(0xFF757575);
 
+    final activeBudgets = _filteredBudgets
+        .where((b) => (b['days_left'] as int) > 0)
+        .toList();
+    final expiredBudgets = _filteredBudgets
+        .where((b) => (b['days_left'] as int) <= 0)
+        .toList();
+
     return Scaffold(
       backgroundColor: surfaceColor,
       appBar: AppBar(
@@ -416,25 +424,64 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
                             style: TextStyle(color: greyText),
                           ),
                         )
-                      : ListView.builder(
+                      : ListView(
                           padding: const EdgeInsets.fromLTRB(
                             pageMargin,
                             16,
                             pageMargin,
                             100,
                           ),
-                          itemCount: _filteredBudgets.length,
-                          itemBuilder: (context, index) {
-                            final budget = _filteredBudgets[index];
-                            return _buildBudgetCard(
-                              budget,
-                              index,
-                              primaryColor,
-                              warningColor,
-                              errorColor,
-                              greyText,
-                            );
-                          },
+                          children: [
+                            if (activeBudgets.isNotEmpty) ...[
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: Text(
+                                  "Active",
+                                  style: TextStyle(
+                                    color: AppColors.getTextPrimary(context),
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              ...activeBudgets.map(
+                                (budget) => _buildBudgetCard(
+                                  budget,
+                                  0,
+                                  primaryColor,
+                                  warningColor,
+                                  errorColor,
+                                  greyText,
+                                ),
+                              ),
+                            ],
+                            if (activeBudgets.isNotEmpty &&
+                                expiredBudgets.isNotEmpty)
+                              const SizedBox(height: 24),
+                            if (expiredBudgets.isNotEmpty) ...[
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: Text(
+                                  "Expired",
+                                  style: TextStyle(
+                                    color: AppColors.getTextPrimary(context),
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              ...expiredBudgets.map(
+                                (budget) => _buildBudgetCard(
+                                  budget,
+                                  0,
+                                  primaryColor,
+                                  warningColor,
+                                  errorColor,
+                                  greyText,
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                 ),
               ],
@@ -558,7 +605,11 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
                     if ((budget['days_left'] as int) <= 0)
                       Row(
                         children: [
-                          Icon(Icons.error_outline, size: 14, color: error), // Alert Icon
+                          Icon(
+                            Icons.error_outline,
+                            size: 14,
+                            color: error,
+                          ), // Alert Icon
                           const SizedBox(width: 4),
                           Text(
                             'Expired',
