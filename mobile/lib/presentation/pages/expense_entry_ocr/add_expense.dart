@@ -292,7 +292,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
       _pendingReceipt = Receipt(
         id: null,
         transactionId: '', // Placeholder
-        merchantName: result.merchant,
+        merchantName: '', // Placeholder
         confidenceScore: result.confidence,
         ocrRawText: result.rawText,
         path: storagePath,
@@ -300,25 +300,10 @@ class _AddExpensePageState extends State<AddExpensePage> {
       );
 
       setState(() {
-        // Transaction name
-        if (result.merchant != null) {
-          _transactionNameController.text = result.merchant!;
-        }
-
-        // Date
-        if (result.date != null) {
-          _selectedDate = result.date!;
-        }
-
-        // Item total → qty & price
-        if (result.total != null && _items.isNotEmpty) {
-          _items[0]['qty']?.text = '1';
-          _items[0]['price']?.text = result.total!.toStringAsFixed(2);
-        }
-
-        // Confidence (always update)
         _lastOcrConfidence = result.confidence;
+        _pendingReceipt = _pendingReceipt;
       });
+
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
