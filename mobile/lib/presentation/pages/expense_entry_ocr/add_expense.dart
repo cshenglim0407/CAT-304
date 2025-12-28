@@ -57,9 +57,6 @@ class _AddExpensePageState extends State<AddExpensePage> {
   DateTime _selectedDate = DateTime.now();
   bool _isScanning = false;
   double? _lastOcrConfidence;
-  bool _nameEdited = false;
-  bool _dateEdited = false;
-  bool _itemEdited = false;
   Receipt? _pendingReceipt;
   String? _existingReceiptUrl;
   bool _isLoadingReceipt = false;
@@ -197,16 +194,6 @@ class _AddExpensePageState extends State<AddExpensePage> {
     qtyParams.addListener(_calculateTotal);
     priceParams.addListener(_calculateTotal);
 
-    qtyParams.addListener(() {
-      final hasValue = qtyParams.text.trim().isNotEmpty;
-      _itemEdited = hasValue;
-    });
-
-    priceParams.addListener(() {
-      final hasValue = priceParams.text.trim().isNotEmpty;
-      _itemEdited = hasValue;
-    });
-
     setState(() {
       _items.add({'name': nameParams, 'qty': qtyParams, 'price': priceParams});
     });
@@ -269,21 +256,11 @@ class _AddExpensePageState extends State<AddExpensePage> {
     if (picked != null) {
       setState(() {
         _selectedDate = picked;
-        _dateEdited = true;
       });
     }
   }
 
   Future<void> _scanReceiptAndPrefill() async {
-    // Allow OCR to refill if fields are empty
-    if (_transactionNameController.text.trim().isEmpty) {
-      _nameEdited = false;
-    }
-
-    if (_items.isNotEmpty && _items[0]['price']!.text.trim().isEmpty) {
-      _itemEdited = false;
-    }
-
     if (_isScanning) return;
 
     final image = await ReceiptPicker.pickReceipt();
@@ -322,19 +299,17 @@ class _AddExpensePageState extends State<AddExpensePage> {
 
       setState(() {
         // Transaction name
-        if (!_nameEdited &&
-            result.merchant != null &&
-            _transactionNameController.text.isEmpty) {
+        if (result.merchant != null) {
           _transactionNameController.text = result.merchant!;
         }
 
         // Date
-        if (!_dateEdited && result.date != null) {
+        if (result.date != null) {
           _selectedDate = result.date!;
         }
 
         // Item total → qty & price
-        if (!_itemEdited && result.total != null && _items.isNotEmpty) {
+        if (result.total != null && _items.isNotEmpty) {
           _items[0]['qty']?.text = '1';
           _items[0]['price']?.text = result.total!.toStringAsFixed(2);
         }
@@ -652,9 +627,6 @@ class _AddExpensePageState extends State<AddExpensePage> {
             const FormLabel(label: "Name", useGreyStyle: true),
             TextField(
               controller: _transactionNameController,
-              onChanged: (value) {
-                _nameEdited = value.trim().isNotEmpty;
-              },
               decoration: CustomInputDecoration.simple(
                 "e.g. Weekly Groceries",
                 fieldColor,
