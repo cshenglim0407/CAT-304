@@ -28,18 +28,6 @@ WHERE EMAIL = 'bobsmith@example.com';
 
 
 INSERT INTO
-    BIOMETRICS (TEMPLATE_DATA, ALGO_VERSION, DEVICE_ID, DEVICE_NAME, TYPE, USER_ID)
-VALUES
-('template_fingerprint_johndoe_device_001', 'v1.0', 'device_001', 'Fingerprint Scanner A', 'fingerprint',
-    (SELECT USER_ID FROM APP_USERS WHERE EMAIL = 'johndoe@example.com')),
-('template_face_johndoe_device_001', 'v1.0', 'device_001', 'Face Detector A', 'face',
-    (SELECT USER_ID FROM APP_USERS WHERE EMAIL = 'johndoe@example.com')),
-('template_fingerprint_janedoe_device_002', 'v1.0', 'device_002', 'Fingerprint Scanner B', 'fingerprint',
-    (SELECT USER_ID FROM APP_USERS WHERE EMAIL = 'janedoe@example.com')),
-('template_face_bobsmith_device_003', 'v1.0', 'device_003', 'Face Detector C', 'face',
-    (SELECT USER_ID FROM APP_USERS WHERE EMAIL = 'bobsmith@example.com'));
-
-INSERT INTO
     ACCOUNTS (NAME, TYPE, INITIAL_BALANCE, DESCRIPTION, USER_ID)
 VALUES
 ('Cash Wallet', 'CASH', 1000.00, 'Personal cash wallet', 

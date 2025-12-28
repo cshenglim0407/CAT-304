@@ -1,7 +1,6 @@
 -- Clear existing data from all tables to ensure a clean slate
 TRUNCATE TABLE
     APP_USERS,
-    BIOMETRICS,
     ACCOUNTS,
     TRANSACTION,
     TRANSFER,
