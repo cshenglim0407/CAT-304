@@ -2050,8 +2050,6 @@ class _ExpenseDistributionCardState extends State<_ExpenseDistributionCard> {
             'amount, expense_cat_id, expense_category:expense_cat_id(name), transaction!expenses_transaction_id_fkey(created_at, account:account_id(user_id))',
           );
 
-      debugPrint('[ExpenseDistribution] Raw response: $expenseResponse');
-
       // Filter in Dart for date range and user_id due to potential RLS constraints
       final Map<String, double> totalsByCategory = {};
 
@@ -2090,8 +2088,6 @@ class _ExpenseDistributionCardState extends State<_ExpenseDistributionCard> {
             (map['expense_category']?['name'] as String?) ?? 'Uncategorized';
         totalsByCategory[catName] = (totalsByCategory[catName] ?? 0) + amount;
       }
-
-      debugPrint('[ExpenseDistribution] Totals by category: $totalsByCategory');
 
       final sorted = totalsByCategory.entries.toList()
         ..sort((a, b) => b.value.compareTo(a.value));
