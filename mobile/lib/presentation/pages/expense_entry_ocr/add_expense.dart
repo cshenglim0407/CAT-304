@@ -370,7 +370,6 @@ class _AddExpensePageState extends State<AddExpensePage> {
         _lastOcrConfidence = result.confidence;
         _pendingReceipt = _pendingReceipt;
       });
-
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -412,13 +411,10 @@ class _AddExpensePageState extends State<AddExpensePage> {
   void _viewExistingReceipt() {
     if (_existingReceiptUrl == null) return;
 
-    showDialog(
-      context: context,
-      builder: (_) => Dialog(
-        insetPadding: const EdgeInsets.all(16),
-        child: InteractiveViewer(
-          child: Image.network(_existingReceiptUrl!, fit: BoxFit.contain),
-        ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ReceiptPreviewPage(imageUrl: _existingReceiptUrl!),
       ),
     );
   }
@@ -647,11 +643,11 @@ class _AddExpensePageState extends State<AddExpensePage> {
               ),
 
             if (_existingReceiptUrl != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
+              SizedBox(
+                width: double.infinity,
                 child: OutlinedButton.icon(
                   icon: const Icon(Icons.receipt_long),
-                  label: const Text('View Receipt'),
+                  label: const Text("View Receipt"),
                   onPressed: _viewExistingReceipt,
                 ),
               ),
