@@ -7,58 +7,82 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 /// Gemini API client for generating financial insights
 class GeminiClient {
   late final String _apiKey;
-  final String _baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent';
+  final String _baseUrl =
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent';
   final Duration _timeout = const Duration(seconds: 45);
 
   GeminiClient() {
     _apiKey = dotenv.env['AI_INSIGHT_GEMINI_API'] ?? '';
     if (_apiKey.isEmpty) {
-      throw Exception('AI_INSIGHT_GEMINI_API not configured in environment variables');
+      throw Exception(
+        'AI_INSIGHT_GEMINI_API not configured in environment variables',
+      );
     }
   }
 
+  String sanitizeForUtf8(String input) {
+    final out = <int>[];
+
+    for (final u in input.codeUnits) {
+      if (u >= 0xD800 && u <= 0xDFFF) continue; // surrogates
+      if (u == 0x0000) continue; // NULL
+      if (u < 0x20 && u != 0x09 && u != 0x0A && u != 0x0D) continue;
+      out.add(u);
+    }
+
+    return String.fromCharCodes(out)
+        .replaceAll('\uFEFF', '')
+        .replaceAll('\u200B', '')
+        .replaceAll('\u200C', '')
+        .replaceAll('\u200D', '')
+        .replaceAll('•', '.');
+  }
+
   /// Generate financial insights from a prompt
-  /// 
+  ///
   /// Returns the parsed JSON response from Gemini API
   /// Throws an exception if the API call fails
   Future<Map<String, dynamic>> generateInsights(String prompt) async {
+    HttpClient? httpClient;
     try {
-      final httpClient = HttpClient();
-      httpClient.connectionTimeout = _timeout;
+      final safePrompt = sanitizeForUtf8(prompt);
+
+      httpClient = HttpClient()..connectionTimeout = _timeout;
 
       final uri = Uri.parse('$_baseUrl?key=$_apiKey');
       final request = await httpClient.postUrl(uri);
 
-      request.headers.set('Content-Type', 'application/json');
+      request.headers.set('Content-Type', 'application/json; charset=utf-8');
 
       final payload = {
         'contents': [
           {
             'parts': [
-              {'text': prompt}
-            ]
-          }
-        ]
+              {'text': safePrompt},
+            ],
+          },
+        ],
       };
 
-      request.write(jsonEncode(payload));
+      request.write(jsonEncode(payload)); // ✅ SAFE NOW
+
       final response = await request.close().timeout(_timeout);
+      final responseBody = await response.transform(utf8.decoder).join();
 
       if (response.statusCode != 200) {
         debugPrint('Gemini API error status: ${response.statusCode}');
+        debugPrint('Gemini API error body: $responseBody');
         throw Exception('Gemini API error: ${response.statusCode}');
       }
 
-      final body = await response.transform(utf8.decoder).join();
-      final jsonResponse = jsonDecode(body) as Map<String, dynamic>;
-
-      httpClient.close();
-
+      final jsonResponse = jsonDecode(responseBody) as Map<String, dynamic>;
       debugPrint('[GeminiClient] Response received successfully');
       return jsonResponse;
     } catch (e) {
       debugPrint('[GeminiClient] Error: $e');
       rethrow;
+    } finally {
+      httpClient?.close(force: true);
     }
   }
 
