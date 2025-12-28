@@ -49,13 +49,16 @@ async def ocr_receipt(receipt: UploadFile = File(...)):
                 "raw_response": result
             })
 
-        parsed_text = result["ParsedResults"][0].get("ParsedText", "")
+        parsed_result = result["ParsedResults"][0]
+        parsed_text = parsed_result.get("ParsedText", "")
+        confidence = parsed_result.get("Confidence")
 
         return {
             "success": True,
             "filename": receipt.filename,
             "scanned_at": datetime.now(timezone.utc).isoformat(),
-            "ocr_raw_text": parsed_text
+            "ocr_raw_text": parsed_text,
+            "confidence": confidence
         }
     except Exception as e:
         traceback.print_exc()

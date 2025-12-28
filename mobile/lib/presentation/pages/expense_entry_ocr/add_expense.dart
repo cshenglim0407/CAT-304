@@ -368,7 +368,9 @@ class _AddExpensePageState extends State<AddExpensePage> {
 
         // Confidence (always update)
         _lastOcrConfidence = result.confidence;
+        _pendingReceipt = _pendingReceipt;
       });
+
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
