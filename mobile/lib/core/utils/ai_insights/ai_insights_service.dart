@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cashlytics/domain/entities/account.dart';
 import 'package:flutter/foundation.dart';
 
@@ -63,8 +65,10 @@ class AiInsightsService {
           return existing;
         }
       } else {
-        final existingForMonth =
-            await _aiReportRepository.getReportByMonth(user.id, monthKey);
+        final existingForMonth = await _aiReportRepository.getReportByMonth(
+          user.id,
+          monthKey,
+        );
         if (existingForMonth?.id != null) {
           debugPrint(
             '[AiInsightsService] Deleting existing report ${existingForMonth!.id} for $monthKey before regeneration',
@@ -174,6 +178,52 @@ class AiInsightsService {
     }
   }
 
+  /// Parse raw OCR text into structured JSON using Gemini
+  Future<Map<String, dynamic>> parseReceipt(String rawText) async {
+    try {
+      final prompt = _buildReceiptPrompt(rawText);
+      debugPrint(
+        '[AiInsightsService] Sending receipt parsing prompt to Gemini',
+      );
+      debugPrint(prompt);
+
+      final geminiResponse = await _geminiClient.generateInsights(prompt);
+      final responseText = GeminiClient.extractResponseText(geminiResponse);
+
+      debugPrint('[AiInsightsService] Gemini receipt response: $responseText');
+
+      // Clean up markdown code blocks if present (e.g. ```json ... ```)
+      final cleanJson = responseText
+          .replaceAll(RegExp(r'^```json\s*', multiLine: true), '')
+          .replaceAll(RegExp(r'^```\s*', multiLine: true), '')
+          .trim();
+
+      return json.decode(cleanJson) as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint('[AiInsightsService] Receipt parsing failed: $e');
+      return {};
+    }
+  }
+
+  String _buildReceiptPrompt(String rawText) {
+    return '''
+$rawText
+
+structure this into json response of
+
+{
+  "name": "Merchant Name",
+  "description": "Brief description of items",
+  "date": "DD/MM/YYYY",
+  "items": [
+    { "item_name": "Item Name", "qty": "1", "unit_price": "0.00" },
+    ... (include tax as one of the items)
+  ],
+  "total_price": "0.00"
+}
+''';
+  }
+
   /// Build the complete Gemini prompt
   String _buildGeminiPrompt({
     required dynamic user,
@@ -241,7 +291,9 @@ class AiInsightsService {
       for (final r in sortedPrev) {
         final score = r.healthScore ?? -1;
         final month = r.month ?? 'unknown';
-        buffer.writeln('- Month: $month, HealthScore: ${score >= 0 ? score : 'n/a'}');
+        buffer.writeln(
+          '- Month: $month, HealthScore: ${score >= 0 ? score : 'n/a'}',
+        );
         // Include concise insights summary if available
         if ((r.insights ?? '').isNotEmpty) {
           buffer.writeln('  Insights: ${r.insights}');

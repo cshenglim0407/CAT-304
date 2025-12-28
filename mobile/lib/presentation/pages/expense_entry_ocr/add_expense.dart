@@ -7,6 +7,7 @@ import 'package:cashlytics/core/utils/currency_input_formatter.dart';
 import 'package:cashlytics/core/utils/income_expense_management/income_expense_helpers.dart';
 import 'package:cashlytics/core/services/ocr/ocr_service.dart';
 import 'package:cashlytics/core/utils/budget_threshold/receipt_picker.dart';
+import 'package:cashlytics/core/utils/ai_insights/ai_insights_service.dart';
 
 import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
@@ -286,34 +287,83 @@ class _AddExpensePageState extends State<AddExpensePage> {
         receiptId: receiptId,
       );
 
-      debugPrint("response: $result");
+      // Use AI to parse the raw text
+      Map<String, dynamic> aiData = {};
+      if (result.rawText != null && result.rawText!.isNotEmpty) {
+        try {
+          aiData = await AiInsightsService().parseReceipt(result.rawText!);
+        } catch (e) {
+          debugPrint("AI Parsing failed: $e");
+        }
+      }
 
       // Build pending domain entity
       _pendingReceipt = Receipt(
         id: null,
         transactionId: '', // Placeholder
-        merchantName: result.merchant,
+        path: storagePath,
+        merchantName: '', // Placeholder
         confidenceScore: result.confidence,
         ocrRawText: result.rawText,
-        path: storagePath,
         scannedAt: DateTime.now(),
       );
 
       setState(() {
         // Transaction name
-        if (result.merchant != null) {
+        if (aiData['name'] != null && aiData['name'].toString().isNotEmpty) {
+          _transactionNameController.text = aiData['name'];
+        } else if (result.merchant != null) {
           _transactionNameController.text = result.merchant!;
         }
 
+        // Description
+        if (aiData['description'] != null) {
+          _descriptionController.text = aiData['description'];
+        }
+
         // Date
-        if (result.date != null) {
+        if (aiData['date'] != null) {
+          try {
+            // Expected format: DD/MM/YYYY
+            final parts = aiData['date'].toString().split('/');
+            if (parts.length == 3) {
+              _selectedDate = DateTime(
+                int.parse(parts[2]), // Year
+                int.parse(parts[1]), // Month
+                int.parse(parts[0]), // Day
+              );
+            }
+          } catch (_) {
+            // Fallback if parsing fails
+          }
+        } else if (result.date != null) {
           _selectedDate = result.date!;
         }
 
-        // Item total → qty & price
-        if (result.total != null && _items.isNotEmpty) {
+        // Items
+        if (aiData['items'] != null && (aiData['items'] as List).isNotEmpty) {
+          // Clear existing items properly
+          for (var item in _items) {
+            item['name']?.dispose();
+            item['qty']?.dispose();
+            item['price']?.dispose();
+          }
+          _items.clear();
+
+          for (var item in (aiData['items'] as List)) {
+            _addNewItem();
+            final idx = _items.length - 1;
+            _items[idx]['name']!.text = item['item_name']?.toString() ?? '';
+            _items[idx]['qty']!.text = item['qty']?.toString() ?? '1';
+            _items[idx]['price']!.text =
+                item['unit_price']?.toString() ?? '0.00';
+          }
+          _calculateTotal();
+        } else if (result.total != null && _items.isNotEmpty) {
+          // Fallback to basic OCR total if AI fails to get items
           _items[0]['qty']?.text = '1';
           _items[0]['price']?.text = result.total!.toStringAsFixed(2);
+          _calculateTotal();
         }
 
         // Confidence (always update)
