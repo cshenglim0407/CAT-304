@@ -1,6 +1,5 @@
 -- Enable RLS on all tables
 ALTER TABLE public.APP_USERS ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.BIOMETRICS ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ACCOUNTS ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.TRANSACTION ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.TRANSFER ENABLE ROW LEVEL SECURITY;
@@ -29,21 +28,6 @@ CREATE POLICY "Users can update own profile" ON public.APP_USERS
     FOR UPDATE USING (auth.uid() = USER_ID);
 
 CREATE POLICY "Users can delete own profile" ON public.APP_USERS
-    FOR DELETE USING (auth.uid() = USER_ID);
-
--- ==============================================
--- BIOMETRICS Policies
--- ==============================================
-CREATE POLICY "Users can view own biometrics" ON public.BIOMETRICS
-    FOR SELECT USING (auth.uid() = USER_ID);
-
-CREATE POLICY "Users can insert own biometrics" ON public.BIOMETRICS
-    FOR INSERT WITH CHECK (auth.uid() = USER_ID);
-
-CREATE POLICY "Users can update own biometrics" ON public.BIOMETRICS
-    FOR UPDATE USING (auth.uid() = USER_ID);
-
-CREATE POLICY "Users can delete own biometrics" ON public.BIOMETRICS
     FOR DELETE USING (auth.uid() = USER_ID);
 
 -- ==============================================

@@ -9,7 +9,7 @@
 3. Set your OCR.Space key (PowerShell): `$env:OCR_SPACE_API_KEY="your_key_here"` (or add a `.env` file next to this README).
 4. Install deps: `pip install -r requirements.txt`.
 5. Start the server: `uvicorn main:app --reload --host 0.0.0.0 --port 8000`.
-6. Health check: `curl http://127.0.0.1:8000/`.
+6. Health check: `curl http://127.0.0.1:8000/health`.
 7. OCR example: `curl -F "receipt=@/absolute/path/to/receipt.jpg" http://127.0.0.1:8000/ocr`.
 
 ### Deployment (Docker)
@@ -25,9 +25,23 @@
 3. **Deploy to Cloud (Render/Railway)**:
    - Push code to Git. Connect repo to provider. Set `OCR_SPACE_API_KEY` env var.
 
-### Endpoint
+### Base Endpoint
 
+```
+GET /
+```
+
+### Health Check
+
+```
+GET /health
+```
+
+### OCR Endpoint
+
+```
 POST /ocr
+```
 
 ### Request
 
@@ -36,15 +50,14 @@ POST /ocr
 
 ### Response (success)
 
+```
 {
-"success": true,
-"merchant_name": string | null,
-"total_amount": number | null,
-"expense_date": string | null,
-"confidence_score": number,
-"scanned_at": string (ISO),
-"ocr_raw_text": string
+   "success": true,
+   "filename": string,
+   "scanned_at": string (ISO),
+   "ocr_raw_text": string
 }
+```
 
 ### Notes
 

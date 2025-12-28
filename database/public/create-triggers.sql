@@ -46,7 +46,6 @@ CREATE TRIGGER trigger_init_account_current_balance
 -- Updates the UPDATED_AT column to the current timestamp before any update operation. 
 ---
 
-DROP TRIGGER IF EXISTS trg_update_biometrics_timestamp ON BIOMETRICS;
 DROP TRIGGER IF EXISTS trg_update_accounts_timestamp ON ACCOUNTS;
 DROP TRIGGER IF EXISTS trg_update_transaction_timestamp ON TRANSACTION;
 DROP TRIGGER IF EXISTS trg_update_detailed_timestamp ON DETAILED;
@@ -59,10 +58,6 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SET search_path = public;
-
-CREATE TRIGGER trg_update_biometrics_timestamp
-BEFORE UPDATE ON BIOMETRICS
-FOR EACH ROW EXECUTE FUNCTION update_timestamp();
 
 CREATE TRIGGER trg_update_accounts_timestamp
 BEFORE UPDATE ON ACCOUNTS
