@@ -2,11 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:cashlytics/core/utils/user_management/profile_helpers.dart';
 
 class CustomInputDecoration {
-  static InputDecoration simple(String hint, Color fillColor) {
+  static InputDecoration simple(
+    String hint,
+    Color fillColor, {
+    bool isCurrencyInput = false,
+  }) {
     return InputDecoration(
       hintText: hint,
       hintStyle: const TextStyle(color: Colors.grey),
-      prefixText: '${ProfileHelpers.getUserCurrencyPref()} ',
+      prefixText: isCurrencyInput
+          ? '${ProfileHelpers.getUserCurrencyPref()} '
+          : null,
       filled: true,
       fillColor: fillColor,
       border: OutlineInputBorder(

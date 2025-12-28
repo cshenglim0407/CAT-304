@@ -918,6 +918,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                       decoration: CustomInputDecoration.simple(
                         "0.00",
                         fieldColor,
+                        isCurrencyInput: true,
                       ),
                     ),
                   ],
