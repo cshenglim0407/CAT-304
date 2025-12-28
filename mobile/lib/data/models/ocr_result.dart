@@ -2,14 +2,14 @@ class OcrResult {
   final String? merchant;
   final double? total;
   final DateTime? date;
-  final double confidence;
+  final double? confidence;
   final String? rawText;
 
   OcrResult({
     this.merchant,
     this.total,
     this.date,
-    required this.confidence,
+    this.confidence,
     this.rawText,
   });
 
@@ -22,7 +22,7 @@ class OcrResult {
       date: json['expense_date'] != null
           ? DateTime.tryParse(json['expense_date'])
           : null,
-      confidence: (json['confidence_score'] as num?)?.toDouble() ?? 0.0,
+      confidence: (json['confidence_score'] as num?)?.toDouble(),
       rawText: json['ocr_raw_text'],
     );
   }
