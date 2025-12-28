@@ -286,6 +286,8 @@ class _AddExpensePageState extends State<AddExpensePage> {
         receiptId: receiptId,
       );
 
+      debugPrint("response: $result");
+
       // Build pending domain entity
       _pendingReceipt = Receipt(
         id: null,

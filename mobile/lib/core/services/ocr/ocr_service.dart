@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 
 import 'package:http/http.dart' as http;
 
@@ -31,6 +32,9 @@ class OCRService {
     final response = await http.Response.fromStream(streamedResponse);
 
     if (response.statusCode != 200) {
+      debugPrint(
+        'OCR Service Error: ${response.statusCode} - ${response.body}',
+      );
       throw Exception('OCR failed: ${response.body}');
     }
 
@@ -54,6 +58,9 @@ class OCRService {
     final response = await http.Response.fromStream(streamedResponse);
 
     if (response.statusCode != 200) {
+      debugPrint(
+        'OCR Service Error: ${response.statusCode} - ${response.body}',
+      );
       throw Exception('OCR failed: ${response.body}');
     }
 
