@@ -26,7 +26,6 @@ class TransactionsCalendarPage extends StatefulWidget {
 
 class _TransactionsCalendarPageState extends State<TransactionsCalendarPage> {
   late DateTime _selectedDate;
-  late final List<NeatCleanCalendarEvent> _events;
   final List<Color> _palette = const [
     Colors.blue,
     Colors.green,
@@ -44,7 +43,6 @@ class _TransactionsCalendarPageState extends State<TransactionsCalendarPage> {
   void initState() {
     super.initState();
     _selectedDate = DateTime.now();
-    _events = _buildEvents();
   }
 
   Color _colorForAccount(int index) => _palette[index % _palette.length];
@@ -153,6 +151,7 @@ class _TransactionsCalendarPageState extends State<TransactionsCalendarPage> {
     final dayTransactions = _transactionsForSelectedDate();
     final expenseTotal = _sumBy(true);
     final incomeTotal = _sumBy(false);
+    final events = _buildEvents();
 
     return Scaffold(
       backgroundColor: AppColors.getSurface(context),
@@ -188,7 +187,7 @@ class _TransactionsCalendarPageState extends State<TransactionsCalendarPage> {
                   selectedColor: AppColors.primary,
                   todayColor: AppColors.primary.withValues(alpha: 0.2),
                   eventDoneColor: AppColors.primary,
-                  eventsList: _events,
+                  eventsList: events,
                   locale: 'en_US',
                   dayOfWeekStyle: AppTypography.bodySmall.copyWith(
                     color: AppColors.getTextPrimary(context),
@@ -199,7 +198,7 @@ class _TransactionsCalendarPageState extends State<TransactionsCalendarPage> {
                   eventListBuilder: (_, _) => const SizedBox.shrink(),
                   dayBuilder: (BuildContext context, DateTime day) {
                     final isSelected = _isSameDay(day, _selectedDate);
-                    final dayEvents = _events
+                    final dayEvents = events
                         .where((event) => _isSameDay(event.startTime, day))
                         .toList();
                     return Container(
