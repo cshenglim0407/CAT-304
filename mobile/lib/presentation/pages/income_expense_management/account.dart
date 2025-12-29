@@ -1788,7 +1788,7 @@ class _AccountPageState extends State<AccountPage> {
       type: isTransferType ? 'T' : (isExpenseForCurrent ? 'E' : 'I'),
       description: sanitized['description']?.toString(),
       currency: 'MYR',
-      spentAt: sanitized['date'],
+      spentAt: sanitized['rawDate'],
     );
 
     await _upsertTransaction(transactionRecord);

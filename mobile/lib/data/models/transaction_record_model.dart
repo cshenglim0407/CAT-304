@@ -12,6 +12,7 @@ class TransactionRecordModel extends TransactionRecord {
     super.currency,
     super.createdAt,
     super.updatedAt,
+    super.spentAt,
   });
 
   factory TransactionRecordModel.fromEntity(TransactionRecord entity) {
@@ -24,6 +25,7 @@ class TransactionRecordModel extends TransactionRecord {
       currency: entity.currency,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
+      spentAt: entity.spentAt,
     );
   }
 
@@ -37,6 +39,7 @@ class TransactionRecordModel extends TransactionRecord {
       currency: map['currency'] as String?,
       createdAt: DateFormatter.parseDateTime(map['created_at']),
       updatedAt: DateFormatter.parseDateTime(map['updated_at']),
+      spentAt: DateFormatter.parseDateTime(map['spent_at']),
     );
   }
 
@@ -48,6 +51,7 @@ class TransactionRecordModel extends TransactionRecord {
       'type': type,
       'description': description,
       'currency': currency,
+      if (spentAt != null) 'spent_at': spentAt!.toIso8601String(),
     };
   }
 
