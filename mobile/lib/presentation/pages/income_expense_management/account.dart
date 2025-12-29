@@ -69,7 +69,7 @@ class AccountPage extends StatefulWidget {
 }
 
 class _AccountPageState extends State<AccountPage> {
-  int _selectedIndex = 1;
+  int _selectedIndex = 1; // Account page index
   int _currentCardIndex = 0;
   late PageController _pageController;
 
@@ -3109,6 +3109,8 @@ class _AccountPageState extends State<AccountPage> {
       Navigator.pushReplacementNamed(context, '/dashboard');
     } else if (index == 2) {
       Navigator.pushReplacementNamed(context, '/profile');
+    } else if (index == 3) {
+      Navigator.pushReplacementNamed(context, '/budget');
     }
   }
 

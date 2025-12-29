@@ -40,7 +40,7 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  int _selectedIndex = 0; // Home is always 0
+  int _selectedIndex = 0; // Home page index
 
   // Cache keys
   final String _accountsCacheKey = 'dashboard_accounts_cache';
@@ -63,11 +63,11 @@ class _DashboardPageState extends State<DashboardPage> {
     });
 
     if (index == 1) {
-      // Index 1 is now ACCOUNT
       Navigator.pushReplacementNamed(context, '/account');
     } else if (index == 2) {
-      // Index 2 is now PROFILE
       Navigator.pushReplacementNamed(context, '/profile');
+    } else if (index == 3) {
+      Navigator.pushReplacementNamed(context, '/budget');
     }
   }
 

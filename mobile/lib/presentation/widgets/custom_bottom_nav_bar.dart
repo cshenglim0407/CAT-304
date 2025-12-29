@@ -52,6 +52,12 @@ class CustomBottomNavBar extends StatelessWidget {
             icon: Icon(Icons.person_rounded),
             label: 'Profile',
           ),
+
+          // Index 3: Budget
+          BottomNavigationBarItem(
+            icon: Icon(Icons.pie_chart_rounded),
+            label: 'Budget',
+          ),
         ],
       ),
     );

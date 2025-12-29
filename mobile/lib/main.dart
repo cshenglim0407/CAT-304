@@ -21,6 +21,8 @@ import 'package:cashlytics/presentation/pages/user_management/otp_verification.d
 import 'package:cashlytics/presentation/pages/user_management/reset_password.dart';
 import 'package:cashlytics/presentation/pages/user_management/profile.dart';
 import 'package:cashlytics/presentation/pages/income_expense_management/account.dart';
+import 'package:cashlytics/presentation/pages/budget_threshold/budget.dart';
+import 'package:cashlytics/presentation/pages/budget_threshold/add_budget.dart';
 import 'package:cashlytics/core/services/timezone_service.dart';
 
 Future<void> main() async {
@@ -33,9 +35,10 @@ Future<void> main() async {
   await CacheService.initialize();
 
   // Load saved theme preference
-  final cachedProfile = CacheService.load<Map<String, dynamic>>('user_profile_cache');
+  final cachedProfile = CacheService.load<Map<String, dynamic>>(
+    'user_profile_cache',
+  );
   final savedTheme = cachedProfile?['theme_pref'] as String? ?? 'system';
-
 
   // Use path URL strategy for web
   usePathUrlStrategy();
@@ -62,7 +65,7 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    
+
     supabase.auth.onAuthStateChange.listen((data) {
       final event = data.event;
       if (event == AuthChangeEvent.passwordRecovery) {
@@ -92,8 +95,9 @@ class _MyAppState extends State<MyApp> {
         '/profile': (context) => const ProfilePage(),
         '/dashboard': (context) => const DashboardPage(),
         '/account': (context) => const AccountPage(),
+        '/budget': (context) => const BudgetPage(),
+        '/addbudget': (context) => const AddBudgetPage(),
       },
     );
   }
 }
-

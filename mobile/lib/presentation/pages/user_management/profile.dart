@@ -45,6 +45,8 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  int _selectedIndex = 2; // Profile page index
+
   late final _authService = AuthService();
   late final AppUserRepository _appUserRepository = AppUserRepositoryImpl();
   late final DetailedRepository _detailedRepository = DetailedRepositoryImpl();
@@ -238,8 +240,6 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  final int _selectedIndex = 2;
-
   // --- Basic User Data ---
   late String _displayName = "";
   late String _email = "";
@@ -339,10 +339,14 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _onNavBarTap(int index) {
+    setState(() => _selectedIndex = index);
+
     if (index == 0) {
-      Navigator.pushReplacementNamed(context, '/dashboard'); // Go Home
+      Navigator.pushReplacementNamed(context, '/dashboard');
     } else if (index == 1) {
-      Navigator.pushReplacementNamed(context, '/account'); // Go Account
+      Navigator.pushReplacementNamed(context, '/account');
+    } else if (index == 3) {
+      Navigator.pushReplacementNamed(context, '/budget');
     }
   }
 
@@ -768,9 +772,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) => const BudgetOverviewPage(),
-                    ),
+                    MaterialPageRoute(builder: (context) => const BudgetPage()),
                   );
                 },
               ),

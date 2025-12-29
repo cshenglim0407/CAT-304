@@ -20,14 +20,16 @@ import 'package:cashlytics/presentation/widgets/confirm_delete_dialog.dart';
 
 import 'package:cashlytics/presentation/pages/budget_threshold/add_budget.dart';
 
-class BudgetOverviewPage extends StatefulWidget {
-  const BudgetOverviewPage({super.key});
+class BudgetPage extends StatefulWidget {
+  const BudgetPage({super.key});
 
   @override
-  State<BudgetOverviewPage> createState() => _BudgetOverviewPageState();
+  State<BudgetPage> createState() => _BudgetPageState();
 }
 
-class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
+class _BudgetPageState extends State<BudgetPage> {
+  int _selectedIndex = 3; // Budget page index
+
   String _selectedFilter = 'All';
   String _selectedSort = 'Newest';
   bool _showAllExpired = false;
@@ -44,6 +46,20 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
   late final GetAccounts _getAccounts;
   late final GetAccountTransactions _getAccountTransactions;
   late final DeleteBudget _deleteBudget;
+
+  void _onNavBarTap(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+
+    if (index == 0) {
+      Navigator.pushReplacementNamed(context, '/dashboard');
+    } else if (index == 1) {
+      Navigator.pushReplacementNamed(context, '/account');
+    } else if (index == 2) {
+      Navigator.pushReplacementNamed(context, '/profile');
+    }
+  }
 
   @override
   void initState() {
@@ -402,14 +418,7 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        // --- UPDATED BACK BUTTON SECTION ---
-        // We use Container + padding to perfectly align with the page margin
-        leading: Container(
-          margin: const EdgeInsets.only(left: pageMargin),
-          alignment: Alignment.centerLeft, // Ensures button doesn't stretch
-          child: AppBackButton(onPressed: () => Navigator.pop(context)),
-        ),
-        leadingWidth: 70, // Give enough width for margin + button
+        automaticallyImplyLeading: false,
         title: Text(
           'My Budgets',
           style: TextStyle(
@@ -530,13 +539,17 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
           onPressed: () async {
             await Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const BudgetPage()),
+              MaterialPageRoute(builder: (context) => const AddBudgetPage()),
             );
             if (mounted) {
               _loadBudgets(forceRefresh: true);
             }
           },
         ),
+      ),
+      bottomNavigationBar: CustomBottomNavBar(
+        currentIndex: _selectedIndex,
+        onTap: _onNavBarTap,
       ),
     );
   }

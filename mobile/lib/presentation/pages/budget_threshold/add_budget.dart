@@ -41,14 +41,14 @@ enum BudgetType {
   const BudgetType(this.code, this.label, this.icon);
 }
 
-class BudgetPage extends StatefulWidget {
-  const BudgetPage({super.key});
+class AddBudgetPage extends StatefulWidget {
+  const AddBudgetPage({super.key});
 
   @override
-  State<BudgetPage> createState() => _BudgetPageState();
+  State<AddBudgetPage> createState() => _AddBudgetPageState();
 }
 
-class _BudgetPageState extends State<BudgetPage> {
+class _AddBudgetPageState extends State<AddBudgetPage> {
   final _formKey = GlobalKey<FormState>();
   final DatabaseService _databaseService = const DatabaseService();
 
@@ -469,7 +469,7 @@ class _BudgetPageState extends State<BudgetPage> {
                               context,
                               MaterialPageRoute(
                                 builder: (context) =>
-                                    const BudgetOverviewPage(),
+                                    const BudgetPage(),
                               ),
                             );
                           },
