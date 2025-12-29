@@ -55,6 +55,10 @@ class _TransactionsCalendarPageState extends State<TransactionsCalendarPage> {
   DateTime? _extractDate(Map<String, dynamic> tx) {
     final raw = tx['rawDate'];
     if (raw is DateTime) return _dateOnly(raw);
+    if (raw is String) {
+      final parsed = DateTime.tryParse(raw);
+      if (parsed != null) return _dateOnly(parsed);
+    }
 
     final dateStr = (tx['date'] ?? '').toString();
     if (dateStr.isEmpty) return null;

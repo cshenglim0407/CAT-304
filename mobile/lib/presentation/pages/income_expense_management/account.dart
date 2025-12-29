@@ -401,6 +401,7 @@ class _AccountPageState extends State<AccountPage> {
                   : (isExpense ? 'expense' : 'income'),
               'title': tx.title,
               'date': _formatDate(tx.date),
+              'rawDate': tx.date,
               'amount': displayAmount,
               'rawAmount': amount,
               'isExpense': isExpense,
@@ -479,6 +480,11 @@ class _AccountPageState extends State<AccountPage> {
         final sanitized = Map<String, dynamic>.from(tx);
         // Remove any non-serializable fields
         sanitized.remove('icon'); // Remove IconData which can't be serialized
+        // Convert DateTime objects to string for caching
+        if (sanitized['rawDate'] is DateTime) {
+          sanitized['rawDate'] =
+              (sanitized['rawDate'] as DateTime).toIso8601String();
+        }
         return sanitized;
       }).toList();
     }).toList();
@@ -995,6 +1001,7 @@ class _AccountPageState extends State<AccountPage> {
         'type': resolvedType,
         'title': title,
         'date': displayDate,
+        'rawDate': result['date'],
         'amount': displayAmount,
         'rawAmount': newRaw,
         'isExpense': isExpenseForCurrent,
@@ -1533,6 +1540,7 @@ class _AccountPageState extends State<AccountPage> {
           'type': isTransfer ? 'transfer' : (isExpense ? 'expense' : 'income'),
           'title': title,
           'date': DateFormatter.formatDate(result['date'] as DateTime),
+          'rawDate': result['date'],
           'amount': displayAmount,
           'rawAmount': rawAmount,
           'isExpense': isExpense,
@@ -1578,6 +1586,7 @@ class _AccountPageState extends State<AccountPage> {
               'type': 'transfer',
               'title': "From $senderName", // Display "From [Sender Name]"
               'date': DateFormatter.formatDate(result['date'] as DateTime),
+              'rawDate': result['date'],
               'amount': displayAmountReceiver,
               'rawAmount': rawAmount,
               'isExpense': false, // It's income for the receiver
