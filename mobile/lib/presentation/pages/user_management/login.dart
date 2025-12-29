@@ -16,7 +16,7 @@ import 'package:cashlytics/presentation/themes/typography.dart';
 import 'package:cashlytics/presentation/widgets/index.dart';
 
 import 'package:cashlytics/presentation/pages/user_management/forgot_password.dart';
-import 'package:cashlytics/presentation/pages/income_expense_management/home_page.dart';
+import 'package:cashlytics/presentation/pages/income_expense_management/dashboard.dart';
 import 'package:cashlytics/presentation/pages/user_management/sign_up.dart';
 import 'package:provider/provider.dart';
 
@@ -188,7 +188,7 @@ class _LoginPageState extends State<LoginPage> with WidgetsBindingObserver {
     Navigator.of(context, rootNavigator: true).pop();
     // Replace entire stack to avoid nested navigator issues
     Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (context) => const HomePage()),
+      MaterialPageRoute(builder: (context) => const DashboardPage()),
       (route) => false,
     );
   }

@@ -123,7 +123,15 @@ class _DashboardPageState extends State<DashboardPage> {
     try {
       final user = _authService.currentUser;
       if (user == null) {
-        throw Exception('User not authenticated');
+        // user not authenticated
+        if (mounted) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => const LoginPage()),
+            );
+          });
+        }
+        return;
       }
 
       final accounts = await _getAccounts(user.id);
@@ -180,9 +188,11 @@ class _DashboardPageState extends State<DashboardPage> {
           cachedAccounts = [];
           await CacheService.remove(_accountsCacheKey);
           if (mounted) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const LoginPage()),
-            );
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (context) => const LoginPage()),
+              );
+            });
           }
         } else {
           debugPrint('User logged out but cached accounts available');
@@ -267,9 +277,11 @@ class _DashboardPageState extends State<DashboardPage> {
           cachedBalances = null;
           await CacheService.remove(_balancesCacheKey);
           if (mounted) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const LoginPage()),
-            );
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (context) => const LoginPage()),
+              );
+            });
           }
         } else {
           debugPrint('User logged out but cached balances available');

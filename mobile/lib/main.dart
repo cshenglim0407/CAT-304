@@ -12,7 +12,6 @@ import 'package:cashlytics/core/services/ocr/ocr_service.dart';
 import 'package:cashlytics/presentation/providers/theme_provider.dart';
 import 'package:cashlytics/presentation/themes/app_themes.dart';
 
-import 'package:cashlytics/presentation/pages/income_expense_management/home_page.dart';
 import 'package:cashlytics/presentation/pages/income_expense_management/dashboard.dart';
 import 'package:cashlytics/presentation/pages/user_management/login.dart';
 import 'package:cashlytics/presentation/pages/user_management/sign_up.dart';
@@ -84,7 +83,7 @@ class _MyAppState extends State<MyApp> {
       darkTheme: AppThemes.darkTheme,
       themeMode: context.watch<ThemeProvider>().themeMode,
 
-      home: const HomePage(),
+      home: const DashboardPage(),
       routes: {
         '/login': (context) => const LoginPage(),
         '/signup': (context) => const SignUpPage(),

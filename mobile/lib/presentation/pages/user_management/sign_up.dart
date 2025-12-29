@@ -11,7 +11,7 @@ import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
 import 'package:cashlytics/presentation/widgets/index.dart';
 
-import 'package:cashlytics/presentation/pages/income_expense_management/home_page.dart';
+import 'package:cashlytics/presentation/pages/income_expense_management/dashboard.dart';
 import 'package:cashlytics/presentation/pages/user_management/login.dart';
 
 class SignUpPage extends StatefulWidget {
@@ -147,16 +147,17 @@ class _SignUpPageState extends State<SignUpPage> {
             showDialog(
               context: context,
               barrierDismissible: false,
-              builder: (context) => const Center(
-                child: CircularProgressIndicator(),
-              ),
+              builder: (context) =>
+                  const Center(child: CircularProgressIndicator()),
             );
             // Delay navigation to allow UI to render
             Future.delayed(const Duration(milliseconds: 300), () {
               if (mounted) {
                 Navigator.of(context).pop(); // Close loading dialog
                 Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => const HomePage()),
+                  MaterialPageRoute(
+                    builder: (context) => const DashboardPage(),
+                  ),
                 );
               }
             });

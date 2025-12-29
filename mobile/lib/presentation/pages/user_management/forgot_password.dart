@@ -11,7 +11,7 @@ import 'package:cashlytics/presentation/themes/colors.dart';
 import 'package:cashlytics/presentation/themes/typography.dart';
 import 'package:cashlytics/presentation/widgets/index.dart';
 
-import 'package:cashlytics/presentation/pages/income_expense_management/home_page.dart';
+import 'package:cashlytics/presentation/pages/income_expense_management/dashboard.dart';
 import 'package:cashlytics/presentation/pages/user_management/login.dart';
 // import 'package:cashlytics/presentation/pages/user_management/otp_verification.dart';
 
@@ -87,7 +87,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         if (!mounted) return;
         setState(() => _redirecting = true);
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const HomePage()),
+          MaterialPageRoute(builder: (context) => const DashboardPage()),
         );
       },
       onError: (error) {
