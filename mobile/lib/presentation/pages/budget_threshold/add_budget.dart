@@ -608,7 +608,7 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
                                   // Fix: Use SizedBox instead of IntrinsicWidth to avoid layout crash
                                   SizedBox(
                                     width:
-                                        MediaQuery.of(context).size.width * 0.6,
+                                        MediaQuery.of(context).size.width * 0.8,
                                     child: TextFormField(
                                       controller: _amountController,
                                       keyboardType: TextInputType.number,
