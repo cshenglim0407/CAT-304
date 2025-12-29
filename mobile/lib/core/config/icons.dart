@@ -61,10 +61,6 @@ IconData getAccountTypeIcon(String accountType) {
       return Icons.account_balance_wallet_rounded;
     case 'CREDIT CARD':
       return Icons.credit_card_rounded;
-    case 'INVESTMENT':
-      return Icons.trending_up_rounded;
-    case 'LOAN':
-      return Icons.money_off_rounded;
     default:
       return Icons.account_box_rounded;
   }

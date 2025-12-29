@@ -2136,8 +2136,6 @@ class _AccountPageState extends State<AccountPage> {
       'BANK',
       'E-WALLET',
       'CREDIT CARD',
-      'INVESTMENT',
-      'LOAN',
       'OTHER',
     ];
 
@@ -2406,8 +2404,6 @@ class _AccountPageState extends State<AccountPage> {
       'BANK',
       'E-WALLET',
       'CREDIT CARD',
-      'INVESTMENT',
-      'LOAN',
       'OTHER',
     ];
 
