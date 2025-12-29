@@ -22,7 +22,6 @@ import 'package:cashlytics/presentation/pages/user_management/reset_password.dar
 import 'package:cashlytics/presentation/pages/user_management/profile.dart';
 import 'package:cashlytics/presentation/pages/income_expense_management/account.dart';
 import 'package:cashlytics/presentation/pages/budget_threshold/budget.dart';
-import 'package:cashlytics/presentation/pages/budget_threshold/add_budget.dart';
 import 'package:cashlytics/core/services/timezone_service.dart';
 
 Future<void> main() async {
@@ -96,7 +95,6 @@ class _MyAppState extends State<MyApp> {
         '/dashboard': (context) => const DashboardPage(),
         '/account': (context) => const AccountPage(),
         '/budget': (context) => const BudgetPage(),
-        '/addbudget': (context) => const AddBudgetPage(),
       },
     );
   }
