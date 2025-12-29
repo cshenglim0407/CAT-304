@@ -14,11 +14,10 @@ import 'package:cashlytics/presentation/themes/typography.dart';
 import 'package:cashlytics/presentation/widgets/index.dart';
 
 import 'package:cashlytics/data/models/ocr_result.dart';
-import 'package:cashlytics/domain/repositories/receipt_repository.dart';
 import 'package:cashlytics/domain/entities/receipt.dart';
 import 'package:cashlytics/data/repositories/receipt_repository_impl.dart';
 
-import 'package:uuid/uuid.dart';
+import 'dart:io';
 import 'receipt_preview_page.dart';
 
 class AddExpensePage extends StatefulWidget {
@@ -61,6 +60,8 @@ class _AddExpensePageState extends State<AddExpensePage> {
   Receipt? _pendingReceipt;
   String? _existingReceiptUrl;
   bool _isLoadingReceipt = false;
+  File? _pendingReceiptImage;
+  bool _receiptUpdated = false;
 
   @override
   void initState() {
@@ -264,6 +265,10 @@ class _AddExpensePageState extends State<AddExpensePage> {
   Future<void> _scanReceiptAndPrefill() async {
     if (_isScanning) return;
 
+    _pendingReceipt = null;
+    _pendingReceiptImage = null;
+    _receiptUpdated = true;
+
     final image = await ReceiptPicker.pickReceipt();
     if (image == null) return;
 
@@ -275,17 +280,8 @@ class _AddExpensePageState extends State<AddExpensePage> {
     try {
       final OcrResult result = await OCRService.instance.scanReceipt(image);
 
-      // Create repository (interface type)
-      final ReceiptRepository receiptRepo = ReceiptRepositoryImpl();
-
-      // Generate receiptId (UUID or null → insert)
-      final String receiptId = const Uuid().v4();
-
-      // Upload image to storage
-      final String storagePath = await receiptRepo.uploadReceiptImage(
-        imageSource: image,
-        receiptId: receiptId,
-      );
+      _pendingReceiptImage = image;
+      _receiptUpdated = true;
 
       // Use AI to parse the raw text
       Map<String, dynamic> aiData = {};
@@ -300,9 +296,9 @@ class _AddExpensePageState extends State<AddExpensePage> {
       // Build pending domain entity
       _pendingReceipt = Receipt(
         id: null,
-        transactionId: '', // Placeholder
-        path: storagePath,
-        merchantName: '', // Placeholder
+        transactionId: '',
+        path: '',
+        merchantName: '',
         confidenceScore: result.confidence,
         ocrRawText: result.rawText,
         scannedAt: DateTime.now(),
@@ -383,40 +379,26 @@ class _AddExpensePageState extends State<AddExpensePage> {
   }
 
   Future<void> _viewReceipt() async {
-    if (_pendingReceipt == null) return;
-
-    try {
-      final receiptRepo = ReceiptRepositoryImpl();
-
-      final signedUrl = await receiptRepo.getSignedReceiptUrl(
-        _pendingReceipt!.path,
-      );
-
-      if (!mounted) return;
-
+    // Local image
+    if (_pendingReceiptImage != null) {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => ReceiptPreviewPage(imageUrl: signedUrl),
+          builder: (_) => ReceiptPreviewPage(imageFile: _pendingReceiptImage!),
         ),
       );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to load receipt: $e')));
+      return;
     }
-  }
 
-  void _viewExistingReceipt() {
-    if (_existingReceiptUrl == null) return;
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ReceiptPreviewPage(imageUrl: _existingReceiptUrl!),
-      ),
-    );
+    // Existing uploaded receipt
+    if (_existingReceiptUrl != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ReceiptPreviewPage(imageUrl: _existingReceiptUrl!),
+        ),
+      );
+    }
   }
 
   // In AddExpensePage.dart
@@ -470,6 +452,8 @@ class _AddExpensePageState extends State<AddExpensePage> {
       'items': itemsList,
       'description': _descriptionController.text.trim(),
       'pendingReceipt': _pendingReceipt,
+      'pendingReceiptImage': _pendingReceiptImage,
+      'receiptUpdated': _receiptUpdated,
     };
 
     Navigator.pop(context, newTransaction);
@@ -632,23 +616,14 @@ class _AddExpensePageState extends State<AddExpensePage> {
                 child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
               ),
 
-            if (_pendingReceipt != null)
+            // View receipt button
+            if (_pendingReceiptImage != null || _existingReceiptUrl != null)
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
                   icon: const Icon(Icons.receipt_long),
                   label: const Text("View Receipt"),
                   onPressed: _viewReceipt,
-                ),
-              ),
-
-            if (_existingReceiptUrl != null)
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.receipt_long),
-                  label: const Text("View Receipt"),
-                  onPressed: _viewExistingReceipt,
                 ),
               ),
 

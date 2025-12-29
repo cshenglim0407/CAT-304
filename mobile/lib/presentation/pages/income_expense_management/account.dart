@@ -1,3 +1,4 @@
+import "dart:io";
 import 'dart:async';
 
 import 'package:cashlytics/core/utils/user_management/profile_helpers.dart';
@@ -43,7 +44,6 @@ import 'package:cashlytics/domain/usecases/income/upsert_income.dart';
 import 'package:cashlytics/domain/usecases/expenses/upsert_expense.dart';
 import 'package:cashlytics/domain/usecases/transfers/upsert_transfer.dart';
 import 'package:cashlytics/domain/usecases/expense_items/upsert_expense_item.dart';
-import 'package:cashlytics/domain/repositories/receipt_repository.dart';
 import 'package:cashlytics/data/repositories/receipt_repository_impl.dart';
 import 'package:cashlytics/domain/entities/receipt.dart';
 
@@ -1361,6 +1361,9 @@ class _AccountPageState extends State<AccountPage> {
 
       final savedTransaction = await _upsertTransaction(transactionRecord);
       final String? transactionId = savedTransaction.id;
+      final Receipt? pendingReceipt = result['pendingReceipt'];
+      final File? pendingReceiptImage = result['pendingReceiptImage'];
+      final bool receiptUpdated = result['receiptUpdated'] == true;
 
       if (transactionId == null || transactionId.isEmpty) {
         throw Exception('Transaction saved but ID is null or empty');
@@ -1368,17 +1371,32 @@ class _AccountPageState extends State<AccountPage> {
 
       debugPrint('Transaction saved with ID: $transactionId');
 
-      final Receipt? pendingReceipt = result['pendingReceipt'];
+      final receiptRepo = ReceiptRepositoryImpl();
 
-      if (pendingReceipt != null) {
-        final ReceiptRepository receiptRepo = ReceiptRepositoryImpl();
+      // Get existing receipt
+      final existingReceipt = await receiptRepo.getReceiptByTransactionId(
+        transactionId,
+      );
 
-        final receiptToInsert = pendingReceipt.copyWith(
-          id: null,
-          transactionId: transactionId,
+      if (!receiptUpdated && existingReceipt != null) {
+      } else if (receiptUpdated && existingReceipt != null) {
+        await receiptRepo.deleteReceiptImage(existingReceipt.path);
+        await receiptRepo.deleteReceipt(existingReceipt.id!);
+      }
+
+      if (pendingReceipt != null && pendingReceiptImage != null) {
+        final storagePath = await receiptRepo.uploadReceiptImage(
+          imageSource: pendingReceiptImage,
+          receiptId: transactionId,
         );
 
-        await receiptRepo.upsertReceipt(receiptToInsert);
+        final receiptToSave = pendingReceipt.copyWith(
+          id: null,
+          transactionId: transactionId,
+          path: storagePath,
+        );
+
+        await receiptRepo.upsertReceipt(receiptToSave);
       }
 
       // Validate amount

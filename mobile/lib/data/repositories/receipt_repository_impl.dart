@@ -68,6 +68,19 @@ class ReceiptRepositoryImpl implements ReceiptRepository {
     return storagePath;
   }
 
+  Future<String> uploadTempReceiptImage(File imageFile) async {
+    final fileName =
+        'temp/${DateTime.now().millisecondsSinceEpoch}_${imageFile.path.split('/').last}';
+
+    try {
+      await supabase.storage.from('receipts').upload(fileName, imageFile);
+
+      return fileName;
+    } catch (e) {
+      throw Exception('Failed to upload temp receipt: $e');
+    }
+  }
+
   // ---------------------------
   // FETCH RECEIPT BY ID
   // ---------------------------
@@ -106,5 +119,26 @@ class ReceiptRepositoryImpl implements ReceiptRepository {
 
     if (data == null) return null;
     return ReceiptModel.fromMap(data);
+  }
+
+  // ---------------------------
+  // DELETE IMAGE FROM STORAGE
+  // ---------------------------
+  Future<void> deleteReceiptImage(String path) async {
+    await supabase.storage.from('receipts').remove([path]);
+  }
+
+  // ---------------------------
+  // DELETE ENTRY IN DATABASE
+  // ---------------------------
+  Future<void> deleteReceipt(String receiptId) async {
+    final response = await supabase
+        .from('receipt')
+        .delete()
+        .eq('id', receiptId);
+
+    if (response.error != null) {
+      throw Exception(response.error!.message);
+    }
   }
 }
