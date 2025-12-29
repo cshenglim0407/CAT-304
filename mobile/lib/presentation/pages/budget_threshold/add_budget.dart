@@ -1,3 +1,4 @@
+import 'package:cashlytics/core/utils/string_case_formatter.dart';
 import 'package:cashlytics/core/utils/user_management/profile_helpers.dart';
 import 'package:flutter/material.dart';
 
@@ -468,8 +469,7 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) =>
-                                    const BudgetPage(),
+                                builder: (context) => const BudgetPage(),
                               ),
                             );
                           },
@@ -621,7 +621,8 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
                                         fontSize: 42,
                                       ),
                                       decoration: InputDecoration(
-                                        prefixText: ProfileHelpers.getUserCurrencyPref(),
+                                        prefixText:
+                                            ProfileHelpers.getUserCurrencyPref(),
                                         prefixStyle: AppTypography.headline1
                                             .copyWith(
                                               color: AppColors.grey,
@@ -672,7 +673,18 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
                                       ), // UNIQUE KEY for logic fix
                                       "Select Category",
                                       "Category", // Placeholder Text
-                                      _categories,
+                                      _categories
+                                          .map(
+                                            (cat) => {
+                                              'id': cat['id'],
+                                              'name':
+                                                  StringCaseFormatter.toTitleCase(
+                                                    cat['name'] as String,
+                                                  ),
+                                              'icon': cat['icon'],
+                                            },
+                                          )
+                                          .toList(),
                                       _selectedCategoryId,
                                       (val) => setState(
                                         () => _selectedCategoryId = val,

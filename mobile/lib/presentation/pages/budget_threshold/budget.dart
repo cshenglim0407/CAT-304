@@ -1,3 +1,4 @@
+import 'package:cashlytics/core/utils/string_case_formatter.dart';
 import 'package:flutter/material.dart';
 
 import 'package:cashlytics/core/config/icons.dart';
@@ -109,7 +110,7 @@ class _BudgetPageState extends State<BudgetPage> {
       final categoryMap = <String, String>{};
       for (final row in categoryRows) {
         final id = row['expense_cat_id'] as String?;
-        final name = row['name'] as String?;
+        final name = StringCaseFormatter.toTitleCase(row['name']) as String?;
         if (id != null && name != null) {
           categoryMap[id] = name;
         }
