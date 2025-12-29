@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cashlytics/core/utils/date_formatter.dart';
 
 import 'package:cashlytics/core/config/icons.dart';
 import 'package:cashlytics/core/utils/currency_input_formatter.dart';
@@ -34,6 +35,7 @@ class _AddIncomePageState extends State<AddIncomePage> {
 
   // 1. New variable for the Recurrent feature
   bool _isRecurrent = false;
+  DateTime _selectedDate = DateTime.now();
 
   String? _selectedAccount;
   String _selectedCategory = 'Salary';
@@ -77,6 +79,12 @@ class _AddIncomePageState extends State<AddIncomePage> {
         _descriptionController.text = desc;
       }
 
+      // Use helper to extract date
+      final DateTime? date = IncomeExpenseHelpers.getInitialDate(init);
+      if (date != null) {
+        _selectedDate = date;
+      }
+
       // Use helper to parse amount
       final double amt = IncomeExpenseHelpers.getInitialAmount(init);
       if (IncomeExpenseHelpers.isValidAmount(amt)) {
@@ -117,6 +125,33 @@ class _AddIncomePageState extends State<AddIncomePage> {
     super.dispose();
   }
 
+  String _formatDate(DateTime date) {
+    return DateFormatter.formatDateDDMMYYYY(date);
+  }
+
+  Future<void> _pickDate() async {
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(
+            context,
+          ).copyWith(colorScheme: ColorScheme.light(primary: primaryColor)),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedDate = picked;
+      });
+    }
+  }
+
   void _saveIncome() {
     final amountText = _totalIncomeController.text;
     if (amountText.isEmpty) return;
@@ -134,7 +169,7 @@ class _AddIncomePageState extends State<AddIncomePage> {
       'amount': amount,
       'category': _selectedCategory.toUpperCase(),
       'isRecurrent': _isRecurrent,
-      'date': DateTime.now(),
+      'date': _selectedDate,
       'accountName': _selectedAccount ?? widget.accountName,
       'description': description.isNotEmpty ? description : null,
     };
@@ -300,7 +335,39 @@ class _AddIncomePageState extends State<AddIncomePage> {
                 fieldColor,
               ),
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 20),
+
+            // --- 3. Date Input ---
+            Text(
+              "Date",
+              style: AppTypography.labelLarge.copyWith(
+                color: AppColors.greyText,
+              ),
+            ),
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: _pickDate,
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: fieldColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.calendar_today, color: primaryColor, size: 20),
+                    const SizedBox(width: 12),
+                    Text(
+                      _formatDate(_selectedDate),
+                      style: AppTypography.bodySmall.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
 
             // --- 3. Amount Input ---
             Container(

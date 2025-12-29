@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cashlytics/core/utils/date_formatter.dart';
 
 import 'package:cashlytics/core/utils/currency_input_formatter.dart';
 import 'package:cashlytics/core/utils/user_management/profile_helpers.dart';
@@ -34,6 +35,7 @@ class _AddTransferPageState extends State<AddTransferPage> {
   late String _fromAccount;
   String? _selectedToAccount;
   late List<String> _validToAccounts;
+  DateTime _selectedDate = DateTime.now();
 
   @override
   void initState() {
@@ -74,6 +76,12 @@ class _AddTransferPageState extends State<AddTransferPage> {
         _descriptionController.text = desc;
       }
 
+      // Use helper to extract date
+      final DateTime? date = IncomeExpenseHelpers.getInitialDate(init);
+      if (date != null) {
+        _selectedDate = date;
+      }
+
       // Use helper to parse amount
       final double amt = IncomeExpenseHelpers.getInitialAmount(init);
       if (IncomeExpenseHelpers.isValidAmount(amt)) {
@@ -111,6 +119,33 @@ class _AddTransferPageState extends State<AddTransferPage> {
     super.dispose();
   }
 
+  String _formatDate(DateTime date) {
+    return DateFormatter.formatDateDDMMYYYY(date);
+  }
+
+  Future<void> _pickDate() async {
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(
+            context,
+          ).copyWith(colorScheme: ColorScheme.light(primary: primaryColor)),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedDate = picked;
+      });
+    }
+  }
+
   void _saveTransfer() {
     final amountText = _amountController.text;
     if (amountText.isEmpty || _selectedToAccount == null) return;
@@ -127,7 +162,7 @@ class _AddTransferPageState extends State<AddTransferPage> {
       'amount': amount,
       'fromAccount': _fromAccount,
       'toAccount': _selectedToAccount,
-      'date': DateTime.now(),
+      'date': _selectedDate,
       'type': 'transfer',
       'description': description.isNotEmpty ? description : null,
     };
@@ -273,7 +308,39 @@ class _AddTransferPageState extends State<AddTransferPage> {
                 fieldColor,
               ),
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 20),
+
+            // --- 3. Date Input ---
+            Text(
+              "Date",
+              style: AppTypography.labelLarge.copyWith(
+                color: AppColors.greyText,
+              ),
+            ),
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: _pickDate,
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: fieldColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.calendar_today, color: primaryColor, size: 20),
+                    const SizedBox(width: 12),
+                    Text(
+                      _formatDate(_selectedDate),
+                      style: AppTypography.bodySmall.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
 
             // --- 3. Amount Input ---
             Container(
