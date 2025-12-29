@@ -355,8 +355,9 @@ class _AccountPageState extends State<AccountPage> {
             filters: {'to_account_id': account.id!},
           );
 
-          final incomingTxIds =
-              incomingTransfers.map((t) => t['transaction_id']).toList();
+          final incomingTxIds = incomingTransfers
+              .map((t) => t['transaction_id'])
+              .toList();
 
           List<Map<String, dynamic>> incomingTxParents = [];
           if (incomingTxIds.isNotEmpty) {
@@ -446,12 +447,13 @@ class _AccountPageState extends State<AccountPage> {
                 MathFormatter.parseDouble(transferRecord['amount']) ?? 0.0;
             final spentAt =
                 DateTime.tryParse(parentTx['spent_at']?.toString() ?? '') ??
-                    DateTime.now();
+                DateTime.now();
 
             String senderName = 'Unknown';
             try {
-              final senderAccount =
-                  accounts.firstWhere((a) => a.id == parentTx['account_id']);
+              final senderAccount = accounts.firstWhere(
+                (a) => a.id == parentTx['account_id'],
+              );
               senderName = senderAccount.name;
             } catch (_) {}
 
@@ -549,8 +551,8 @@ class _AccountPageState extends State<AccountPage> {
         sanitized.remove('icon'); // Remove IconData which can't be serialized
         // Convert DateTime objects to string for caching
         if (sanitized['rawDate'] is DateTime) {
-          sanitized['rawDate'] =
-              (sanitized['rawDate'] as DateTime).toIso8601String();
+          sanitized['rawDate'] = (sanitized['rawDate'] as DateTime)
+              .toIso8601String();
         }
         return sanitized;
       }).toList();
@@ -2477,13 +2479,7 @@ class _AccountPageState extends State<AccountPage> {
 
     // Enforce DB-allowed TYPE values
     String type = (account['type']?.toString() ?? 'CASH').toUpperCase();
-    final types = <String>[
-      'CASH',
-      'BANK',
-      'E-WALLET',
-      'CREDIT CARD',
-      'OTHER',
-    ];
+    final types = <String>['CASH', 'BANK', 'E-WALLET', 'CREDIT CARD', 'OTHER'];
 
     showModalBottomSheet(
       context: context,
@@ -3522,11 +3518,13 @@ class _TransactionTile extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Text(
-                      title,
-                      style: AppTypography.labelLarge.copyWith(
-                        color: AppColors.getTextPrimary(context),
-                        fontWeight: FontWeight.bold,
+                    Flexible(
+                      child: Text(
+                        title,
+                        style: AppTypography.labelLarge.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     if (isRecurrent) ...[

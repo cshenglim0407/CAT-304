@@ -327,10 +327,13 @@ class _TransactionsCalendarPageState extends State<TransactionsCalendarPage> {
                                 shape: BoxShape.circle,
                               ),
                             ),
-                            Text(
-                              tx['title'],
-                              style: AppTypography.labelLarge.copyWith(
-                                fontWeight: FontWeight.bold,
+                            Flexible(
+                              child: Text(
+                                tx['title'],
+                                style: AppTypography.labelLarge.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             if (isRecurrent) ...[
@@ -352,10 +355,12 @@ class _TransactionsCalendarPageState extends State<TransactionsCalendarPage> {
                               ),
                             ),
                             const SizedBox(width: 10),
-                            _SummaryChip(
-                              label: accName,
-                              color: accColor.withValues(alpha: 0.12),
-                              textColor: accColor,
+                            Flexible(
+                              child: _SummaryChip(
+                                label: accName,
+                                color: accColor.withValues(alpha: 0.12),
+                                textColor: accColor,
+                              ),
                             ),
                           ],
                         ),
@@ -449,6 +454,7 @@ class _SummaryChip extends StatelessWidget {
           color: textColor,
           fontWeight: FontWeight.w600,
         ),
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }

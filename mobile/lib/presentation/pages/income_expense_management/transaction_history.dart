@@ -72,10 +72,13 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
                   ),
                   title: Row(
                     children: [
-                      Text(
-                        tx['title'],
-                        style: AppTypography.labelLarge.copyWith(
-                          fontWeight: FontWeight.bold,
+                      Flexible(
+                        child: Text(
+                          tx['title'],
+                          style: AppTypography.labelLarge.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       if (isRecurrent) ...[
