@@ -147,7 +147,7 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM ACCOUNTS WHERE ACCOUNT_ID = p_account_id AND USER_ID = p_user_id) THEN
         RAISE EXCEPTION 'Account % does not exist or does not belong to user %', p_account_id, p_user_id;
     END IF;
-    
+
     SELECT EXPENSE_CAT_ID INTO v_cat_id FROM EXPENSE_CATEGORY 
     WHERE NAME = p_category_name;
 

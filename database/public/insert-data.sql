@@ -155,8 +155,6 @@ BEGIN
         ]',
         '/receipts/receipt_002.png',
         'MYR',
-        'City Taxi Services',
-        92.00,
         'City Taxi Services\nDate: 2024-09-12\nTaxi Fare x1 - $45.00\nTotal: $45.00'
     );
 END $$;
