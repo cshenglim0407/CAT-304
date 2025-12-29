@@ -11,6 +11,9 @@ import 'package:cashlytics/core/services/supabase/auth/oauth_image_service.dart'
 import 'package:cashlytics/data/repositories/app_user_repository_impl.dart';
 
 class AuthService {
+  /// Track if Google Sign In has been initialized
+  static bool _isGoogleSignInInitialized = false;
+
   /// Get the current authenticated user
   User? get currentUser => supabase.auth.currentUser;
 
@@ -65,19 +68,18 @@ class AuthService {
       final iosClientId =
           dotenv.env['PUBLIC_SUPABASE_AUTH_EXTERNAL_GOOGLE_IOS_CLIENT_ID'] ??
           '';
-      final androidClientId =
-          dotenv
-              .env['PUBLIC_SUPABASE_AUTH_EXTERNAL_GOOGLE_ANDROID_CLIENT_ID'] ??
-          '';
       final scopes = ['email', 'profile'];
       final googleSignIn = GoogleSignIn.instance;
 
-      await googleSignIn.initialize(
-        serverClientId: webClientId,
-        clientId: defaultTargetPlatform == TargetPlatform.iOS
-            ? iosClientId
-            : androidClientId,
-      );
+      if (!_isGoogleSignInInitialized) {
+        await googleSignIn.initialize(
+          serverClientId: webClientId,
+          clientId: defaultTargetPlatform == TargetPlatform.iOS
+              ? iosClientId
+              : null,
+        );
+        _isGoogleSignInInitialized = true;
+      }
 
       late GoogleSignInAccount account;
       try {
