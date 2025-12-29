@@ -134,8 +134,6 @@ CREATE OR REPLACE PROCEDURE add_expense_with_receipt(
     p_items JSONB,
     p_receipt_path TEXT,
     p_currency TEXT DEFAULT 'MYR',
-    p_receipt_merchant_name TEXT DEFAULT NULL,
-    p_receipt_confidence_score NUMERIC DEFAULT NULL,
     p_receipt_ocr_raw_text TEXT DEFAULT NULL
 )
 LANGUAGE plpgsql SET search_path = public AS $$
@@ -184,12 +182,10 @@ BEGIN
     END LOOP;
 
     -- Insert into RECEIPT table
-    INSERT INTO RECEIPT (TRANSACTION_ID, PATH, MERCHANT_NAME, CONFIDENCE_SCORE, OCR_RAW_TEXT)
+    INSERT INTO RECEIPT (TRANSACTION_ID, PATH, OCR_RAW_TEXT)
     VALUES (
         v_tx_id,
         p_receipt_path,
-        p_receipt_merchant_name,
-        p_receipt_confidence_score,
         p_receipt_ocr_raw_text
     );
 END;

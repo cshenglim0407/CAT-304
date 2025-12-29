@@ -56,7 +56,6 @@ class _AddExpensePageState extends State<AddExpensePage> {
   double _totalPrice = 0.0;
   DateTime _selectedDate = DateTime.now();
   bool _isScanning = false;
-  double? _lastOcrConfidence;
   Receipt? _pendingReceipt;
   String? _existingReceiptUrl;
   bool _isLoadingReceipt = false;
@@ -274,7 +273,6 @@ class _AddExpensePageState extends State<AddExpensePage> {
 
     setState(() {
       _isScanning = true;
-      _lastOcrConfidence = null;
     });
 
     try {
@@ -298,8 +296,6 @@ class _AddExpensePageState extends State<AddExpensePage> {
         id: null,
         transactionId: '',
         path: '',
-        merchantName: '',
-        confidenceScore: result.confidence,
         ocrRawText: result.rawText,
         scannedAt: DateTime.now(),
       );
@@ -308,8 +304,6 @@ class _AddExpensePageState extends State<AddExpensePage> {
         // Transaction name
         if (aiData['name'] != null && aiData['name'].toString().isNotEmpty) {
           _transactionNameController.text = aiData['name'];
-        } else if (result.merchant != null) {
-          _transactionNameController.text = result.merchant!;
         }
 
         // Description
@@ -361,10 +355,6 @@ class _AddExpensePageState extends State<AddExpensePage> {
           _items[0]['price']?.text = result.total!.toStringAsFixed(2);
           _calculateTotal();
         }
-
-        // Confidence (always update)
-        _lastOcrConfidence = result.confidence;
-        _pendingReceipt = _pendingReceipt;
       });
     } catch (e) {
       if (!mounted) return;
@@ -625,27 +615,6 @@ class _AddExpensePageState extends State<AddExpensePage> {
                   label: const Text("View Receipt"),
                   onPressed: _viewReceipt,
                 ),
-              ),
-
-            // --- 1c. OCR Confidence ---
-            if (_lastOcrConfidence != null)
-              Row(
-                children: [
-                  Icon(
-                    _lastOcrConfidence! >= 0.8
-                        ? Icons.check_circle
-                        : Icons.warning_amber_rounded,
-                    color: _lastOcrConfidence! >= 0.8
-                        ? Colors.green
-                        : Colors.orange,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    "OCR confidence: ${(_lastOcrConfidence! * 100).toStringAsFixed(0)}%",
-                    style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
-                  ),
-                ],
               ),
 
             // --- 2. Transaction Name ---

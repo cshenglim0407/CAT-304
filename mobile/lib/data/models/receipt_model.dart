@@ -1,4 +1,3 @@
-import 'package:cashlytics/core/utils/math_formatter.dart';
 import 'package:cashlytics/core/utils/date_formatter.dart';
 import 'package:cashlytics/domain/entities/receipt.dart';
 
@@ -8,8 +7,6 @@ class ReceiptModel extends Receipt {
     super.id,
     required super.transactionId,
     required super.path,
-    super.merchantName,
-    super.confidenceScore,
     super.ocrRawText,
     super.scannedAt,
   });
@@ -19,8 +16,6 @@ class ReceiptModel extends Receipt {
       id: entity.id,
       transactionId: entity.transactionId,
       path: entity.path,
-      merchantName: entity.merchantName,
-      confidenceScore: entity.confidenceScore,
       ocrRawText: entity.ocrRawText,
       scannedAt: entity.scannedAt,
     );
@@ -31,8 +26,6 @@ class ReceiptModel extends Receipt {
       id: map['receipt_id'] as String?,
       transactionId: map['transaction_id'] as String? ?? '',
       path: map['path'] as String? ?? '',
-      merchantName: map['merchant_name'] as String?,
-      confidenceScore: MathFormatter.parseDouble(map['confidence_score']),
       ocrRawText: map['ocr_raw_text'] as String?,
       scannedAt: DateFormatter.parseDateTime(map['scanned_at']),
     );
@@ -43,8 +36,6 @@ class ReceiptModel extends Receipt {
       if (id != null) 'receipt_id': id,
       'transaction_id': transactionId,
       'path': path,
-      'merchant_name': merchantName,
-      'confidence_score': confidenceScore,
       'ocr_raw_text': ocrRawText,
       'scanned_at': scannedAt?.toIso8601String(),
     };
