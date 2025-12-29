@@ -131,11 +131,13 @@ class _AddIncomePageState extends State<AddIncomePage> {
 
   Future<void> _pickDate() async {
     final primaryColor = Theme.of(context).colorScheme.primary;
+    final now = DateTime.now();
+    final initialDate = _selectedDate.isAfter(now) ? now : _selectedDate;
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate,
+      initialDate: initialDate,
       firstDate: DateTime(2000),
-      lastDate: DateTime.now(),
+      lastDate: now,
       builder: (context, child) {
         return Theme(
           data: Theme.of(

@@ -7,7 +7,8 @@ CREATE OR REPLACE PROCEDURE add_transfer(
     p_name TEXT,
     p_amount NUMERIC,
     p_description TEXT DEFAULT NULL,
-    p_currency TEXT DEFAULT 'MYR'
+    p_currency TEXT DEFAULT 'MYR',
+    p_spent_at TIMESTAMPTZ DEFAULT NOW()
 )
 LANGUAGE plpgsql SET search_path = public AS $$
 DECLARE
@@ -23,8 +24,8 @@ BEGIN
     END IF;
 
     -- 2. Insert into TRANSACTION (Primary log)
-    INSERT INTO TRANSACTION (NAME, TYPE, DESCRIPTION, CURRENCY, ACCOUNT_ID)
-    VALUES (p_name, 'T', p_description, p_currency, p_from_account_id)
+    INSERT INTO TRANSACTION (NAME, TYPE, DESCRIPTION, CURRENCY, ACCOUNT_ID, SPENT_AT)
+    VALUES (p_name, 'T', p_description, p_currency, p_from_account_id, p_spent_at)
     RETURNING TRANSACTION_ID INTO v_tx_id;
 
     -- 3. Insert into TRANSFER
@@ -41,7 +42,8 @@ CREATE OR REPLACE PROCEDURE add_income(
     p_category TEXT, -- 'SALARY', 'BUSINESS', etc.
     p_description TEXT DEFAULT NULL,
     p_currency TEXT DEFAULT 'MYR',
-    p_is_recurrent BOOLEAN DEFAULT FALSE
+    p_is_recurrent BOOLEAN DEFAULT FALSE,
+    p_spent_at TIMESTAMPTZ DEFAULT NOW()
 )
 LANGUAGE plpgsql SET search_path = public AS $$
 DECLARE
@@ -53,8 +55,8 @@ BEGIN
     END IF;
 
     -- Insert into Parent Transaction
-    INSERT INTO TRANSACTION (NAME, TYPE, DESCRIPTION, CURRENCY, ACCOUNT_ID)
-    VALUES (p_name, 'I', p_description, p_currency, p_account_id)
+    INSERT INTO TRANSACTION (NAME, TYPE, DESCRIPTION, CURRENCY, ACCOUNT_ID, SPENT_AT)
+    VALUES (p_name, 'I', p_description, p_currency, p_account_id, p_spent_at)
     RETURNING TRANSACTION_ID INTO v_tx_id;
 
     -- Insert into Income child table
@@ -70,7 +72,8 @@ CREATE OR REPLACE PROCEDURE add_expense(
     p_expense_name TEXT,
     p_description TEXT,
     p_items JSONB, -- Format: '[{"name": "Milk", "qty": 2, "unit_price": 5.50}, ...]'
-    p_currency TEXT DEFAULT 'MYR'
+    p_currency TEXT DEFAULT 'MYR',
+    p_spent_at TIMESTAMPTZ DEFAULT NOW()
 )
 LANGUAGE plpgsql SET search_path = public AS $$
 DECLARE
@@ -100,8 +103,8 @@ BEGIN
     END IF;
 
     -- 2. Create the Parent Transaction
-    INSERT INTO TRANSACTION (NAME, TYPE, DESCRIPTION, CURRENCY, ACCOUNT_ID)
-    VALUES (p_expense_name, 'E', p_description, p_currency, p_account_id)
+    INSERT INTO TRANSACTION (NAME, TYPE, DESCRIPTION, CURRENCY, ACCOUNT_ID, SPENT_AT)
+    VALUES (p_expense_name, 'E', p_description, p_currency, p_account_id, p_spent_at)
     RETURNING TRANSACTION_ID INTO v_tx_id;
 
     -- 3. Create the Expense Record with the correct total amount
@@ -134,7 +137,8 @@ CREATE OR REPLACE PROCEDURE add_expense_with_receipt(
     p_items JSONB,
     p_receipt_path TEXT,
     p_currency TEXT DEFAULT 'MYR',
-    p_receipt_ocr_raw_text TEXT DEFAULT NULL
+    p_receipt_ocr_raw_text TEXT DEFAULT NULL,
+    p_spent_at TIMESTAMPTZ DEFAULT NOW()
 )
 LANGUAGE plpgsql SET search_path = public AS $$
 DECLARE
@@ -161,8 +165,8 @@ BEGIN
         RAISE EXCEPTION 'Total expense amount must be positive.';
     END IF;
 
-    INSERT INTO TRANSACTION (NAME, TYPE, DESCRIPTION, CURRENCY, ACCOUNT_ID)
-    VALUES (p_expense_name, 'E', p_description, p_currency, p_account_id)
+    INSERT INTO TRANSACTION (NAME, TYPE, DESCRIPTION, CURRENCY, ACCOUNT_ID, SPENT_AT)
+    VALUES (p_expense_name, 'E', p_description, p_currency, p_account_id, p_spent_at)
     RETURNING TRANSACTION_ID INTO v_tx_id;
 
     INSERT INTO EXPENSES (TRANSACTION_ID, AMOUNT, EXPENSE_CAT_ID)

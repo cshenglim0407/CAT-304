@@ -67,10 +67,12 @@ CREATE TABLE TRANSACTION (
     DESCRIPTION TEXT,
     CREATED_AT TIMESTAMPTZ DEFAULT NOW(),
     UPDATED_AT TIMESTAMPTZ DEFAULT NOW(),
+    SPENT_AT TIMESTAMPTZ DEFAULT NOW(),
     CURRENCY TEXT,
     ACCOUNT_ID UUID REFERENCES ACCOUNTS(ACCOUNT_ID) ON DELETE CASCADE,
     -- Constraint
-    CONSTRAINT transaction_type_options CHECK (TYPE IN ('T', 'I', 'E')) -- T: Transfer, I: Income, E: Expense
+    CONSTRAINT transaction_type_options CHECK (TYPE IN ('T', 'I', 'E')), -- T: Transfer, I: Income, E: Expense
+    CONSTRAINT spent_at_not_future CHECK (SPENT_AT <= NOW())
 );
 
 CREATE TABLE TRANSFER (

@@ -21,7 +21,7 @@ class TransactionRepositoryImpl implements TransactionRepository {
     final data = await _databaseService.fetchAll(
       _table,
       filters: {'account_id': accountId},
-      orderBy: 'created_at',
+      orderBy: 'spent_at',
       ascending: false,
       limit: 100,
     );

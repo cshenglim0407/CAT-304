@@ -11,6 +11,7 @@ class TransactionRecord {
     this.currency,
     this.createdAt,
     this.updatedAt,
+    this.spentAt
   });
 
   final String? id;
@@ -21,6 +22,7 @@ class TransactionRecord {
   final String? currency;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final DateTime? spentAt;
 
   TransactionRecord copyWith({
     String? id,
@@ -31,6 +33,7 @@ class TransactionRecord {
     String? currency,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? spentAt,
   }) {
     return TransactionRecord(
       id: id ?? this.id,
@@ -41,6 +44,7 @@ class TransactionRecord {
       currency: currency ?? this.currency,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      spentAt: spentAt ?? this.spentAt,
     );
   }
 
@@ -55,7 +59,8 @@ class TransactionRecord {
         other.description == description &&
         other.currency == currency &&
         other.createdAt == createdAt &&
-        other.updatedAt == updatedAt;
+        other.updatedAt == updatedAt &&
+        other.spentAt == spentAt;
   }
 
   @override
@@ -68,5 +73,6 @@ class TransactionRecord {
         currency,
         createdAt,
         updatedAt,
+        spentAt,
       );
 }

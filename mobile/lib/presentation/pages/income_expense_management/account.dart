@@ -444,8 +444,8 @@ class _AccountPageState extends State<AccountPage> {
 
             final amount =
                 MathFormatter.parseDouble(transferRecord['amount']) ?? 0.0;
-            final createdAt =
-                DateTime.tryParse(parentTx['created_at']?.toString() ?? '') ??
+            final spentAt =
+                DateTime.tryParse(parentTx['spent_at']?.toString() ?? '') ??
                     DateTime.now();
 
             String senderName = 'Unknown';
@@ -459,8 +459,8 @@ class _AccountPageState extends State<AccountPage> {
               'transactionId': parentTx['transaction_id'],
               'type': 'transfer',
               'title': 'From $senderName',
-              'date': _formatDate(createdAt),
-              'rawDate': createdAt,
+              'date': _formatDate(spentAt),
+              'rawDate': spentAt,
               'amount': '+ ${MathFormatter.formatCurrency(amount)}',
               'rawAmount': amount,
               'isExpense': false,
@@ -768,16 +768,16 @@ class _AccountPageState extends State<AccountPage> {
       final name = txData['name'] as String;
       final description = txData['description'] as String?;
       final accountId = txData['account_id'] as String;
-      final createdAt =
-          DateTime.tryParse(txData['created_at'] as String? ?? '') ??
+      final spentAt =
+          DateTime.tryParse(txData['spent_at'] as String? ?? '') ??
           DateTime.now();
 
       Map<String, dynamic> completeData = {
         'transactionId': transactionId,
         'title': name,
         'description': description,
-        'date': _formatDate(createdAt),
-        'rawDate': createdAt,
+        'date': _formatDate(spentAt),
+        'rawDate': spentAt,
       };
 
       if (type == 'I') {
@@ -1431,6 +1431,7 @@ class _AccountPageState extends State<AccountPage> {
         type: isTransfer ? 'T' : (isExpense ? 'E' : 'I'),
         description: result['description'],
         currency: 'MYR',
+        spentAt: result['date'],
       );
 
       final savedTransaction = await _upsertTransaction(transactionRecord);
@@ -1787,6 +1788,7 @@ class _AccountPageState extends State<AccountPage> {
       type: isTransferType ? 'T' : (isExpenseForCurrent ? 'E' : 'I'),
       description: sanitized['description']?.toString(),
       currency: 'MYR',
+      spentAt: sanitized['date'],
     );
 
     await _upsertTransaction(transactionRecord);
