@@ -349,6 +349,23 @@ class _AccountPageState extends State<AccountPage> {
         if (account.id != null) {
           final transactions = await _getAccountTransactions(account.id!);
 
+          // Fetch incoming transfers for this account
+          final incomingTransfers = await _databaseService.fetchAll(
+            'transfer',
+            filters: {'to_account_id': account.id!},
+          );
+
+          final incomingTxIds =
+              incomingTransfers.map((t) => t['transaction_id']).toList();
+
+          List<Map<String, dynamic>> incomingTxParents = [];
+          if (incomingTxIds.isNotEmpty) {
+            incomingTxParents = await _databaseService.fetchAll(
+              'transaction',
+              filters: {'transaction_id': incomingTxIds},
+            );
+          }
+
           for (final tx in transactions) {
             final isExpense = tx.isExpense;
             final amount = tx.amount.abs();
@@ -413,6 +430,56 @@ class _AccountPageState extends State<AccountPage> {
               'description': tx.description,
             });
           }
+
+          // Process incoming transfers
+          for (final parentTx in incomingTxParents) {
+            // Skip if self-transfer (already handled as outgoing)
+            if (parentTx['account_id'] == account.id) continue;
+
+            final transferRecord = incomingTransfers.firstWhere(
+              (t) => t['transaction_id'] == parentTx['transaction_id'],
+              orElse: () => {},
+            );
+            if (transferRecord.isEmpty) continue;
+
+            final amount =
+                MathFormatter.parseDouble(transferRecord['amount']) ?? 0.0;
+            final createdAt =
+                DateTime.tryParse(parentTx['created_at']?.toString() ?? '') ??
+                    DateTime.now();
+
+            String senderName = 'Unknown';
+            try {
+              final senderAccount =
+                  accounts.firstWhere((a) => a.id == parentTx['account_id']);
+              senderName = senderAccount.name;
+            } catch (_) {}
+
+            txList.add({
+              'transactionId': parentTx['transaction_id'],
+              'type': 'transfer',
+              'title': 'From $senderName',
+              'date': _formatDate(createdAt),
+              'rawDate': createdAt,
+              'amount': '+ ${MathFormatter.formatCurrency(amount)}',
+              'rawAmount': amount,
+              'isExpense': false,
+              'iconName': 'south_east_rounded',
+              'isRecurrent': false,
+              'category': 'TRANSFER',
+              'toAccount': account.name,
+              'fromAccount': senderName,
+              'description': parentTx['description'],
+              'icon': Icons.south_east_rounded,
+            });
+          }
+
+          // Sort by date descending
+          txList.sort((a, b) {
+            final dateA = a['rawDate'] as DateTime? ?? DateTime(0);
+            final dateB = b['rawDate'] as DateTime? ?? DateTime(0);
+            return dateB.compareTo(dateA);
+          });
         }
 
         // Add this account and its transactions immediately to UI
