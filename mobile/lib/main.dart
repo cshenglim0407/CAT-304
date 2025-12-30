@@ -16,7 +16,6 @@ import 'package:cashlytics/presentation/pages/income_expense_management/dashboar
 import 'package:cashlytics/presentation/pages/user_management/login.dart';
 import 'package:cashlytics/presentation/pages/user_management/sign_up.dart';
 import 'package:cashlytics/presentation/pages/user_management/forgot_password.dart';
-import 'package:cashlytics/presentation/pages/user_management/otp_verification.dart';
 import 'package:cashlytics/presentation/pages/user_management/reset_password.dart';
 import 'package:cashlytics/presentation/pages/user_management/profile.dart';
 import 'package:cashlytics/presentation/pages/income_expense_management/account.dart';
@@ -88,7 +87,6 @@ class _MyAppState extends State<MyApp> {
         '/login': (context) => const LoginPage(),
         '/signup': (context) => const SignUpPage(),
         '/forgetpassword': (context) => const ForgotPasswordPage(),
-        '/otpverification': (context) => OtpVerificationPage(userEmail: ''),
         '/resetpassword': (context) => const ResetPasswordPage(),
         '/profile': (context) => const ProfilePage(),
         '/dashboard': (context) => const DashboardPage(),

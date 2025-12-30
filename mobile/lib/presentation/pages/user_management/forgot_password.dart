@@ -13,7 +13,6 @@ import 'package:cashlytics/presentation/widgets/index.dart';
 
 import 'package:cashlytics/presentation/pages/income_expense_management/dashboard.dart';
 import 'package:cashlytics/presentation/pages/user_management/login.dart';
-// import 'package:cashlytics/presentation/pages/user_management/otp_verification.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
