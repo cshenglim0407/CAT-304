@@ -730,6 +730,20 @@ class _AccountPageState extends State<AccountPage> {
     }
   }
 
+  void _confirmDeleteTransaction(
+    BuildContext context,
+    Map<String, dynamic> tx,
+    int accountIndex,
+  ) {
+    showConfirmDeleteDialog(
+      context: context,
+      title: 'Delete Transaction',
+      content:
+          'Are you sure you want to delete this transaction? This cannot be undone.',
+      onConfirm: () async => await _deleteTransaction(tx, accountIndex),
+    );
+  }
+
   Future<String?> _resolveTransactionIdFromBackend(
     Map<String, dynamic> tx,
     String accountId,
@@ -2013,7 +2027,8 @@ class _AccountPageState extends State<AccountPage> {
         builder: (context) => TransactionHistoryPage(
           accountName: _myAccounts[_currentCardIndex]['name'],
           transactions: _allTransactions[_currentCardIndex],
-          onDelete: (tx) => _deleteTransaction(tx, _currentCardIndex),
+          onDelete: (tx) =>
+              _confirmDeleteTransaction(context, tx, _currentCardIndex),
           onEdit: (tx) => _editTransaction(tx),
         ),
       ),
@@ -2027,7 +2042,8 @@ class _AccountPageState extends State<AccountPage> {
         builder: (context) => TransactionsCalendarPage(
           accounts: _myAccounts,
           allTransactions: _allTransactions,
-          onDelete: (tx, accIndex) => _deleteTransaction(tx, accIndex),
+          onDelete: (tx, accIndex) =>
+              _confirmDeleteTransaction(context, tx, accIndex),
           onEdit: (tx, accIndex) {
             // switch context to the transaction's account before editing
             setState(() {
@@ -2091,7 +2107,7 @@ class _AccountPageState extends State<AccountPage> {
                 title: Text("Delete $transactionType"),
                 onTap: () {
                   Navigator.pop(ctx);
-                  _deleteTransaction(tx, _currentCardIndex);
+                  _confirmDeleteTransaction(context, tx, _currentCardIndex);
                 },
               ),
               const SizedBox(height: 10),
