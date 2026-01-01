@@ -54,8 +54,8 @@ import 'package:cashlytics/presentation/widgets/account_card.dart';
 import 'package:cashlytics/presentation/widgets/confirm_delete_dialog.dart';
 
 import 'package:cashlytics/presentation/pages/user_management/login.dart';
-import 'package:cashlytics/presentation/pages/expense_entry_ocr/add_income.dart';
-import 'package:cashlytics/presentation/pages/expense_entry_ocr/add_transfer.dart';
+import 'package:cashlytics/presentation/pages/income_expense_management/add_income.dart';
+import 'package:cashlytics/presentation/pages/income_expense_management/add_transfer.dart';
 import 'package:cashlytics/presentation/pages/expense_entry_ocr/add_expense.dart';
 import 'package:cashlytics/presentation/pages/income_expense_management/transaction_history.dart';
 import 'package:cashlytics/presentation/pages/income_expense_management/transactions_calendar.dart';
