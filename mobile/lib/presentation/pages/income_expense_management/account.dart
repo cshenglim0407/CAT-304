@@ -1089,6 +1089,11 @@ class _AccountPageState extends State<AccountPage> {
         'rawAmount': newRaw,
         'isExpense': isExpenseForCurrent,
         'icon': icon,
+        'iconName': _getIconName(
+          isExpenseForCurrent,
+          result['category'],
+          resolvedType == 'transfer',
+        ),
         'isRecurrent': result['isRecurrent'] ?? false,
         'category': result['category'],
         'transactionId':
@@ -1184,6 +1189,7 @@ class _AccountPageState extends State<AccountPage> {
                 'rawAmount': newRaw,
                 'isExpense': true,
                 'icon': Icons.north_west_rounded,
+                'iconName': 'north_east_rounded',
                 'category': 'TRANSFER',
                 'fromAccount': newFromAccount,
                 'toAccount': newToAccount,
@@ -1208,6 +1214,8 @@ class _AccountPageState extends State<AccountPage> {
                   'amount': '- ${MathFormatter.formatCurrency(newRaw)}',
                   'rawAmount': newRaw,
                   'isExpense': true,
+                  'icon': Icons.north_east_rounded,
+                  'iconName': 'north_east_rounded',
                 };
               }
             }
@@ -1233,6 +1241,7 @@ class _AccountPageState extends State<AccountPage> {
                 'rawAmount': newRaw,
                 'isExpense': false,
                 'icon': Icons.south_east_rounded,
+                'iconName': 'south_east_rounded',
                 'category': 'TRANSFER',
                 'fromAccount': newFromAccount,
                 'toAccount': newToAccount,
@@ -1258,6 +1267,8 @@ class _AccountPageState extends State<AccountPage> {
                   'amount': '+ ${MathFormatter.formatCurrency(newRaw)}',
                   'rawAmount': newRaw,
                   'isExpense': false,
+                  'icon': Icons.south_east_rounded,
+                  'iconName': 'south_east_rounded',
                 };
               }
             }
@@ -1270,6 +1281,14 @@ class _AccountPageState extends State<AccountPage> {
           } else {
             _myAccounts[_currentCardIndex]['current'] -= oldRaw;
             _myAccounts[_currentCardIndex]['current'] += newRaw;
+          }
+
+          // Update the transaction in the list with new values
+          final index = _allTransactions[_currentCardIndex].indexWhere(
+            (item) => item['transactionId'] == sanitized['transactionId'],
+          );
+          if (index != -1) {
+            _allTransactions[_currentCardIndex][index] = sanitized;
           }
         }
       });
@@ -1629,6 +1648,7 @@ class _AccountPageState extends State<AccountPage> {
           'rawAmount': rawAmount,
           'isExpense': isExpense,
           'icon': icon,
+          'iconName': _getIconName(isExpense, result['category'], isTransfer),
           'isRecurrent': result['isRecurrent'] ?? false,
           'category': result['category'],
           'transactionId': transactionId,
@@ -1676,6 +1696,7 @@ class _AccountPageState extends State<AccountPage> {
               'isExpense': false, // It's income for the receiver
               'icon': Icons
                   .arrow_downward_rounded, // Icon pointing down for received money
+              'iconName': 'south_east_rounded',
               'isRecurrent': false,
               'category': 'Transfer',
               'transactionId': transactionId,
