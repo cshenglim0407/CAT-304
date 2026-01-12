@@ -283,7 +283,7 @@ class _AddIncomePageState extends State<AddIncomePage> {
                                 child: Row(
                                   children: [
                                     Icon(
-                                      getExpenseIcon(cat),
+                                      getIncomeIcon(cat),
                                       color: primaryColor,
                                       size: 18,
                                     ),
